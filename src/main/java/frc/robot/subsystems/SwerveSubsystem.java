@@ -26,8 +26,13 @@ import swervelib.SwerveModule;
 import swervelib.math.SwerveMath;
 import swervelib.parser.SwerveParser;
 import swervelib.telemetry.SwerveDriveTelemetry;
+import yall.LimelightHelpers;
 
 public class SwerveSubsystem extends SubsystemBase {
+
+  private static final String LIMELIGHT_FRONT = "limelight-front";
+  private static final String LIMELIGHT_BACK = "limelight-back";
+  private static final double MAX_ANGULAR_VELOCITY_FOR_VISION = 720.0; // degrees per second
 
   private Field2d field;
   public SwerveDrive swerveDrive;
@@ -193,6 +198,38 @@ public class SwerveSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     swerveDrive.updateOdometry();
+
+    // Update vision pose estimation from both Limelights
+    updateVisionPoseEstimate(LIMELIGHT_FRONT);
+    updateVisionPoseEstimate(LIMELIGHT_BACK);
+
     field.setRobotPose(swerveDrive.getPose());
+  }
+
+  private void updateVisionPoseEstimate(String limelightName) {
+    // Send robot orientation to Limelight for MegaTag2
+    LimelightHelpers.SetRobotOrientation(
+        limelightName,
+        swerveDrive.getYaw().getDegrees(),
+        0, 0, 0, 0, 0);
+
+    // Get the vision pose estimate using MegaTag2
+    var visionEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelightName);
+
+    // Reject if no tags visible
+    if (visionEstimate == null || visionEstimate.tagCount == 0) {
+      return;
+    }
+
+    // Reject if robot is spinning too fast (vision becomes unreliable)
+    double angularVelocity = Math.abs(swerveDrive.getRobotVelocity().omegaRadiansPerSecond * 180.0 / Math.PI);
+    if (angularVelocity > MAX_ANGULAR_VELOCITY_FOR_VISION) {
+      return;
+    }
+
+    // Add vision measurement to pose estimator
+    swerveDrive.addVisionMeasurement(
+        visionEstimate.pose,
+        visionEstimate.timestampSeconds);
   }
 }
