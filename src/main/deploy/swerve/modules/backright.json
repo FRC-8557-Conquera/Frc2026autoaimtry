@@ -7,7 +7,7 @@
   "drive": {
     "type": "talonfx",
     "id": 14,
-    "canbus": ""
+    "canbus": null
   },
   "inverted": {
     "drive": true,
