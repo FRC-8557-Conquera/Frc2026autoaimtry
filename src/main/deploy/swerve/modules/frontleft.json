@@ -6,9 +6,9 @@
   
   "absoluteEncoderOffset":127.4,
   "drive": {
-    "type": "sparkmax_neo",
+    "type": "talonfx",
     "id": 11,
-    "canbus": null
+    "canbus": ""
   },
   "inverted": {
     "drive": true,
