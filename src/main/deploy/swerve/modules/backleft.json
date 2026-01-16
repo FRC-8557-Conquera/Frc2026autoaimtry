@@ -3,15 +3,15 @@
     "front": -11.4173228346,
     "left": 11.4173228346
   },
-  "absoluteEncoderOffset": 323.6,
+  "absoluteEncoderOffset": 322.9,
   "drive": {
     "type": "krakenx60",
     "id": 13,
     "canbus": ""
   },
   "inverted": {
-    "drive": false,
-    "angle": true
+    "drive": true,
+    "angle": false
   },
   "angle": {
     "type": "sparkmax_neo",
