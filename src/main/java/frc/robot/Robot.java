@@ -25,6 +25,7 @@ public class Robot extends TimedRobot {
   public void robotInit() {
     m_robotContainer = new RobotContainer();
     m_robotContainer.zeroGyro();
+    SignalLogger.setPath("/media/sda1/");
   }
 
   @Override
