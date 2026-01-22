@@ -58,7 +58,6 @@ public class SwerveSubsystem extends SubsystemBase {
   private File swerveJsonDirectory = new File(Filesystem.getDeployDirectory(), "swerve");
 
   public SwerveSubsystem() {
-    setupLimelight();
 
     RobotConfig config;
     SwerveDriveTelemetry.verbosity = SwerveDriveTelemetry.TelemetryVerbosity.HIGH;
@@ -105,7 +104,7 @@ public class SwerveSubsystem extends SubsystemBase {
     swerveDrive.setModuleStateOptimization(true);
     swerveDrive.setAutoCenteringModules(false);
     swerveDrive.setHeadingCorrection(true);
-
+    setupLimelight();
   }
 
   public Rotation2d getHeading() {
@@ -217,13 +216,9 @@ public class SwerveSubsystem extends SubsystemBase {
   }
   
   public void setupLimelight(){
-    swerveDrive.stopOdometryThread();
     limelightBack.getSettings()
              .withPipelineIndex(0)
-             .withLimelightLEDMode(LEDMode.PipelineControl)
-             .withCameraOffset(new Pose3d(
-                                new Translation3d(0, -0.38, 0.2),
-                                new Rotation3d(0, 0, -Math.PI / 2)))    .save();
+             .withLimelightLEDMode(LEDMode.PipelineControl).save();
       limelightBackPoseEstimator = limelightBack.createPoseEstimator(EstimationMode.MEGATAG2);
   }
 
@@ -231,20 +226,21 @@ private int     outofAreaReading = 0;
 private boolean initialReading = false;
 @Override
 public void periodic() {
+  
     double yawVelocity = swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond);
 
         limelightBack.getSettings()
-             .withRobotOrientation(new Orientation3d(new Rotation3d(swerveDrive.getOdometryHeading()
-                                                                               .rotateBy(Rotation2d.kZero)),
+             .withRobotOrientation(new Orientation3d(swerveDrive.getGyro().getRotation3d(),
                                                      new AngularVelocity3d(DegreesPerSecond.of(0),
                                                                            DegreesPerSecond.of(0),
-                                                                           DegreesPerSecond.of(yawVelocity))))      .save();
+                                                                           DegreesPerSecond.of(yawVelocity))));
             
     Optional<PoseEstimate> est1 = limelightBackPoseEstimator.getPoseEstimate();
-    Optional<LimelightResults> results = limelightBack.getLatestResults();
-        if (results.isPresent()/* && poseEstimates.isPresent()*/)
-    {
-      LimelightResults result       = results.get();
+    
+    // Optional<LimelightResults> results = limelightBack.getLatestResults();
+        if (est1.isPresent()) // & poseEstimates.isPresent())
+    { 
+      
       PoseEstimate     poseEstimate = est1.get();
       SmartDashboard.putNumber("Avg Tag Ambiguity", poseEstimate.getAvgTagAmbiguity());
       SmartDashboard.putNumber("Min Tag Ambiguity", poseEstimate.getMinTagAmbiguity());
@@ -257,12 +253,11 @@ public void periodic() {
       SmartDashboard.putNumber("Limelight Pose/x", poseEstimate.pose.getX());
       SmartDashboard.putNumber("Limelight Pose/y", poseEstimate.pose.getY());
       SmartDashboard.putNumber("Limelight Pose/degrees", poseEstimate.pose.toPose2d().getRotation().getDegrees());
-      if (result.valid)
-      {
+      
         // Pose2d estimatorPose = poseEstimate.pose.toPose2d();
-        Pose2d usefulPose     = result.getBotPose2d(Alliance.Blue);
+        Pose2d usefulPose     = poseEstimate.pose.toPose2d();
         double distanceToPose = usefulPose.getTranslation().getDistance(swerveDrive.getPose().getTranslation());
-        if (distanceToPose < 0.5 || (outofAreaReading > 10) || (outofAreaReading > 10 && !initialReading))
+        if (poseEstimate.tagCount > 0 && (distanceToPose < 0.5 || (outofAreaReading > 10) || (outofAreaReading > 10 && !initialReading)))
         {
           if (!initialReading)
           {
@@ -282,9 +277,9 @@ public void periodic() {
        field.setRobotPose(swerveDrive.getPose());
 
        } 
+      }
+      
 
-    } 
 
   }
 
-}
