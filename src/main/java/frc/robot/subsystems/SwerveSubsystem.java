@@ -4,8 +4,11 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.path.PathConstraints;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.estimator.PoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -16,6 +19,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Filesystem;
@@ -56,11 +60,10 @@ public class SwerveSubsystem extends SubsystemBase {
   LimelightPoseEstimator limelightBackPoseEstimator;
   Limelight limelightBack = new Limelight("limelight-back");
   private File swerveJsonDirectory = new File(Filesystem.getDeployDirectory(), "swerve");
-
   public SwerveSubsystem() {
+    SwerveDriveTelemetry.verbosity = SwerveDriveTelemetry.TelemetryVerbosity.HIGH;
 
     RobotConfig config;
-    SwerveDriveTelemetry.verbosity = SwerveDriveTelemetry.TelemetryVerbosity.HIGH;
     try {
       config = RobotConfig.fromGUISettings();
       boolean enableFeedforward = true;
@@ -111,6 +114,21 @@ public class SwerveSubsystem extends SubsystemBase {
     return getPose().getRotation();
   }
 
+  public Rotation2d calculateHubAngle() {
+    Translation2d hub = new Translation2d(12.742, 4.238); 
+    Translation2d pos = getPose().getTranslation();
+
+    double angle = Math.asin(pos.minus(hub).dot(new Translation2d(0,1)) / pos.getDistance(hub));
+    angle += Math.PI/2;
+    return new Rotation2d(angle);
+  }
+
+  public void turnToAngle(Supplier<Rotation2d> angle) {
+    while(Math.abs(getHeading().minus(angle.get()).getRadians()) > 0.1) {
+      swerveDrive.drive(new ChassisSpeeds(0,0, 
+      Math.signum(-getHeading().minus(angle.get()).getRadians())));
+    }
+  }
   public ChassisSpeeds getTargetSpeeds(double xInput, double yInput, Rotation2d angle) {
     Translation2d scaledInputs = SwerveMath.cubeTranslation(new Translation2d(xInput, yInput));
     return swerveDrive.swerveController.getTargetSpeeds(
@@ -200,6 +218,7 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
   public Command driveFieldOriented(Supplier<ChassisSpeeds> velocity) {
+    double diff = getHeading().minus(calculateHubAngle()).getRadians();
     return run(() -> swerveDrive.driveFieldOriented(velocity.get()));
   }
 
@@ -273,7 +292,7 @@ public void periodic() {
         {
           outofAreaReading += 1;
         }
-    
+        
        field.setRobotPose(swerveDrive.getPose());
 
        } 
