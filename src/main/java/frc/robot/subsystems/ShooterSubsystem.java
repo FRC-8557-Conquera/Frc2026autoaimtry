@@ -1,88 +1,55 @@
+
 package frc.robot.subsystems;
 
-import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.config.SparkMaxConfig;
-import com.revrobotics.ResetMode;
-import com.revrobotics.PersistMode;
-import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
+import static edu.wpi.first.units.Units.Degrees;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants.Shooter;
+import frc.robot.Constants;
 
 public class ShooterSubsystem extends SubsystemBase {
 
-  private final SparkMax shooterMotor;
-  private final SparkMax angleMotor;
+    private final TurretSubsystem turret;
+    private final HoodSubsystem hood;
+    private final FlywheelSubsystem flywheel;
+    private final SwerveSubsystem swerve;
 
-  public ShooterSubsystem() {
-    shooterMotor = new SparkMax(
-        Shooter.shooterFlywheel,
-        MotorType.kBrushless
-    );
+    // Hub pose on field (example, blue alliance)
+   private static final Pose2d HUB_POSE =
+    new Pose2d(12.742, 4.238, new Rotation2d());
 
-    angleMotor = new SparkMax(
-        Shooter.shooterAngle,
-        MotorType.kBrushless
-    );
+    public ShooterSubsystem(
+        TurretSubsystem turret,
+        HoodSubsystem hood,
+        FlywheelSubsystem flywheel,
+        SwerveSubsystem swerve
+    ) {
+        this.turret = turret;
+        this.hood = hood;
+        this.flywheel = flywheel;
+        this.swerve = swerve;
 
-    configureShooterMotor();
-    configureAngleMotor();
-  }
+        // 🔥 Default command: sürekli açı setpoint’i gönder
+        turret.setDefaultCommand(
+            turret.setAngle(this::calculateTurretAngle)
+        );
+    }
 
-  private void configureShooterMotor() {
-    SparkMaxConfig config = new SparkMaxConfig();
-    config
-        .idleMode(IdleMode.kCoast)
-        .inverted(Shooter.flywheelInverted)
-        .smartCurrentLimit(40);
+    /** 🎯 Field-relative turret angle (SMC PID handles control) */
+    private edu.wpi.first.units.measure.Angle calculateTurretAngle() {
+        Pose2d robotPose = swerve.getPose();
 
-    shooterMotor.configure(
-        config,
-        ResetMode.kResetSafeParameters,
-        PersistMode.kPersistParameters
-    );
-  }
+        Rotation2d fieldTargetAngle =
+            HUB_POSE.getTranslation()
+                .minus(robotPose.getTranslation())
+                .getAngle();
 
-  private void configureAngleMotor() {
-    SparkMaxConfig config = new SparkMaxConfig();
-    config
-        .idleMode(IdleMode.kBrake)
-        .inverted(Shooter.angleInverted)
-        .smartCurrentLimit(20);
+        // Turret robot-relative çalışır
+        Rotation2d turretAngle =
+            fieldTargetAngle.minus(robotPose.getRotation());
 
-    angleMotor.configure(
-        config,
-        ResetMode.kResetSafeParameters,
-        PersistMode.kPersistParameters
-    );
-  }
-
-  /* =======================
-     SHOOTER (FLYWHEEL)
-     ======================= */
-
-  public void shoot(double speed) {
-    shooterMotor.set(speed);
-  }
-
-  public void stopShooter() {
-    shooterMotor.set(0);
-  }
-
-  /* =======================
-     ANGLE
-     ======================= */
-
-  public void angleUp() {
-    angleMotor.set(0.4);
-  }
-
-  public void angleDown() {
-    angleMotor.set(-0.3);
-  }
-
-  public void stopAngle() {
-    angleMotor.set(0);
-  }
+        return Degrees.of(turretAngle.getDegrees());
+    }
 }

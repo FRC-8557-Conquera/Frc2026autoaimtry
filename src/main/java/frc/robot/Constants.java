@@ -139,6 +139,28 @@ public final class Constants {
     public static final double manualSpeed = 0.4;
   }
 
+  /* ===================== HOOD ===================== */
+
+  public static final class Hood {
+
+    public static final int hoodMotor = 52;
+    public static final IdleMode idleMode = IdleMode.kBrake;
+    public static final boolean inverted = false;
+
+    public static final double minAngleDegrees = 5.0;
+    public static final double maxAngleDegrees = 100.0;
+  }
+
+  /* ===================== FLYWHEEL ===================== */
+
+  public static final class Flywheel{
+    
+    public static final int flywheelMotor = 53;
+    public static final IdleMode idleMode = IdleMode.kCoast;
+    public static final boolean inverted = false;
+
+  }
+  
   /* ===================== CLIMB ===================== */
   public static final class Climb {
 
