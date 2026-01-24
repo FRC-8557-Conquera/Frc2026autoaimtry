@@ -15,6 +15,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.hardware.TalonFXS;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
+import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
@@ -45,8 +46,8 @@ public class HoodSubsystem extends SubsystemBase {
             .withMotorInverted(false)
             .withClosedLoopRampRate(Seconds.of(0.25))
             .withOpenLoopRampRate(Seconds.of(0.25))
-            .withFeedforward(new SimpleMotorFeedforward(0, 0, 0))
-            .withSimFeedforward(new SimpleMotorFeedforward(0, 0, 0))
+            .withFeedforward(new ArmFeedforward(0, 0, 0))
+            .withSimFeedforward(new ArmFeedforward(0, 0, 0))
             .withControlMode(ControlMode.CLOSED_LOOP);
 
   private final SmartMotorController hoodSMC = new TalonFXWrapper(hoodMotor, DCMotor.getKrakenX60(1), hoodMotorConfig);

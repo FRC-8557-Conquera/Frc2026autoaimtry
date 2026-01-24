@@ -18,6 +18,7 @@ import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
 import edu.wpi.first.math.controller.ArmFeedforward;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
@@ -42,7 +43,7 @@ public class TurretSubsystem extends SubsystemBase
   private final SmartMotorControllerConfig motorConfig      = new SmartMotorControllerConfig(this)
 
       .withClosedLoopController(0, 0, 0, DegreesPerSecond.of(180), DegreesPerSecondPerSecond.of(90)) //TODO: Change the PID values
-      .withSoftLimit(Degrees.of(-30), Degrees.of(100))
+      .withSoftLimit(Degrees.of(-180), Degrees.of(180))
       .withGearing(new MechanismGearing(GearBox.fromReductionStages(3, 4)))     //TODO: Set the correct gear ratio
       .withIdleMode(MotorMode.BRAKE)
       .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
@@ -50,7 +51,7 @@ public class TurretSubsystem extends SubsystemBase
       .withMotorInverted(false)
       .withClosedLoopRampRate(Seconds.of(0.25))
       .withOpenLoopRampRate(Seconds.of(0.25))
-      .withFeedforward(new ArmFeedforward(0, 0, 0, 0))
+      .withFeedforward(new SimpleMotorFeedforward(0, 0, 0, 0))
       .withControlMode(ControlMode.CLOSED_LOOP);
   private final SmartMotorController       turretSMC            = new SparkWrapper(turretMotor,
                                                                                   DCMotor.getNEO(1),
