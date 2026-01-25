@@ -1,54 +1,104 @@
 package frc.robot.subsystems;
 
-import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.*;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants;
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
 
-public class ShooterSubsystem extends SubsystemBase {
+public class ShooterSubsystem {
 
-    private final TurretSubsystem turret;
-    private final HoodSubsystem hood;
-    private final FlywheelSubsystem flywheel;
     private final SwerveSubsystem swerve;
+    private ShotIntent intent = ShotIntent.OFF;
 
-    // Hub pose on field (example, blue alliance)
-   private static final Pose2d HUB_POSE =
-    new Pose2d(12.742, 4.238, new Rotation2d());
+    private static final Pose2d HUB_POSE =
+        new Pose2d(12.742, 4.238, new Rotation2d());
 
-    public ShooterSubsystem(
-        TurretSubsystem turret,
-        HoodSubsystem hood,
-        FlywheelSubsystem flywheel,
-        SwerveSubsystem swerve
-    ) {
-        this.turret = turret;
-        this.hood = hood;
-        this.flywheel = flywheel;
+    private final InterpolatingDoubleTreeMap hoodMap = new InterpolatingDoubleTreeMap();
+    private final InterpolatingDoubleTreeMap flywheelMap = new InterpolatingDoubleTreeMap();
+
+    public ShooterSubsystem(SwerveSubsystem swerve) {
         this.swerve = swerve;
-
-        // 🔥 Default command: sürekli açı setpoint’i gönder
-        turret.setDefaultCommand(
-            turret.setAngle(this::calculateTurretAngle)
-        );
+        buildLookupTables();
     }
 
-    /** 🎯 Field-relative turret angle (SMC PID handles control) */
-    private edu.wpi.first.units.measure.Angle calculateTurretAngle() {
-        Pose2d robotPose = swerve.getPose();
+    public void setIntent(ShotIntent intent) {
+        this.intent = intent;
+    }
 
-        Rotation2d fieldTargetAngle =
-            HUB_POSE.getTranslation()
-                .minus(robotPose.getTranslation())
-                .getAngle();
+    public ShotIntent getIntent() {
+        return intent;
+    }
 
-        // Turret robot-relative çalışır
-        Rotation2d turretAngle =
-            fieldTargetAngle.minus(robotPose.getRotation());
+    private void buildLookupTables() {
+        hoodMap.put(1.5, 20.0);
+        hoodMap.put(2.0, 28.0);
+        hoodMap.put(2.5, 35.0);
+        hoodMap.put(3.0, 42.0);
+        hoodMap.put(3.5, 48.0);
 
-        return Degrees.of(turretAngle.getDegrees());
+        flywheelMap.put(1.5, 55.0);
+        flywheelMap.put(2.0, 65.0);
+        flywheelMap.put(2.5, 75.0);
+        flywheelMap.put(3.0, 85.0);
+        flywheelMap.put(3.5, 95.0);
+    }
+
+
+
+    public Angle getTurretSetpoint() {
+        if (intent == ShotIntent.HUB) {
+            Pose2d pose = swerve.getPose();
+            Rotation2d fieldAngle =
+                HUB_POSE.getTranslation()
+                    .minus(pose.getTranslation())
+                    .getAngle();
+
+            return Degrees.of(
+                fieldAngle.minus(pose.getRotation()).getDegrees()
+            );
+        }
+
+        if (intent == ShotIntent.DUMP) {
+            return Degrees.of(0); 
+        }
+
+        return Degrees.of(0); 
+    }
+
+    public Angle getHoodSetpoint() {
+        if (intent == ShotIntent.HUB) {
+            double distance =
+                swerve.getPose()
+                    .getTranslation()
+                    .getDistance(HUB_POSE.getTranslation());
+
+            return Degrees.of(hoodMap.get(distance));
+        }
+
+        if (intent == ShotIntent.DUMP) {
+            return Degrees.of(15);
+        }
+
+        return Degrees.of(0);
+    }
+
+    public AngularVelocity getFlywheelSetpoint() {
+        if (intent == ShotIntent.HUB) {
+            double distance =
+                swerve.getPose()
+                    .getTranslation()
+                    .getDistance(HUB_POSE.getTranslation());
+
+            return RotationsPerSecond.of(flywheelMap.get(distance));
+        }
+
+        if (intent == ShotIntent.DUMP) {
+            return RotationsPerSecond.of(30);
+        }
+
+        return RotationsPerSecond.of(0);
     }
 }

@@ -2,7 +2,7 @@ package frc.robot.subsystems;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.RPM;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Seconds;
@@ -33,14 +33,15 @@ import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.remote.TalonFXWrapper;
+import static edu.wpi.first.units.Units.*;
 
 public class HoodSubsystem extends SubsystemBase {
     private final TalonFX hoodMotor = new TalonFX(Hood.hoodMotor);
     private final SmartMotorControllerConfig hoodMotorConfig = new SmartMotorControllerConfig(this)
 
-            .withClosedLoopController(0, 0, 0, RPM.of(5000), RotationsPerSecondPerSecond.of(2500))  // TODO: Change the PID values
+            .withClosedLoopController(0, 0, 0, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))  // TODO: Change the PID values
             .withGearing(new MechanismGearing(GearBox.fromReductionStages(3, 4)))           //TODO: Set the correct gear ratio
-            .withIdleMode(MotorMode.COAST)
+            .withIdleMode(MotorMode.BRAKE)
             .withTelemetry("HoodMotor", TelemetryVerbosity.HIGH)
             .withStatorCurrentLimit(Amps.of(40))
             .withMotorInverted(false)
@@ -49,10 +50,12 @@ public class HoodSubsystem extends SubsystemBase {
             .withFeedforward(new ArmFeedforward(0, 0, 0))
             .withSimFeedforward(new ArmFeedforward(0, 0, 0))
             .withControlMode(ControlMode.CLOSED_LOOP);
+            
 
   private final SmartMotorController hoodSMC = new TalonFXWrapper(hoodMotor, DCMotor.getKrakenX60(1), hoodMotorConfig);
 
     private final ArmConfig hoodConfig = new ArmConfig(hoodSMC)
+            .withLength(Inches.of(6)).withMass(Pounds.of(1))     // Approximate values for the Hood
             .withTelemetry("HoodMech", TelemetryVerbosity.HIGH)
             .withSoftLimits(Degrees.of(5), Degrees.of(100))
             .withHardLimit(Degrees.of(0), Degrees.of(120)); 
@@ -68,11 +71,6 @@ public class HoodSubsystem extends SubsystemBase {
     public Command setAngle(Angle angle) {
         return hood.setAngle(angle);
     }
-
-  public void setAngleDirect(Angle angle)
-  {
-    hoodSMC.setPosition(angle);
-  }
 
     public Command setAngle(Supplier<Angle> angleSupplier) {
         return hood.setAngle(angleSupplier);

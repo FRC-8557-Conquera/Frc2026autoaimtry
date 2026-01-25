@@ -71,10 +71,6 @@ public class TurretSubsystem extends SubsystemBase
                 return turret.setAngle(angle);
         }
 
-        public void setAngleDirect(Angle angle) {
-              turretSMC.setPosition(angle);
-        }
-
         public Command setAngle(Supplier<Angle> angleSupplier) {
                 return turret.setAngle(angleSupplier);
         }

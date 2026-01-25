@@ -5,7 +5,6 @@ import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Pounds;
-import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Second;
@@ -43,14 +42,14 @@ public class FlywheelSubsystem extends SubsystemBase
   private final TalonFX flywheelMotor    = new TalonFX(Flywheel.flywheelMotor);
 
   private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
-      .withClosedLoopController(0, 0, 0, RPM.of(5000), RotationsPerSecondPerSecond.of(2500))        // TODO: Change the PID values
+      .withClosedLoopController(0, 0, 0, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))        // TODO: Change the PID values
       .withGearing(new MechanismGearing(GearBox.fromReductionStages(3, 4)))                                   //TODO: Set the correct gear ratio
       .withIdleMode(MotorMode.COAST)
       .withTelemetry("FlywheelMotor", TelemetryVerbosity.HIGH)
       .withStatorCurrentLimit(Amps.of(40))
       .withMotorInverted(false)
       .withClosedLoopRampRate(Seconds.of(0.25))
-      .withOpenLoopRampRate(Seconds.of(0.25))
+      .withOpenLoopRampRate(Seconds.of(0.25))   
       .withFeedforward(new SimpleMotorFeedforward(0, 0, 0))
       .withSimFeedforward(new SimpleMotorFeedforward(0, 0, 0))
       .withControlMode(ControlMode.CLOSED_LOOP);
@@ -61,8 +60,7 @@ public class FlywheelSubsystem extends SubsystemBase
       .withDiameter(Inches.of(4))
       .withMass(Pounds.of(1))
       .withTelemetry("FlywheelMech", TelemetryVerbosity.HIGH)
-      .withSoftLimit(RPM.of(-5000), RPM.of(5000))
-      .withSpeedometerSimulation(RPM.of(7500));
+      .withSpeedometerSimulation(RotationsPerSecond.of(120));
 
   private final FlyWheel flywheel = new FlyWheel(flywheelConfig);
 
@@ -112,13 +110,10 @@ public class FlywheelSubsystem extends SubsystemBase
     flywheel.simIterate();
   }
 
-  public Command setRPM(LinearVelocity speed)
+  public Command setSurfaceSpeed(LinearVelocity speed)
   {
     return flywheel.setSpeed(RotationsPerSecond.of(speed.in(MetersPerSecond) / flywheelDiameter.times(Math.PI).in(Meters)));
   }
 
-  public void setRPMDirect(LinearVelocity speed)
-  {
-    motor.setVelocity(RotationsPerSecond.of(speed.in(MetersPerSecond) / flywheelDiameter.times(Math.PI).in(Meters)));
-  }
+
 }

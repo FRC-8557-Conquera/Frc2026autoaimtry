@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import frc.robot.commands.AutoShootCommand;
 import frc.robot.subsystems.*;
 import swervelib.SwerveInputStream;
 
@@ -28,7 +29,15 @@ public class RobotContainer {
 
   private final JoystickButton turnButton = new JoystickButton(driver, 4);
 
+  JoystickButton hubButton  = new JoystickButton(driver, 5);
+  JoystickButton dumpButton = new JoystickButton(driver, 6);
+
   public final SwerveSubsystem s_Swerve = new SwerveSubsystem();
+  private final TurretSubsystem turret = new TurretSubsystem();
+  private final HoodSubsystem hood = new HoodSubsystem();
+  private final FlywheelSubsystem flywheel = new FlywheelSubsystem();
+  private final ShooterSubsystem shooter = new ShooterSubsystem(s_Swerve);
+
 
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(
           s_Swerve.getSwerveDrive(),
@@ -57,9 +66,19 @@ public class RobotContainer {
   }
 
   private void configureButtonBindings() {
+
+    hubButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.HUB)));
+    hubButton.onFalse(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
+
+    dumpButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.DUMP)));
+    dumpButton.onFalse(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
+
+    hubButton.or(dumpButton).whileTrue(new AutoShootCommand(shooter,turret,hood,flywheel));
+
     turnButton.whileTrue(Commands.run(() -> s_Swerve.turnToAngle(() -> s_Swerve.calculateHubAngle())));
     zeroGyro.onTrue(new InstantCommand(() -> s_Swerve.zeroGyro()));
     xLock.whileTrue(Commands.runOnce(() -> s_Swerve.lock(), s_Swerve).repeatedly());
+
   }
 
   public Command getAutonomousCommand() {
