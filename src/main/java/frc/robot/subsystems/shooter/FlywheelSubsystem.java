@@ -113,4 +113,10 @@ public class FlywheelSubsystem extends SubsystemBase
   {
     return flywheel.setSpeed(RotationsPerSecond.of(speed.in(MetersPerSecond) / flywheelDiameter.times(Math.PI).in(Meters)));
   }
+
+  public Command setExitVelocity(LinearVelocity exitVelocity, double metersPerRotation) {
+    double rps = exitVelocity.in(MetersPerSecond) / metersPerRotation;
+    return flywheel.setSpeed(RotationsPerSecond.of(rps));
+}
+
 }

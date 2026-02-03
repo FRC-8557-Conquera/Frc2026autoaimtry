@@ -21,6 +21,9 @@ public class ShooterSubsystem {
     private final InterpolatingDoubleTreeMap hoodMap = new InterpolatingDoubleTreeMap();
     private final InterpolatingDoubleTreeMap flywheelMap = new InterpolatingDoubleTreeMap();
 
+    public static final double METERS_PER_ROTATION = 0.08; //TODO: measure this
+
+
     public ShooterSubsystem(SwerveSubsystem swerve) {
         this.swerve = swerve;
         buildLookupTables();
@@ -111,14 +114,14 @@ public class ShooterSubsystem {
         return RotationsPerSecond.of(0);
     }
 
-    public LinearVelocity getBaseExitVelocity() {
-        // TODO: Tune!
-        return MetersPerSecond.of(15);
-    }
+   public LinearVelocity getBaseExitVelocity(double distance) {
+    double rps = flywheelMap.get(distance);
+    return MetersPerSecond.of(rps * METERS_PER_ROTATION);
+}
 
-    /*
+
     public AngularVelocity getFlyWheelRPS(double distance) {
         return RotationsPerSecond.of(flywheelMap.get(distance));
     }
-    */
+    
 }

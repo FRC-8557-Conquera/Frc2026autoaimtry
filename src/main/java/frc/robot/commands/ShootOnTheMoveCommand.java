@@ -122,7 +122,7 @@ public class ShootOnTheMoveCommand extends Command
     double        dist         = targetVec.getNorm();
 
     Angle baseHood = shooterSubsystem.getHoodSetpoint(dist);
-    LinearVelocity baseExitVelocity = shooterSubsystem.getBaseExitVelocity();
+    LinearVelocity baseExitVelocity = shooterSubsystem.getBaseExitVelocity(dist);
 
 
     // 3. CALCULATE IDEAL SHOT (Stationary)
@@ -146,7 +146,8 @@ public class ShootOnTheMoveCommand extends Command
     // 7. SET OUTPUTS
     turretSubsystem.setAngle(Degrees.of(turretAngle));
     hoodSubsystem.setAngle(Radians.of(newPitch));
-    flywheelSubsystem.setRPM(baseExitVelocity);
+    flywheelSubsystem.setExitVelocity(baseExitVelocity,ShooterSubsystem.METERS_PER_ROTATION);
+    
   }
 
   @Override
