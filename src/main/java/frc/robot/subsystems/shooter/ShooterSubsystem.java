@@ -7,6 +7,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.LinearVelocity;
 import frc.robot.subsystems.SwerveSubsystem;
 
 public class ShooterSubsystem {
@@ -86,6 +87,13 @@ public class ShooterSubsystem {
         return Degrees.of(0);
     }
 
+    // distance - latency comp distance
+    public Angle getHoodSetpoint(double distance) {
+        if(intent == ShotIntent.HUB) {
+            return Degrees.of(hoodMap.get(distance));
+        } else return getHoodSetpoint();
+    }
+
     public AngularVelocity getFlywheelSetpoint() {
         if (intent == ShotIntent.HUB) {
             double distance =
@@ -103,7 +111,14 @@ public class ShooterSubsystem {
         return RotationsPerSecond.of(0);
     }
 
+    public LinearVelocity getBaseExitVelocity() {
+        // TODO: Tune!
+        return MetersPerSecond.of(15);
+    }
+
+    /*
     public AngularVelocity getFlyWheelRPS(double distance) {
         return RotationsPerSecond.of(flywheelMap.get(distance));
     }
+    */
 }

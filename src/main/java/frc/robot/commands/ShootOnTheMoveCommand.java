@@ -12,6 +12,9 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.LinearVelocity;
+import edu.wpi.first.units.measure.Velocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
@@ -117,9 +120,13 @@ public class ShootOnTheMoveCommand extends Command
     Translation2d targetVec    = goalLocation.minus(futurePos);
     double        dist         = targetVec.getNorm();
 
+    Angle baseHood = shooterSubsystem.getHoodSetpoint(dist);
+    LinearVelocity baseExitVelocity = shooterSubsystem.getBaseExitVelocity();
+
+
     // 3. CALCULATE IDEAL SHOT (Stationary)
     // Note: This returns HORIZONTAL velocity component
-    double idealHorizontalSpeed = shooterSubsystem.getFlyWheelRPS(dist).in(RPM);
+    double idealHorizontalSpeed = baseExitVelocity.in(MetersPerSecond) * Math.cos(baseHood.in(Radians));
 
     // 4. VECTOR SUBTRACTION
     Translation2d robotVelVec = new Translation2d(robotSpeed.vxMetersPerSecond, robotSpeed.vyMetersPerSecond);
@@ -132,13 +139,13 @@ public class ShootOnTheMoveCommand extends Command
     // 6. SOLVE FOR NEW PITCH/RPM
     // Assuming constant total exit velocity, variable hood:
     // Clamp to avoid domain errors if we need more speed than possible
-    double ratio    = Math.min(newHorizontalSpeed / totalExitVelocity, 1.0);
+    double ratio    = Math.min(newHorizontalSpeed / baseExitVelocity.in(MetersPerSecond), 1.0);
     double newPitch = Math.acos(ratio);
 
     // 7. SET OUTPUTS
     turretSubsystem.setAngle(Degrees.of(turretAngle));
     hoodSubsystem.setAngle(Radians.of(newPitch));
-    flywheelSubsystem.setRPM(MetersPerSecond.of(totalExitVelocity));
+    flywheelSubsystem.setRPM(baseExitVelocity);
   }
 
   @Override
