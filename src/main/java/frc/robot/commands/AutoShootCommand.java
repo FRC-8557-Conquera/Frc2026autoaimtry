@@ -1,10 +1,10 @@
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.subsystems.FlywheelSubsystem;
-import frc.robot.subsystems.HoodSubsystem;
-import frc.robot.subsystems.ShooterSubsystem;
-import frc.robot.subsystems.TurretSubsystem;
+import frc.robot.subsystems.shooter.FlywheelSubsystem;
+import frc.robot.subsystems.shooter.HoodSubsystem;
+import frc.robot.subsystems.shooter.ShooterSubsystem;
+import frc.robot.subsystems.shooter.TurretSubsystem;
 
 public class AutoShootCommand extends Command {
 

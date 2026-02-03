@@ -1,4 +1,4 @@
-package frc.robot.subsystems;
+package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.*;
 
@@ -7,6 +7,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
+import frc.robot.subsystems.SwerveSubsystem;
 
 public class ShooterSubsystem {
 
@@ -33,13 +34,13 @@ public class ShooterSubsystem {
     }
 
     private void buildLookupTables() {
-        hoodMap.put(1.5, 20.0);
+        hoodMap.put(1.5, 20.0);             // distance to Hood angle
         hoodMap.put(2.0, 28.0);
         hoodMap.put(2.5, 35.0);
         hoodMap.put(3.0, 42.0);
         hoodMap.put(3.5, 48.0);
 
-        flywheelMap.put(1.5, 55.0);
+        flywheelMap.put(1.5, 55.0);         // distance to RPS
         flywheelMap.put(2.0, 65.0);
         flywheelMap.put(2.5, 75.0);
         flywheelMap.put(3.0, 85.0);
@@ -100,5 +101,9 @@ public class ShooterSubsystem {
         }
 
         return RotationsPerSecond.of(0);
+    }
+
+    public AngularVelocity getFlyWheelRPS(double distance) {
+        return RotationsPerSecond.of(flywheelMap.get(distance));
     }
 }

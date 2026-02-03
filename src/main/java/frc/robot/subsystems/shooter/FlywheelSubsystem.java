@@ -1,4 +1,4 @@
-package frc.robot.subsystems;
+package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Inches;
@@ -109,11 +109,8 @@ public class FlywheelSubsystem extends SubsystemBase
   {
     flywheel.simIterate();
   }
-
-  public Command setSurfaceSpeed(LinearVelocity speed)
+    public Command setRPM(LinearVelocity speed)
   {
     return flywheel.setSpeed(RotationsPerSecond.of(speed.in(MetersPerSecond) / flywheelDiameter.times(Math.PI).in(Meters)));
   }
-
-
 }

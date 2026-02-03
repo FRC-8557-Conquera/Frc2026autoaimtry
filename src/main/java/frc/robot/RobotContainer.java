@@ -18,6 +18,11 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.commands.AutoShootCommand;
 import frc.robot.subsystems.*;
+import frc.robot.subsystems.shooter.FlywheelSubsystem;
+import frc.robot.subsystems.shooter.HoodSubsystem;
+import frc.robot.subsystems.shooter.ShooterSubsystem;
+import frc.robot.subsystems.shooter.ShotIntent;
+import frc.robot.subsystems.shooter.TurretSubsystem;
 import swervelib.SwerveInputStream;
 
 public class RobotContainer {
