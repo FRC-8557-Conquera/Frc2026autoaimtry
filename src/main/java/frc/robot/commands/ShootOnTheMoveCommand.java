@@ -7,6 +7,7 @@ import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -139,7 +140,7 @@ public class ShootOnTheMoveCommand extends Command
     // 6. SOLVE FOR NEW PITCH/RPM
     // Assuming constant total exit velocity, variable hood:
     // Clamp to avoid domain errors if we need more speed than possible
-    double ratio    = Math.min(newHorizontalSpeed / baseExitVelocity.in(MetersPerSecond), 1.0);
+    double ratio    = MathUtil.clamp(newHorizontalSpeed / baseExitVelocity.in(MetersPerSecond), 0.0, 1.0);
     double newPitch = Math.acos(ratio);
 
     // 7. SET OUTPUTS
