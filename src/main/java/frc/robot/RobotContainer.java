@@ -28,14 +28,17 @@ import swervelib.SwerveInputStream;
 public class RobotContainer {
 
   private final Joystick driver = new Joystick(0);
+  private final Joystick driver2 = new Joystick(1);
 
   private final JoystickButton zeroGyro = new JoystickButton(driver, 3);
   private final JoystickButton xLock = new JoystickButton(driver, 6);
 
   private final JoystickButton turnButton = new JoystickButton(driver, 4);
+  private final JoystickButton turretButtonLeft = new JoystickButton(driver2, 1);
+  private final JoystickButton turretButtonRight = new JoystickButton(driver2, 2);
 
-  JoystickButton hubButton  = new JoystickButton(driver, 5);
-  JoystickButton dumpButton = new JoystickButton(driver, 6);
+  JoystickButton hubButton  = new JoystickButton(driver2, 5);
+  JoystickButton dumpButton = new JoystickButton(driver2, 6);
 
   public final SwerveSubsystem s_Swerve = new SwerveSubsystem();
   private final TurretSubsystem turret = new TurretSubsystem();
@@ -79,6 +82,10 @@ public class RobotContainer {
     dumpButton.onFalse(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
 
     hubButton.or(dumpButton).whileTrue(new AutoShootCommand(shooter,turret,hood,flywheel));
+
+    turretButtonLeft.whileTrue(turret.rotateLeft()).onFalse(turret.stop());
+    turretButtonRight.whileTrue(turret.rotateRight()).onFalse(turret.stop());
+    
 
     turnButton.whileTrue(Commands.run(() -> s_Swerve.turnToAngle(() -> s_Swerve.calculateHubAngle())));
     zeroGyro.onTrue(new InstantCommand(() -> s_Swerve.zeroGyro()));

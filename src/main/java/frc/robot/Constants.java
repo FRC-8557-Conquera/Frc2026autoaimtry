@@ -132,6 +132,9 @@ public final class Constants {
   /* ===================== TURRET ===================== */
   public static final class Turret {
 
+    public static final int encoderPort = 0; // EXAMPLE CHANGE THIS VALUE
+    public static final double encoderOffsetDeg = 123.4; // EXAMPLE CHANGE THIS VALUE
+    
     public static final int turretMotor = 51;
     public static final IdleMode idleMode = IdleMode.kBrake;
     public static final boolean inverted = false;
@@ -144,11 +147,17 @@ public final class Constants {
   public static final class Hood {
 
     public static final int hoodMotor = 52;
+    public static final int encoderPort = 1; // EXAMPLE CHANGE THIS VALUE
     public static final IdleMode idleMode = IdleMode.kBrake;
     public static final boolean inverted = false;
 
     public static final double minAngleDegrees = 5.0;
     public static final double maxAngleDegrees = 100.0;
+    public static final double hoodOffsetDeg = 73.2; // EXAMPLE CHANGE THIS VALUE
+  }
+
+  public static final class Spindexer {
+    public static final int spindexerMotor = 54; // EXAMPLE CHANGE THIS VALUE
   }
 
   /* ===================== FLYWHEEL ===================== */

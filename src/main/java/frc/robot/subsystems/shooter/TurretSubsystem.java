@@ -11,6 +11,7 @@ import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
+import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.hardware.TalonFXS;
@@ -36,15 +37,20 @@ import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.local.SparkWrapper;
+import edu.wpi.first.wpilibj.DutyCycleEncoder;
 
 public class TurretSubsystem extends SubsystemBase
 {
+        
+  private final DutyCycleEncoder turretThroughBoreEncoder = new DutyCycleEncoder(Constants.Turret.encoderPort);
+
   private final SparkMax turretMotor      = new SparkMax(Constants.Turret.turretMotor,MotorType.kBrushless);
   private final SmartMotorControllerConfig motorConfig      = new SmartMotorControllerConfig(this)
 
-      .withClosedLoopController(0, 0, 0, DegreesPerSecond.of(180), DegreesPerSecondPerSecond.of(90)) //TODO: Change the PID values
+      .withExternalEncoder(turretThroughBoreEncoder) 
+      .withClosedLoopController(0.015, 0.0, 0.0002, DegreesPerSecond.of(180), DegreesPerSecondPerSecond.of(90)) //TODO: Change the PID values
       .withSoftLimit(Degrees.of(-180), Degrees.of(180))
-      .withGearing(new MechanismGearing(GearBox.fromReductionStages(3, 4)))     //TODO: Set the correct gear ratio
+      .withGearing(new MechanismGearing(GearBox.fromReductionStages(1, 16)))     //TODO: Set the correct gear ratio
       .withIdleMode(MotorMode.BRAKE)
       .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
       .withStatorCurrentLimit(Amps.of(40))
@@ -57,14 +63,14 @@ public class TurretSubsystem extends SubsystemBase
                                                                                   DCMotor.getNEO(1),
                                                                                   motorConfig);
   private final PivotConfig turretConfig = new PivotConfig(turretSMC)
-                          .withStartingPosition(Degrees.of(0)) // Starting position of the Pivot
-                          .withWrapping(Degrees.of(-180), Degrees.of(180))
+                          .withStartingPosition(Degrees.of(Constants.Turret.encoderOffsetDeg)) // Starting position of the Pivot
                           .withHardLimit(Degrees.of(-180), Degrees.of(180))
                           .withTelemetry("TurretMech", TelemetryVerbosity.HIGH); // Telemetry
 
         private final Pivot turret = new Pivot(turretConfig);
 
         public TurretSubsystem() {
+
         }
 
         public Command setAngle(Angle angle) {
@@ -77,14 +83,27 @@ public class TurretSubsystem extends SubsystemBase
 
         public Angle getAngle() {
                 return turret.getAngle();
-        }
 
+        }
         public Command sysId() {
                 return turret.sysId(
-                                Volts.of(4.0), // maximumVoltage
-                                Volts.per(Second).of(0.5), // step
-                                Seconds.of(8.0) // duration
-                );
+                        Volts.of(4.0), // maximumVoltage
+                        Volts.per(Second).of(0.5), // step
+                        Seconds.of(8.0)); // duration
+        }
+       public Command rotateLeft() {
+                return run(() ->
+                turret.setMechanismVelocitySetpoint(DegreesPerSecond.of(-120)));
+        }
+
+        public Command rotateRight() {
+                return run(() ->
+                turret.setMechanismVelocitySetpoint(DegreesPerSecond.of(120)));
+        }
+
+        public Command stop() {
+                return runOnce(() ->
+                turret.setMechanismVelocitySetpoint(DegreesPerSecond.of(0)));
         }
 
         @Override
@@ -96,4 +115,5 @@ public class TurretSubsystem extends SubsystemBase
         public void simulationPeriodic() {
                 turret.simIterate();
         }
+        
 }

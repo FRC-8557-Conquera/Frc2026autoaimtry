@@ -1,13 +1,5 @@
 package frc.robot.subsystems.shooter;
 
-import static edu.wpi.first.units.Units.Amps;
-import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.RotationsPerSecond;
-import static edu.wpi.first.units.Units.RotationsPerSecondPerSecond;
-import static edu.wpi.first.units.Units.Second;
-import static edu.wpi.first.units.Units.Seconds;
-import static edu.wpi.first.units.Units.Volts;
-
 import java.util.function.Supplier;
 
 import com.revrobotics.spark.SparkMax;
@@ -19,6 +11,7 @@ import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -37,8 +30,10 @@ import static edu.wpi.first.units.Units.*;
 
 public class HoodSubsystem extends SubsystemBase {
     private final TalonFX hoodMotor = new TalonFX(Hood.hoodMotor);
+    private final DutyCycleEncoder hoodEncoder =
+        new DutyCycleEncoder(Hood.encoderPort);
     private final SmartMotorControllerConfig hoodMotorConfig = new SmartMotorControllerConfig(this)
-
+            .withExternalEncoder(hoodEncoder)
             .withClosedLoopController(0, 0, 0, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))  // TODO: Change the PID values
             .withGearing(new MechanismGearing(GearBox.fromReductionStages(3, 4)))           //TODO: Set the correct gear ratio
             .withIdleMode(MotorMode.BRAKE)
@@ -50,11 +45,13 @@ public class HoodSubsystem extends SubsystemBase {
             .withFeedforward(new ArmFeedforward(0, 0, 0))
             .withSimFeedforward(new ArmFeedforward(0, 0, 0))
             .withControlMode(ControlMode.CLOSED_LOOP);
+
             
 
   private final SmartMotorController hoodSMC = new TalonFXWrapper(hoodMotor, DCMotor.getKrakenX60(1), hoodMotorConfig);
 
     private final ArmConfig hoodConfig = new ArmConfig(hoodSMC)
+            .withStartingPosition(Degrees.of(Hood.hoodOffsetDeg))
             .withLength(Inches.of(6)).withMass(Pounds.of(1))     // Approximate values for the Hood
             .withTelemetry("HoodMech", TelemetryVerbosity.HIGH)
             .withSoftLimits(Degrees.of(5), Degrees.of(100))
