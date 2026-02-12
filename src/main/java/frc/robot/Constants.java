@@ -135,7 +135,7 @@ public final class Constants {
     public static final int encoderPort = 0; // EXAMPLE CHANGE THIS VALUE
     public static final double encoderOffsetDeg = 123.4; // EXAMPLE CHANGE THIS VALUE
     
-    public static final int turretMotor = 51;
+    public static final int turretMotor = 41;
     public static final IdleMode idleMode = IdleMode.kBrake;
     public static final boolean inverted = false;
 

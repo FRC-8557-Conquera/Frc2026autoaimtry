@@ -1,6 +1,5 @@
 package frc.robot.subsystems.shooter;
 
-
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.DegreesPerSecond;
@@ -39,33 +38,33 @@ import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.local.SparkWrapper;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 
-public class TurretSubsystem extends SubsystemBase
-{
-        
-  private final DutyCycleEncoder turretThroughBoreEncoder = new DutyCycleEncoder(Constants.Turret.encoderPort);
+public class TurretSubsystem extends SubsystemBase {
 
-  private final SparkMax turretMotor      = new SparkMax(Constants.Turret.turretMotor,MotorType.kBrushless);
-  private final SmartMotorControllerConfig motorConfig      = new SmartMotorControllerConfig(this)
+        private final DutyCycleEncoder turretThroughBoreEncoder = new DutyCycleEncoder(Constants.Turret.encoderPort);
 
-      .withExternalEncoder(turretThroughBoreEncoder) 
-      .withClosedLoopController(0.015, 0.0, 0.0002, DegreesPerSecond.of(180), DegreesPerSecondPerSecond.of(90)) //TODO: Change the PID values
-      .withSoftLimit(Degrees.of(-180), Degrees.of(180))
-      .withGearing(new MechanismGearing(GearBox.fromReductionStages(1, 16)))     //TODO: Set the correct gear ratio
-      .withIdleMode(MotorMode.BRAKE)
-      .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
-      .withStatorCurrentLimit(Amps.of(40))
-      .withMotorInverted(false)
-      .withClosedLoopRampRate(Seconds.of(0.25))
-      .withOpenLoopRampRate(Seconds.of(0.25))
-      .withFeedforward(new SimpleMotorFeedforward(0, 0, 0, 0))
-      .withControlMode(ControlMode.CLOSED_LOOP);
-  private final SmartMotorController       turretSMC            = new SparkWrapper(turretMotor,
-                                                                                  DCMotor.getNEO(1),
-                                                                                  motorConfig);
-  private final PivotConfig turretConfig = new PivotConfig(turretSMC)
-                          .withStartingPosition(Degrees.of(Constants.Turret.encoderOffsetDeg)) // Starting position of the Pivot
-                          .withHardLimit(Degrees.of(-180), Degrees.of(180))
-                          .withTelemetry("TurretMech", TelemetryVerbosity.HIGH); // Telemetry
+        private final SparkMax turretMotor = new SparkMax(Constants.Turret.turretMotor, MotorType.kBrushless);
+        private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
+                .withExternalEncoder(turretThroughBoreEncoder)
+                .withClosedLoopController(0.015, 0.0, 0.0002, DegreesPerSecond.of(180),
+                                DegreesPerSecondPerSecond.of(90)) // TODO: Change the PID values
+                .withSoftLimit(Degrees.of(-180), Degrees.of(180))
+                .withGearing(new MechanismGearing(GearBox.fromReductionStages(1, 16))) // TODO: Set the correct gear ratio
+                .withIdleMode(MotorMode.BRAKE)
+                .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
+                .withStatorCurrentLimit(Amps.of(40))
+                .withMotorInverted(false)
+                .withClosedLoopRampRate(Seconds.of(0.25))
+                .withOpenLoopRampRate(Seconds.of(0.25))
+                .withFeedforward(new SimpleMotorFeedforward(0, 0, 0, 0))
+                .withControlMode(ControlMode.CLOSED_LOOP);
+        private final SmartMotorController turretSMC = new SparkWrapper(turretMotor,
+                        DCMotor.getNEO(1),
+                        motorConfig);
+        private final PivotConfig turretConfig = new PivotConfig(turretSMC)
+                        .withStartingPosition(Degrees.of(Constants.Turret.encoderOffsetDeg)) // Starting position of the
+                                                                                             // Pivot
+                        .withHardLimit(Degrees.of(-180), Degrees.of(180))
+                        .withTelemetry("TurretMech", TelemetryVerbosity.HIGH); // Telemetry
 
         private final Pivot turret = new Pivot(turretConfig);
 
@@ -85,25 +84,24 @@ public class TurretSubsystem extends SubsystemBase
                 return turret.getAngle();
 
         }
+
         public Command sysId() {
                 return turret.sysId(
-                        Volts.of(4.0), // maximumVoltage
-                        Volts.per(Second).of(0.5), // step
-                        Seconds.of(8.0)); // duration
+                                Volts.of(4.0), // maximumVoltage
+                                Volts.per(Second).of(0.5), // step
+                                Seconds.of(8.0)); // duration
         }
-       public Command rotateLeft() {
-                return run(() ->
-                turret.setMechanismVelocitySetpoint(DegreesPerSecond.of(-120)));
+
+        public Command rotateLeft() {
+                return run(() -> turret.setMechanismVelocitySetpoint(DegreesPerSecond.of(-120)));
         }
 
         public Command rotateRight() {
-                return run(() ->
-                turret.setMechanismVelocitySetpoint(DegreesPerSecond.of(120)));
+                return run(() -> turret.setMechanismVelocitySetpoint(DegreesPerSecond.of(120)));
         }
 
         public Command stop() {
-                return runOnce(() ->
-                turret.setMechanismVelocitySetpoint(DegreesPerSecond.of(0)));
+                return runOnce(() -> turret.setMechanismVelocitySetpoint(DegreesPerSecond.of(0)));
         }
 
         @Override
@@ -115,5 +113,5 @@ public class TurretSubsystem extends SubsystemBase
         public void simulationPeriodic() {
                 turret.simIterate();
         }
-        
+
 }
