@@ -37,7 +37,9 @@ import frc.robot.Constants.Flywheel;
 
 public class FlywheelSubsystem extends SubsystemBase
 {
-
+  public static final double MAX_RPS = 90;
+  public static final double MIN_RPS = 10;
+  
   private final Distance flywheelDiameter = Inches.of(4);
   private final TalonFX flywheelMotor    = new TalonFX(Flywheel.flywheelMotor);
 

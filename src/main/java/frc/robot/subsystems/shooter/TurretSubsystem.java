@@ -48,7 +48,7 @@ public class TurretSubsystem extends SubsystemBase {
                 .withClosedLoopController(0.015, 0.0, 0.0002, DegreesPerSecond.of(180),
                                 DegreesPerSecondPerSecond.of(90)) // TODO: Change the PID values
                 .withSoftLimit(Degrees.of(-180), Degrees.of(180))
-                .withGearing(new MechanismGearing(GearBox.fromReductionStages(1, 16))) // TODO: Set the correct gear ratio
+                .withGearing(new MechanismGearing(GearBox.fromReductionStages(1, 16))) 
                 .withIdleMode(MotorMode.BRAKE)
                 .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
                 .withStatorCurrentLimit(Amps.of(40))
@@ -69,7 +69,7 @@ public class TurretSubsystem extends SubsystemBase {
         private final Pivot turret = new Pivot(turretConfig);
 
         public TurretSubsystem() {
-
+                setDefaultCommand(turret.setAngle(() -> targetAngle));
         }
 
         public Command setAngle(Angle angle) {
@@ -83,6 +83,15 @@ public class TurretSubsystem extends SubsystemBase {
         public Angle getAngle() {
                 return turret.getAngle();
 
+        }
+        private Angle targetAngle = Degrees.of(0);
+
+        public void setTargetAngle(Angle angle) {
+        targetAngle = angle;
+        }
+
+        public Angle getTargetAngle() {
+        return targetAngle;
         }
 
         public Command sysId() {

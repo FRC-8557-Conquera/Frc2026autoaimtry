@@ -21,6 +21,10 @@ public class ShooterSubsystem {
     private final InterpolatingDoubleTreeMap hoodMap = new InterpolatingDoubleTreeMap();
     private final InterpolatingDoubleTreeMap flywheelMap = new InterpolatingDoubleTreeMap();
 
+    private double hoodOffsetDeg = 0.0;
+    private double flywheelOffsetRPS = 0.0;
+
+
     public static final double METERS_PER_ROTATION = 0.08; //TODO: measure this
 
 
@@ -80,7 +84,7 @@ public class ShooterSubsystem {
                     .getTranslation()
                     .getDistance(HUB_POSE.getTranslation());
 
-            return Degrees.of(hoodMap.get(distance));
+            return Degrees.of(hoodMap.get(distance)+hoodOffsetDeg);
         }
 
         if (intent == ShotIntent.DUMP) {
@@ -93,7 +97,7 @@ public class ShooterSubsystem {
     // distance - latency comp distance
     public Angle getHoodSetpoint(double distance) {
         if(intent == ShotIntent.HUB) {
-            return Degrees.of(hoodMap.get(distance));
+            return Degrees.of(hoodMap.get(distance)+hoodOffsetDeg);
         } else return getHoodSetpoint();
     }
 
@@ -104,7 +108,7 @@ public class ShooterSubsystem {
                     .getTranslation()
                     .getDistance(HUB_POSE.getTranslation());
 
-            return RotationsPerSecond.of(flywheelMap.get(distance));
+            return RotationsPerSecond.of(flywheelMap.get(distance)+flywheelOffsetRPS);
         }
 
         if (intent == ShotIntent.DUMP) {
@@ -115,7 +119,7 @@ public class ShooterSubsystem {
     }
 
    public LinearVelocity getBaseExitVelocity(double distance) {
-    double rps = flywheelMap.get(distance);
+    double rps = flywheelMap.get(distance) + flywheelOffsetRPS;
     return MetersPerSecond.of(rps * METERS_PER_ROTATION);
 }
 

@@ -18,6 +18,7 @@ import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.units.measure.Velocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.Constants.Flywheel;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
@@ -54,6 +55,7 @@ public class ShootOnTheMoveCommand extends Command
 
   // Tuned Constants
   double totalExitVelocity = 15.0; // m/s   TODO: Tune this value to match the actual exit velocity of your shooter. This is used to calculate the new hood angle, so it doesn't need to be perfect, but it should be close for best results.
+  double ballTime = 0.12;
   /**
    * Time in seconds between when the robot is told to move and when the shooter actually shoots.
    */
@@ -113,13 +115,16 @@ public class ShootOnTheMoveCommand extends Command
     var robotSpeed = fieldOrientedChassisSpeeds.get();
     // 1. LATENCY COMP
     Translation2d futurePos = robotPose.get().getTranslation().plus(
-        new Translation2d(robotSpeed.vxMetersPerSecond, robotSpeed.vyMetersPerSecond).times(latency)
+        new Translation2d(robotSpeed.vxMetersPerSecond, robotSpeed.vyMetersPerSecond).times(latency+ballTime)
                                                                    );
 
     // 2. GET TARGET VECTOR
     Translation2d goalLocation = goalPose.getTranslation();
     Translation2d targetVec    = goalLocation.minus(futurePos);
     double        dist         = targetVec.getNorm();
+    if (dist < 0.01) {
+        return;   // too close to solve safely
+    }
 
     Angle baseHood = shooterSubsystem.getHoodSetpoint(dist);
     LinearVelocity baseExitVelocity = shooterSubsystem.getBaseExitVelocity(dist);
@@ -140,13 +145,21 @@ public class ShootOnTheMoveCommand extends Command
     // 6. SOLVE FOR NEW PITCH/RPM
     // Assuming constant total exit velocity, variable hood:
     // Clamp to avoid domain errors if we need more speed than possible
-    double ratio    = MathUtil.clamp(newHorizontalSpeed / baseExitVelocity.in(MetersPerSecond), 0.0, 1.0);
-    double newPitch = Math.acos(ratio);
+    double scale = newHorizontalSpeed / idealHorizontalSpeed;
+    scale = MathUtil.clamp(scale, 0.7, 1.3);  // tune range
+    double effectiveDistance = dist * scale;
+
+    // now ask the normal shooter logic
+    Angle newHood = shooterSubsystem.getHoodSetpoint(effectiveDistance);
+    LinearVelocity newExitVelocity = shooterSubsystem.getBaseExitVelocity(effectiveDistance);
+    double newRPS = newExitVelocity.in(MetersPerSecond) / ShooterSubsystem.METERS_PER_ROTATION;
+
+    newRPS = MathUtil.clamp(newRPS, FlywheelSubsystem.MIN_RPS, FlywheelSubsystem.MAX_RPS);
 
     // 7. SET OUTPUTS
-    turretSubsystem.setAngle(Degrees.of(turretAngle));
-    hoodSubsystem.setAngle(Radians.of(newPitch));
-    flywheelSubsystem.setExitVelocity(baseExitVelocity,ShooterSubsystem.METERS_PER_ROTATION);
+   turretSubsystem.setTargetAngle(Degrees.of(turretAngle));
+   hoodSubsystem.setAngle(newHood);
+   flywheelSubsystem.setVelocity(RotationsPerSecond.of(newRPS)); 
     
   }
 
