@@ -46,10 +46,6 @@ public class IntakeSubsystem extends SubsystemBase {
     rightMotor.configure(follow, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters);
   }
 
-  // ==========================================================
-  // 📐 ANGLE
-  // ==========================================================
-
   public Angle getAngle() {
     double leftDeg  = leftEncoder.get()  * 360.0 - Intake.intakeLeftEncoderOffsetDeg;
     double rightDeg = rightEncoder.get() * 360.0 - Intake.intakeRightEncoderOffsetDeg;
@@ -61,10 +57,6 @@ public class IntakeSubsystem extends SubsystemBase {
   public void setTargetAngle(Angle angle) {
      targetAngle = Degrees.of(MathUtil.clamp(angle.in(Degrees), Intake.MIN_ANGLE.in(Degrees), Intake.MAX_ANGLE.in(Degrees)));
   }
-
-  // ==========================================================
-  // 🎮 COMMANDS
-  // ==========================================================
 
   public Command open() {
     return runOnce(() -> setTargetAngle(Degrees.of(120)));
@@ -86,10 +78,7 @@ public class IntakeSubsystem extends SubsystemBase {
     return runOnce(() -> roller.setControl(new NeutralOut()));
   }
 
-  // ==========================================================
-  // 🔁 LOOP
-  // ==========================================================
-
+ 
   @Override
   public void periodic() {
     double current = getAngle().in(Degrees);
