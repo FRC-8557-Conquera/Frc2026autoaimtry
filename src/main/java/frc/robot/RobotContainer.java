@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.commands.AutoShootCommand;
 import frc.robot.subsystems.*;
+import frc.robot.subsystems.feeder.FeederSubsystem;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
@@ -25,6 +26,7 @@ import frc.robot.subsystems.shooter.ShotIntent;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 import swervelib.SwerveInputStream;
+
 
 public class RobotContainer {
 
@@ -38,11 +40,14 @@ public class RobotContainer {
   private final JoystickButton turretButtonLeft = new JoystickButton(driver2, 1);
   private final JoystickButton turretButtonRight = new JoystickButton(driver2, 2);
 
+  private final JoystickButton feederAl= new JoystickButton(driver2, 3);
+
   JoystickButton hubButton  = new JoystickButton(driver2, 5);
   JoystickButton dumpButton = new JoystickButton(driver2, 6);
 
   public final SwerveSubsystem s_Swerve = new SwerveSubsystem();
   private final TurretSubsystem turret = new TurretSubsystem();
+  private final FeederSubsystem feeder = new FeederSubsystem();
   private final HoodSubsystem hood = new HoodSubsystem();
   private final FlywheelSubsystem flywheel = new FlywheelSubsystem();
   private final ShooterSubsystem shooter = new ShooterSubsystem(s_Swerve);
@@ -86,7 +91,8 @@ public class RobotContainer {
 
     turretButtonLeft.whileTrue(turret.rotateLeft()).onFalse(turret.stop());
     turretButtonRight.whileTrue(turret.rotateRight()).onFalse(turret.stop());
-    
+
+    feederAl.whileTrue(feeder.feed()).onFalse(feeder.stop());
 
     turnButton.whileTrue(Commands.run(() -> s_Swerve.turnToAngle(() -> s_Swerve.calculateHubAngle())));
     zeroGyro.onTrue(new InstantCommand(() -> s_Swerve.zeroGyro()));
