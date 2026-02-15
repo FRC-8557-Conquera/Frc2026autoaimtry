@@ -2,7 +2,7 @@ package frc.robot.autos;
 
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
-import frc.robot.subsystems.SwerveSubsystem;
+import frc.robot.subsystems.swerve.SwerveSubsystem;
 
 public class Autonomous extends SequentialCommandGroup {
   public Autonomous(SwerveSubsystem s_Swerve) {

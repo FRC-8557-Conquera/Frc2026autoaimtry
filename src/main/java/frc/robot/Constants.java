@@ -4,6 +4,8 @@ import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.Angle;
+import static edu.wpi.first.units.Units.Degrees;
 
 public final class Constants {
 
@@ -83,9 +85,18 @@ public final class Constants {
   /* ===================== INTAKE ===================== */
   public static final class Intake {
 
+    public static final Angle MIN_ANGLE = Angle.ofBaseUnits(-20, Degrees);                        //TODO: Change this value
+    public static final Angle MAX_ANGLE = Angle.ofBaseUnits(100, Degrees);      //TODO: Change this value
+    
+    public static final double intakeLeftEncoderOffsetDeg = 123.4; // EXAMPLE CHANGE THIS VALUE
+    public static final double intakeRightEncoderOffsetDeg = 123.4; // EXAMPLE CHANGE THIS VALUE
+
     public static final int intakeRoller = 30;
-    public static final int intakeFollower1 = 31;
-    public static final int intakeFollower2 = 32;
+    public static final int intakeLeft = 31;
+    public static final int intakeRight = 32;
+
+    public static final int intakeLeftEncoderPort = 1; // EXAMPLE CHANGE THIS VALUE
+    public static final int intakeRightEncoderPort = 2; // EXAMPLE CHANGE THIS VALUE
 
     public static final IdleMode idleMode = IdleMode.kBrake;
 
