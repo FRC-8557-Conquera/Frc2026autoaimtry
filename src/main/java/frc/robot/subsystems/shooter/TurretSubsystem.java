@@ -55,7 +55,7 @@ public class TurretSubsystem extends SubsystemBase {
                 .withMotorInverted(false)
                 .withClosedLoopRampRate(Seconds.of(0.25))
                 .withOpenLoopRampRate(Seconds.of(0.25))
-                .withFeedforward(new SimpleMotorFeedforward(0, 0, 0, 0))
+                .withFeedforward(new SimpleMotorFeedforward(0, 0, 0, 0.02))
                 .withControlMode(ControlMode.CLOSED_LOOP);
         private final SmartMotorController turretSMC = new SparkWrapper(turretMotor,
                         DCMotor.getNEO(1),
