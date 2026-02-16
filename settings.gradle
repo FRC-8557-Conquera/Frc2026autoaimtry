@@ -21,7 +21,7 @@ pluginManagement {
         def frcHomeMaven = new File(frcHome, 'maven')
         maven {
             name = 'frcHome'
-            url = frcHomeMaven
+            url = frcHomeMaven 
         }
     }
 }
