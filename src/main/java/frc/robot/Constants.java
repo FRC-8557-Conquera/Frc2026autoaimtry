@@ -1,10 +1,16 @@
 package frc.robot;
 
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
+
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.Distance;
+import static edu.wpi.first.units.Units.Inches;
+
 import static edu.wpi.first.units.Units.Degrees;
 
 public final class Constants {
@@ -98,41 +104,23 @@ public final class Constants {
     public static final int intakeLeftEncoderPort = 1; // EXAMPLE CHANGE THIS VALUE
     public static final int intakeRightEncoderPort = 2; // EXAMPLE CHANGE THIS VALUE
 
-    public static final IdleMode idleMode = IdleMode.kBrake;
+    public static final double rollerInSpeed = 1.0;
+    public static final double rollerOutSpeed = -1.0;
 
-    public static final boolean rollerInverted = false;
-    public static final boolean followerInverted = true;
-
-    public static final double intakeSpeed = 0.9;
-    public static final double outtakeSpeed = -0.8;
-    public static final double holdSpeed = 0.1;
+    public static final double kP = 0.03;  // tune later
+    public static Angle targetAngle = Degrees.of(90);
   }
 
-  /* ===================== SHOOTER ===================== */
-  public static final class Shooter {
-
-    public static final int shooterFlywheel = 40;
-    public static final int shooterAngle = 41;
-
-    public static final IdleMode flywheelIdleMode = IdleMode.kCoast;
-    public static final IdleMode angleIdleMode = IdleMode.kBrake;
-
-    public static final boolean flywheelInverted = true;
-    public static final boolean angleInverted = false;
-
-    public static final double shootSpeed = 1.0;
-    public static final double idleSpeed = 0.15;
-
-    // Angle PID (ileride kapalı döngü için)
-    public static final double angleKP = 0.015;
-    public static final double angleKI = 0.0;
-    public static final double angleKD = 0.001;
+  /* ===================== SPINDEXER ===================== */
+  public static final class Spindexer {
+    public static final int spindexerMotor = 33; 
+    public static final double feedSpeed = 0.7;
+    public static final double reverseSpeed = -0.5;
   }
 
   /* ===================== FEEDER ===================== */
   public static final class Feeder {
-
-    public static final int feederMotor = 50;
+    public static final int feederMotor = 34;
     public static final IdleMode idleMode = IdleMode.kBrake;
     public static final boolean inverted = false;
 
@@ -142,58 +130,38 @@ public final class Constants {
 
   /* ===================== TURRET ===================== */
   public static final class Turret {
-
+    public static final int turretMotor = 41;
     public static final int encoderPort = 0; // EXAMPLE CHANGE THIS VALUE
     public static final double encoderOffsetDeg = 123.4; // EXAMPLE CHANGE THIS VALUE
-    
-    public static final int turretMotor = 41;
-    public static final IdleMode idleMode = IdleMode.kBrake;
-    public static final boolean inverted = false;
-
-    public static final double manualSpeed = 0.4;
-  }
-
-  /* ===================== HOOD ===================== */
-
-  public static final class Hood {
-
-    public static final int hoodMotor = 52;
-    public static final int encoderPort = 1; // EXAMPLE CHANGE THIS VALUE
-    public static final IdleMode idleMode = IdleMode.kBrake;
-    public static final boolean inverted = false;
-
-    public static final double minAngleDegrees = 5.0;
-    public static final double maxAngleDegrees = 100.0;
-    public static final double hoodOffsetDeg = 73.2; // EXAMPLE CHANGE THIS VALUE
-  }
-
-  public static final class Spindexer {
-    public static final int spindexerMotor = 54; // EXAMPLE CHANGE THIS VALUE
   }
 
   /* ===================== FLYWHEEL ===================== */
 
   public static final class Flywheel{
-    
-    public static final int flywheelMotor = 53;
-    public static final IdleMode idleMode = IdleMode.kCoast;
-    public static final boolean inverted = false;
-
+    public static final int flywheelMotor = 41;
+    public static final double MAX_RPS = 90;
+    public static final double MIN_RPS = 10;
+    public static final Distance flywheelDiameter = Inches.of(4);
   }
-  
+  /* ===================== SHOOTER ===================== */
+  public static final class Shooter {
+    public static final double flywheelOffsetRPS = 0.0;                   // TODO: tune this
+    public static final Angle FIXED_HOOD = Degrees.of(38);      //TODO: CHANGE THIS VALUE
+    public static final double METERS_PER_ROTATION = 0.08;                //TODO: measure this
+  }
+
   /* ===================== CLIMB ===================== */
   public static final class Climb {
-
-    public static final int climbLeft = 60;
-    public static final int climbRight = 61;
-
-    public static final IdleMode idleMode = IdleMode.kBrake;
-
-    public static final boolean leftInverted = false;
-    public static final boolean rightInverted = true;
-
+    public static final int climbLeft = 50;
+    public static final int climbRight = 51;
     public static final double climbUpSpeed = 1.0;
     public static final double climbDownSpeed = -0.8;
-    public static final double holdSpeed = 0.05;
   }
+
+    /* ===================== FIELD ===================== */
+  public static final class fieldConstants{
+    public static final Pose2d BLUE_HUB_POSE =new Pose2d(4.6, 4.05, new Rotation2d());
+    public static final Pose2d RED_HUB_POSE =  new Pose2d(11.9,4.05,new Rotation2d());
+  }
+
 }

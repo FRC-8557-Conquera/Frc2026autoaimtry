@@ -4,6 +4,8 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.RotationsPerSecond;
+
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -16,11 +18,8 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
-import frc.robot.commands.AutoShootCommand;
-import frc.robot.subsystems.*;
 import frc.robot.subsystems.feeder.FeederSubsystem;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
-import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.shooter.ShotIntent;
 import frc.robot.subsystems.shooter.TurretSubsystem;
@@ -39,6 +38,7 @@ public class RobotContainer {
   private final JoystickButton turnButton = new JoystickButton(driver, 4);
   private final JoystickButton turretButtonLeft = new JoystickButton(driver2, 1);
   private final JoystickButton turretButtonRight = new JoystickButton(driver2, 2);
+  private final JoystickButton triggerButton = new JoystickButton(driver2, 4);
 
   private final JoystickButton feederAl= new JoystickButton(driver2, 3);
 
@@ -48,7 +48,6 @@ public class RobotContainer {
   public final SwerveSubsystem s_Swerve = new SwerveSubsystem();
   private final TurretSubsystem turret = new TurretSubsystem();
   private final FeederSubsystem feeder = new FeederSubsystem();
-  private final HoodSubsystem hood = new HoodSubsystem();
   private final FlywheelSubsystem flywheel = new FlywheelSubsystem();
   private final ShooterSubsystem shooter = new ShooterSubsystem(s_Swerve);
 
@@ -77,24 +76,27 @@ public class RobotContainer {
     configureButtonBindings();
     m_chooser = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData(m_chooser);
+    turret.setDefaultCommand(
+    turret.setAngle(() -> shooter.getTurretSetpoint()));
   }
 
   private void configureButtonBindings() {
 
-    hubButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.HUB)));
-    hubButton.onFalse(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
+    hubButton.whileTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.HUB)));
+    hubButton.whileFalse(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
 
-    dumpButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.DUMP)));
-    dumpButton.onFalse(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
+    dumpButton.whileTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.DUMP)));
+    dumpButton.whileFalse(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
 
-    hubButton.or(dumpButton).whileTrue(new AutoShootCommand(shooter,turret,hood,flywheel));
+    triggerButton.whileTrue(flywheel.setVelocity(() -> shooter.getFlywheelSetpoint()));
+    triggerButton.whileFalse(flywheel.setVelocity(RotationsPerSecond.of(0)));
+
 
     turretButtonLeft.whileTrue(turret.rotateLeft()).onFalse(turret.stop());
     turretButtonRight.whileTrue(turret.rotateRight()).onFalse(turret.stop());
 
     feederAl.whileTrue(feeder.feed()).onFalse(feeder.stop());
 
-    turnButton.whileTrue(Commands.run(() -> s_Swerve.turnToAngle(() -> s_Swerve.calculateHubAngle())));
     zeroGyro.onTrue(new InstantCommand(() -> s_Swerve.zeroGyro()));
     xLock.whileTrue(Commands.runOnce(() -> s_Swerve.lock(), s_Swerve).repeatedly());
 

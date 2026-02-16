@@ -24,12 +24,12 @@ public class FeederSubsystem extends SubsystemBase {
 
   // run forward
   public Command feed() {
-    return run(() -> feederMotor.set(0.7));
+    return run(() -> feederMotor.set(Feeder.feedSpeed));
   }
 
   // reverse
   public Command reverse() {
-    return run(() -> feederMotor.set(-0.7));
+    return run(() -> feederMotor.set(Feeder.reverseSpeed));
   }
 
   // stop

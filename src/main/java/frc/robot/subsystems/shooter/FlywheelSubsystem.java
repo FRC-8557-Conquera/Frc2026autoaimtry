@@ -37,10 +37,6 @@ import frc.robot.Constants.Flywheel;
 
 public class FlywheelSubsystem extends SubsystemBase
 {
-  public static final double MAX_RPS = 90;
-  public static final double MIN_RPS = 10;
-  
-  private final Distance flywheelDiameter = Inches.of(4);
   private final TalonFX flywheelMotor    = new TalonFX(Flywheel.flywheelMotor);
 
   private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
@@ -113,7 +109,7 @@ public class FlywheelSubsystem extends SubsystemBase
   }
     public Command setRPM(LinearVelocity speed)
   {
-    return flywheel.setSpeed(RotationsPerSecond.of(speed.in(MetersPerSecond) / flywheelDiameter.times(Math.PI).in(Meters)));
+    return flywheel.setSpeed(RotationsPerSecond.of(speed.in(MetersPerSecond) / Flywheel.flywheelDiameter.times(Math.PI).in(Meters)));
   }
 
   public Command setExitVelocity(LinearVelocity exitVelocity, double metersPerRotation) {

@@ -39,12 +39,12 @@ import yams.motorcontrollers.local.SparkWrapper;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 
 public class TurretSubsystem extends SubsystemBase {
-
+        private boolean turretZeroed = false;
+        private double startTime = 0;
         private final DutyCycleEncoder turretThroughBoreEncoder = new DutyCycleEncoder(Constants.Turret.encoderPort);
 
         private final SparkMax turretMotor = new SparkMax(Constants.Turret.turretMotor, MotorType.kBrushless);
         private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
-                .withExternalEncoder(turretThroughBoreEncoder)
                 .withClosedLoopController(0.015, 0.0, 0.0002, DegreesPerSecond.of(180),
                                 DegreesPerSecondPerSecond.of(90)) // TODO: Change the PID values
                 .withSoftLimit(Degrees.of(-180), Degrees.of(180))
@@ -69,6 +69,7 @@ public class TurretSubsystem extends SubsystemBase {
         private final Pivot turret = new Pivot(turretConfig);
 
         public TurretSubsystem() {
+                turretMotor.getEncoder().setPosition(getAbsoluteAngle());
                 setDefaultCommand(turret.setAngle(() -> targetAngle));
         }
 
@@ -94,6 +95,13 @@ public class TurretSubsystem extends SubsystemBase {
         return targetAngle;
         }
 
+        private double getAbsoluteAngle() {
+            double raw = ((turretThroughBoreEncoder.get() + turretThroughBoreEncoder.get() + turretThroughBoreEncoder.get()) / 3.0) * 360.0 - Constants.Turret.encoderOffsetDeg;
+            if (raw > 180) raw -= 360;
+            if (raw < -180) raw += 360;
+            return raw;
+        }
+        
         public Command sysId() {
                 return turret.sysId(
                                 Volts.of(4.0), // maximumVoltage
@@ -115,7 +123,16 @@ public class TurretSubsystem extends SubsystemBase {
 
         @Override
         public void periodic() {
-                turret.updateTelemetry();
+            turret.updateTelemetry();
+
+            if (!turretZeroed) {
+                if (startTime == 0) {
+                   startTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
+            } else if (edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - startTime > 2.0) {
+            turretMotor.getEncoder().setPosition(getAbsoluteAngle());
+            turretZeroed = true;                        
+                }
+            }
         }
 
         @Override

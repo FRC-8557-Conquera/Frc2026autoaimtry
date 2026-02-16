@@ -20,9 +20,9 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.Constants.Flywheel;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
-import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
+import frc.robot.Constants.Shooter;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -36,7 +36,6 @@ public class ShootOnTheMoveCommand extends Command
 
   // Subsystems
   private final TurretSubsystem   turretSubsystem;
-  private final HoodSubsystem     hoodSubsystem;
   private final FlywheelSubsystem flywheelSubsystem;
   private final ShooterSubsystem  shooterSubsystem;
 
@@ -54,8 +53,7 @@ public class ShootOnTheMoveCommand extends Command
   private final Pose2d                  goalPose;
 
   // Tuned Constants
-  double totalExitVelocity = 15.0; // m/s   TODO: Tune this value to match the actual exit velocity of your shooter. This is used to calculate the new hood angle, so it doesn't need to be perfect, but it should be close for best results.
-  double ballTime = 0.12;
+  double ballTime = 0.12; //TODO: time in seconds for the ball to reach the target after leaving the shooter. You can measure this by logging the time when the ball leaves the shooter (e.g., using a sensor on the shooter) and the time when the ball hits the target (e.g., using a sensor on the target), and taking the difference.
   /**
    * Time in seconds between when the robot is told to move and when the shooter actually shoots.
    */
@@ -76,34 +74,21 @@ public class ShootOnTheMoveCommand extends Command
    * @param fieldOrientedChassisSpeeds Current field-oriented chassis speeds.
    * @param goal                       Goal to shoot at.
    */
-  public ShootOnTheMoveCommand(TurretSubsystem turret, ShooterSubsystem shooter, HoodSubsystem hood, FlywheelSubsystem flyWheel,
+  public ShootOnTheMoveCommand(TurretSubsystem turret, ShooterSubsystem shooter, FlywheelSubsystem flyWheel,
                                Supplier<Pose2d> currentPose, Supplier<ChassisSpeeds> fieldOrientedChassisSpeeds,
                                Pose2d goal)
   {
     shooterSubsystem = shooter;
     turretSubsystem = turret;
-    hoodSubsystem = hood;
     flywheelSubsystem = flyWheel;
     robotPose = currentPose;
     this.fieldOrientedChassisSpeeds = fieldOrientedChassisSpeeds;
     this.goalPose = goal;
-    /*
-    // Test Results
-    for (var entry : List.of(Pair.of(Meters.of(1), RPM.of((1000))),
-                             Pair.of(Meters.of(2), RPM.of(2000)),
-                             Pair.of(Meters.of(3), RPM.of(3000)))           //TODO: Replace these test values with actual measured values of distance to target vs required shooter RPM. You can measure this by logging the distance to the target and the required shooter RPM when you shoot successfully, and then fitting a curve to the data.
-    )
-    {shooterTable.put(entry.getFirst().in(Meters), entry.getSecond().in(RPM));}
-    */
-
-    setName("Shoot on the move");
   }
 
   @Override
-  public void initialize()
-  {
-
-  }
+  public void initialize(){}
+  
 
   @Override
   public void execute()
@@ -115,8 +100,7 @@ public class ShootOnTheMoveCommand extends Command
     var robotSpeed = fieldOrientedChassisSpeeds.get();
     // 1. LATENCY COMP
     Translation2d futurePos = robotPose.get().getTranslation().plus(
-        new Translation2d(robotSpeed.vxMetersPerSecond, robotSpeed.vyMetersPerSecond).times(latency+ballTime)
-                                                                   );
+      new Translation2d(robotSpeed.vxMetersPerSecond, robotSpeed.vyMetersPerSecond).times(latency+ballTime));
 
     // 2. GET TARGET VECTOR
     Translation2d goalLocation = goalPose.getTranslation();
@@ -126,9 +110,8 @@ public class ShootOnTheMoveCommand extends Command
         return;   // too close to solve safely
     }
 
-    Angle baseHood = shooterSubsystem.getHoodSetpoint(dist);
+    Angle baseHood = Shooter.FIXED_HOOD;
     LinearVelocity baseExitVelocity = shooterSubsystem.getBaseExitVelocity(dist);
-
 
     // 3. CALCULATE IDEAL SHOT (Stationary)
     // Note: This returns HORIZONTAL velocity component
@@ -142,23 +125,14 @@ public class ShootOnTheMoveCommand extends Command
     double turretAngle        = shotVec.getAngle().getDegrees();
     double newHorizontalSpeed = shotVec.getNorm();
 
-    // 6. SOLVE FOR NEW PITCH/RPM
-    // Assuming constant total exit velocity, variable hood:
-    // Clamp to avoid domain errors if we need more speed than possible
-    double scale = newHorizontalSpeed / idealHorizontalSpeed;
-    scale = MathUtil.clamp(scale, 0.7, 1.3);  // tune range
-    double effectiveDistance = dist * scale;
+    // 6. CALCULATE REQUIRED FLYWHEEL SPEED
+    double exitVel = newHorizontalSpeed / Math.cos(Shooter.FIXED_HOOD.in(Radians));
+    double newRPS = exitVel / Shooter.METERS_PER_ROTATION;
 
-    // now ask the normal shooter logic
-    Angle newHood = shooterSubsystem.getHoodSetpoint(effectiveDistance);
-    LinearVelocity newExitVelocity = shooterSubsystem.getBaseExitVelocity(effectiveDistance);
-    double newRPS = newExitVelocity.in(MetersPerSecond) / ShooterSubsystem.METERS_PER_ROTATION;
-
-    newRPS = MathUtil.clamp(newRPS, FlywheelSubsystem.MIN_RPS, FlywheelSubsystem.MAX_RPS);
+    newRPS = MathUtil.clamp(newRPS, Flywheel.MIN_RPS, Flywheel.MAX_RPS);
 
     // 7. SET OUTPUTS
    turretSubsystem.setTargetAngle(Degrees.of(turretAngle));
-   hoodSubsystem.setAngle(newHood);
    flywheelSubsystem.setVelocity(RotationsPerSecond.of(newRPS)); 
     
   }
