@@ -98,8 +98,7 @@ public class RobotContainer {
       spindexer.spinForward();
     }));
 
-    triggerButton.whileTrue(new InstantCommand(() -> flywheel.deneme()));
-    triggerButton.whileFalse(new InstantCommand(() -> flywheel.denemeStop()));
+    triggerButton.whileTrue(flywheel.setVelocity(RotationsPerSecond.of(90))).onFalse(flywheel.setVelocity(RotationsPerSecond.of(0)));
 
     turretButtonLeft.whileTrue(turret.rotateLeft()).onFalse(turret.stop());
     turretButtonRight.whileTrue(turret.rotateRight()).onFalse(turret.stop());
@@ -107,7 +106,7 @@ public class RobotContainer {
     feederAl.whileTrue(feeder.reverse()).onFalse(feeder.stop());
    
     spindexerF.whileTrue(spindexer.spinForward()).onFalse(spindexer.stop());
-    spindexerR.whileTrue(spindexer.spinForward()).onFalse(spindexer.stop());
+    spindexerR.whileTrue(spindexer.spinReverse()).onFalse(spindexer.stop());
 
     zeroGyro.onTrue(new InstantCommand(() -> s_Swerve.zeroGyro()));
     xLock.whileTrue(Commands.runOnce(() -> s_Swerve.lock(), s_Swerve).repeatedly());

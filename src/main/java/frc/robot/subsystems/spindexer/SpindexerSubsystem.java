@@ -17,7 +17,7 @@ public class SpindexerSubsystem extends SubsystemBase {
 
   public SpindexerSubsystem() {
     SparkMaxConfig config = new SparkMaxConfig();
-    config.idleMode(IdleMode.kBrake).inverted(false).smartCurrentLimit(40);
+    config.idleMode(IdleMode.kBrake).inverted(false).smartCurrentLimit(60);
     spindexerMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
   }
 
@@ -30,6 +30,6 @@ public class SpindexerSubsystem extends SubsystemBase {
   }
 
   public Command stop() {
-    return run(() -> spindexerMotor.set(0));
+    return runOnce(() -> spindexerMotor.set(0));
   }
 }
