@@ -94,11 +94,7 @@ public class ShooterSubsystem {
 
    public LinearVelocity getBaseExitVelocity(double distance) {
     double rps = flywheelMap.get(distance) + Shooter.flywheelOffsetRPS;
-    return MetersPerSecond.of(rps * Shooter.METERS_PER_ROTATION);
+    return MetersPerSecond.of(rps);
     }
 
-      public AngularVelocity getFlyWheelRPS(double distance) {
-        return RotationsPerSecond.of(flywheelMap.get(distance));
-    }
-    
 }

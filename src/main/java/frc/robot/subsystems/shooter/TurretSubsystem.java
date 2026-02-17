@@ -45,8 +45,7 @@ public class TurretSubsystem extends SubsystemBase {
 
         private final SparkMax turretMotor = new SparkMax(Constants.Turret.turretMotor, MotorType.kBrushless);
         private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
-                .withClosedLoopController(0.015, 0.0, 0.0002, DegreesPerSecond.of(180),
-                                DegreesPerSecondPerSecond.of(90)) // TODO: Change the PID values
+                .withClosedLoopController(0.015, 0.0, 0.0002, DegreesPerSecond.of(180),DegreesPerSecondPerSecond.of(90)) // TODO: Change the PID values
                 .withSoftLimit(Degrees.of(-180), Degrees.of(180))
                 .withGearing(new MechanismGearing(GearBox.fromReductionStages(1, 16))) 
                 .withIdleMode(MotorMode.BRAKE)
@@ -83,7 +82,6 @@ public class TurretSubsystem extends SubsystemBase {
 
         public Angle getAngle() {
                 return turret.getAngle();
-
         }
         private Angle targetAngle = Degrees.of(0);
 
