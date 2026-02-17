@@ -18,7 +18,7 @@ public class FeederSubsystem extends SubsystemBase {
 
   public FeederSubsystem() {
     SparkMaxConfig config = new SparkMaxConfig();
-    config.idleMode(IdleMode.kBrake).inverted(false).smartCurrentLimit(30);
+    config.idleMode(IdleMode.kBrake).inverted(false).smartCurrentLimit(40);
     feederMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
   }
 

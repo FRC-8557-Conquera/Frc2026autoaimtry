@@ -40,15 +40,15 @@ public class FlywheelSubsystem extends SubsystemBase
   private final TalonFX flywheelMotor    = new TalonFX(Flywheel.flywheelMotor);
 
   private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
-      .withClosedLoopController(0, 0, 0, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))        // TODO: Change the PID values
-      .withGearing(new MechanismGearing(GearBox.fromReductionStages(3, 4)))                                   //TODO: Set the correct gear ratio
+      .withClosedLoopController(0.15,0, 0, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))        // TODO: Change the PID values
+      .withGearing(new MechanismGearing(GearBox.fromReductionStages(1, 1)))                      
       .withIdleMode(MotorMode.COAST)
       .withTelemetry("FlywheelMotor", TelemetryVerbosity.HIGH)
-      .withStatorCurrentLimit(Amps.of(40))
+      .withStatorCurrentLimit(Amps.of(80))
       .withMotorInverted(false)
       .withClosedLoopRampRate(Seconds.of(0.25))
       .withOpenLoopRampRate(Seconds.of(0.25))   
-      .withFeedforward(new SimpleMotorFeedforward(0, 0, 0))
+      .withFeedforward(new SimpleMotorFeedforward(0.2, 0.12, 0))
       .withSimFeedforward(new SimpleMotorFeedforward(0, 0, 0))
       .withControlMode(ControlMode.CLOSED_LOOP);
 
@@ -62,10 +62,14 @@ public class FlywheelSubsystem extends SubsystemBase
 
   private final FlyWheel flywheel = new FlyWheel(flywheelConfig);
 
-  public FlywheelSubsystem()
-  {
-  }
+  public FlywheelSubsystem() {}
 
+  public void deneme(){
+    flywheel.set(-0.7);
+  }
+  public void denemeStop() {
+    flywheel.set(0);
+  }
   public AngularVelocity getVelocity()
   {
     return flywheel.getSpeed();

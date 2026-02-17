@@ -18,11 +18,13 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import frc.robot.Constants.Spindexer;
 import frc.robot.subsystems.feeder.FeederSubsystem;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.shooter.ShotIntent;
 import frc.robot.subsystems.shooter.TurretSubsystem;
+import frc.robot.subsystems.spindexer.SpindexerSubsystem;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 import swervelib.SwerveInputStream;
 
@@ -35,21 +37,23 @@ public class RobotContainer {
   private final JoystickButton zeroGyro = new JoystickButton(driver, 3);
   private final JoystickButton xLock = new JoystickButton(driver, 6);
 
-  private final JoystickButton turnButton = new JoystickButton(driver, 4);
-  private final JoystickButton turretButtonLeft = new JoystickButton(driver2, 1);
+  private final JoystickButton wowButton = new JoystickButton(driver2, 10);
+  private final JoystickButton turretButtonLeft = new JoystickButton(driver2, 8);
   private final JoystickButton turretButtonRight = new JoystickButton(driver2, 2);
-  private final JoystickButton triggerButton = new JoystickButton(driver2, 4);
+  private final JoystickButton triggerButton = new JoystickButton(driver2, 1);
 
   private final JoystickButton feederAl= new JoystickButton(driver2, 3);
-
-  JoystickButton hubButton  = new JoystickButton(driver2, 5);
-  JoystickButton dumpButton = new JoystickButton(driver2, 6);
+  private final JoystickButton spindexerF = new JoystickButton(driver2, 5);
+  private final JoystickButton spindexerR = new JoystickButton(driver2, 6);
+  JoystickButton hubButton  = new JoystickButton(driver2, 11);
+  JoystickButton dumpButton = new JoystickButton(driver2, 12);
 
   public final SwerveSubsystem s_Swerve = new SwerveSubsystem();
   private final TurretSubsystem turret = new TurretSubsystem();
   private final FeederSubsystem feeder = new FeederSubsystem();
   private final FlywheelSubsystem flywheel = new FlywheelSubsystem();
   private final ShooterSubsystem shooter = new ShooterSubsystem(s_Swerve);
+  private final SpindexerSubsystem spindexer = new SpindexerSubsystem();
 
 
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(
@@ -88,14 +92,22 @@ public class RobotContainer {
     dumpButton.whileTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.DUMP)));
     dumpButton.whileFalse(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
 
-    triggerButton.whileTrue(flywheel.setVelocity(() -> shooter.getFlywheelSetpoint()));
-    triggerButton.whileFalse(flywheel.setVelocity(RotationsPerSecond.of(0)));
+    wowButton.whileTrue(new InstantCommand(() -> {
+      feeder.reverse();
+      flywheel.setVelocity(RotationsPerSecond.of(90));
+      spindexer.spinForward();
+    }));
 
+    triggerButton.whileTrue(new InstantCommand(() -> flywheel.deneme()));
+    triggerButton.whileFalse(new InstantCommand(() -> flywheel.denemeStop()));
 
     turretButtonLeft.whileTrue(turret.rotateLeft()).onFalse(turret.stop());
     turretButtonRight.whileTrue(turret.rotateRight()).onFalse(turret.stop());
 
-    feederAl.whileTrue(feeder.feed()).onFalse(feeder.stop());
+    feederAl.whileTrue(feeder.reverse()).onFalse(feeder.stop());
+   
+    spindexerF.whileTrue(spindexer.spinForward()).onFalse(spindexer.stop());
+    spindexerR.whileTrue(spindexer.spinForward()).onFalse(spindexer.stop());
 
     zeroGyro.onTrue(new InstantCommand(() -> s_Swerve.zeroGyro()));
     xLock.whileTrue(Commands.runOnce(() -> s_Swerve.lock(), s_Swerve).repeatedly());

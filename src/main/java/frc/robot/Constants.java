@@ -114,8 +114,8 @@ public final class Constants {
   /* ===================== SPINDEXER ===================== */
   public static final class Spindexer {
     public static final int spindexerMotor = 33; 
-    public static final double feedSpeed = 0.7;
-    public static final double reverseSpeed = -0.5;
+    public static final double feedSpeed = 1;
+    public static final double reverseSpeed = -1;
   }
 
   /* ===================== FEEDER ===================== */
@@ -138,7 +138,7 @@ public final class Constants {
   /* ===================== FLYWHEEL ===================== */
 
   public static final class Flywheel{
-    public static final int flywheelMotor = 41;
+    public static final int flywheelMotor = 40;
     public static final double MAX_RPS = 90;
     public static final double MIN_RPS = 10;
     public static final Distance flywheelDiameter = Inches.of(4);

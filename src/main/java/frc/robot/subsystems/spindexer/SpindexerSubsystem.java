@@ -1,6 +1,10 @@
 package frc.robot.subsystems.spindexer;
 
 import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
+import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.PersistMode;
+import com.revrobotics.ResetMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
 import edu.wpi.first.wpilibj2.command.Command;
@@ -11,7 +15,11 @@ public class SpindexerSubsystem extends SubsystemBase {
 
   private final SparkMax spindexerMotor = new SparkMax(Spindexer.spindexerMotor, MotorType.kBrushless);
 
-  public SpindexerSubsystem() {}
+  public SpindexerSubsystem() {
+    SparkMaxConfig config = new SparkMaxConfig();
+    config.idleMode(IdleMode.kBrake).inverted(false).smartCurrentLimit(40);
+    spindexerMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+  }
 
   public Command spinForward() {
     return run(() -> spindexerMotor.set(Spindexer.feedSpeed));
