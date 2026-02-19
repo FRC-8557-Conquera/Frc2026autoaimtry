@@ -41,7 +41,7 @@ public class FlywheelSubsystem extends SubsystemBase
 
   private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
       .withClosedLoopController(0.15,0, 0, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))        // TODO: Change the PID values
-      .withGearing(new MechanismGearing(GearBox.fromReductionStages(1, 1)))                      
+      .withGearing(new MechanismGearing(1))                      
       .withIdleMode(MotorMode.COAST)
       .withTelemetry("FlywheelMotor", TelemetryVerbosity.HIGH)
       .withStatorCurrentLimit(Amps.of(100))
@@ -52,6 +52,7 @@ public class FlywheelSubsystem extends SubsystemBase
       .withFeedforward(new SimpleMotorFeedforward(0.2, 0.12, 0))
       .withSimFeedforward(new SimpleMotorFeedforward(0, 0, 0))
       .withControlMode(ControlMode.CLOSED_LOOP);
+
 
   private final SmartMotorController motor = new TalonFXWrapper(flywheelMotor, DCMotor.getKrakenX60(1), motorConfig);
 

@@ -45,9 +45,9 @@ public class TurretSubsystem extends SubsystemBase {
 
         private final SparkMax turretMotor = new SparkMax(Constants.Turret.turretMotor, MotorType.kBrushless);
         private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
-                .withClosedLoopController(0.015, 0.0, 0.0002, DegreesPerSecond.of(180),DegreesPerSecondPerSecond.of(90)) // TODO: Change the PID values
+                .withClosedLoopController(0.001, 0.0, 0.0002, DegreesPerSecond.of(90),DegreesPerSecondPerSecond.of(70)) // TODO: Change the PID values
                 .withSoftLimit(Degrees.of(-180), Degrees.of(180))
-                .withGearing(new MechanismGearing(GearBox.fromReductionStages(1, 16))) 
+                .withGearing(new MechanismGearing(16)) 
                 .withIdleMode(MotorMode.BRAKE)
                 .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
                 .withStatorCurrentLimit(Amps.of(40))
@@ -56,13 +56,14 @@ public class TurretSubsystem extends SubsystemBase {
                 .withOpenLoopRampRate(Seconds.of(0.25))
                 .withFeedforward(new SimpleMotorFeedforward(0, 0, 0, 0.02))
                 .withControlMode(ControlMode.CLOSED_LOOP);
+        
         private final SmartMotorController turretSMC = new SparkWrapper(turretMotor,
                         DCMotor.getNEO(1),
                         motorConfig);
         private final PivotConfig turretConfig = new PivotConfig(turretSMC)
                         .withStartingPosition(Degrees.of(Constants.Turret.encoderOffsetDeg)) // Starting position of the
-                                                                                             // Pivot
-                        .withHardLimit(Degrees.of(-180), Degrees.of(180))
+                        .withWrapping(Degrees.of(-180), Degrees.of(180)) // Wrap around at -180 and 180 degrees
+                        .withHardLimit(Degrees.of(-190), Degrees.of(190))
                         .withTelemetry("TurretMech", TelemetryVerbosity.HIGH); // Telemetry
 
         private final Pivot turret = new Pivot(turretConfig);
@@ -94,7 +95,7 @@ public class TurretSubsystem extends SubsystemBase {
         }
 
         private double getAbsoluteAngle() {
-            double raw = ((turretThroughBoreEncoder.get() + turretThroughBoreEncoder.get() + turretThroughBoreEncoder.get()) / 3.0) * 360.0 - Constants.Turret.encoderOffsetDeg;
+            double raw = ((turretThroughBoreEncoder.get())) * 360.0 - Constants.Turret.encoderOffsetDeg;
             if (raw > 180) raw -= 360;
             if (raw < -180) raw += 360;
             return raw;
@@ -125,10 +126,10 @@ public class TurretSubsystem extends SubsystemBase {
 
             if (!turretZeroed) {
                 if (startTime == 0) {
-                   startTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
-            } else if (edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - startTime > 2.0) {
-            turretMotor.getEncoder().setPosition(getAbsoluteAngle());
-            turretZeroed = true;                        
+                        startTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
+                } else if (edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - startTime > 2.0) {
+                        turretMotor.getEncoder().setPosition(getAbsoluteAngle());
+                        turretZeroed = true;                        
                 }
             }
         }
