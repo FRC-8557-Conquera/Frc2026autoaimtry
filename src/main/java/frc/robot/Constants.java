@@ -8,9 +8,10 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import static edu.wpi.first.units.Units.Inches;
-
+import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Degrees;
 
 public final class Constants {
@@ -124,8 +125,10 @@ public final class Constants {
     public static final IdleMode idleMode = IdleMode.kBrake;
     public static final boolean inverted = false;
 
-    public static final double feedSpeed = -0.5;
-    public static final double reverseSpeed = 0.5;
+    public static final double feedSpeed = -0.8;
+    public static final double reverseSpeed = 0.8;
+
+    public static final AngularVelocity feederMaxSpeed = RPM.of(5000);
   }
 
   /* ===================== TURRET ===================== */

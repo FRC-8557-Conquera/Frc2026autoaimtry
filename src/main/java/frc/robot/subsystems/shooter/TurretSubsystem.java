@@ -46,7 +46,6 @@ public class TurretSubsystem extends SubsystemBase {
         private final SparkMax turretMotor = new SparkMax(Constants.Turret.turretMotor, MotorType.kBrushless);
         private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
                 .withClosedLoopController(0.001, 0.0, 0.0002, DegreesPerSecond.of(90),DegreesPerSecondPerSecond.of(70)) // TODO: Change the PID values
-                .withSoftLimit(Degrees.of(-180), Degrees.of(180))
                 .withGearing(new MechanismGearing(16)) 
                 .withIdleMode(MotorMode.BRAKE)
                 .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
@@ -63,7 +62,6 @@ public class TurretSubsystem extends SubsystemBase {
         private final PivotConfig turretConfig = new PivotConfig(turretSMC)
                         .withStartingPosition(Degrees.of(Constants.Turret.encoderOffsetDeg)) // Starting position of the
                         .withWrapping(Degrees.of(-180), Degrees.of(180)) // Wrap around at -180 and 180 degrees
-                        .withHardLimit(Degrees.of(-190), Degrees.of(190))
                         .withTelemetry("TurretMech", TelemetryVerbosity.HIGH); // Telemetry
 
         private final Pivot turret = new Pivot(turretConfig);

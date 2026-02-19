@@ -11,6 +11,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -84,6 +85,7 @@ public class RobotContainer {
     configureButtonBindings();
     m_chooser = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData(m_chooser);
+    
     turret.setDefaultCommand(
     turret.setAngle(() -> shooter.getTurretSetpoint()));
   }
@@ -109,8 +111,8 @@ public class RobotContainer {
 
     sysIDButton.whileTrue(flywheel.sysId());
 
-    feederAl.whileTrue(feeder.feed()).onFalse(feeder.stop());
-    feederTers.whileTrue(feeder.reverse()).onFalse(feeder.stop());
+    feederAl.whileTrue(feeder.dutyCycleFeed()).onFalse(feeder.stop());
+    feederTers.whileTrue(feeder.dutyCycleReverse()).onFalse(feeder.stop());
 
     spindexerF.whileTrue(spindexer.spinForward()).onFalse(spindexer.stop());
     spindexerR.whileTrue(spindexer.spinReverse()).onFalse(spindexer.stop());

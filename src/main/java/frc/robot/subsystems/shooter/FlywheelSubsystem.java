@@ -42,13 +42,13 @@ public class FlywheelSubsystem extends SubsystemBase
   private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
       .withClosedLoopController(0.15,0, 0, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))        // TODO: Change the PID values
       .withGearing(new MechanismGearing(1))                      
-      .withIdleMode(MotorMode.COAST)
+      .withIdleMode(MotorMode.BRAKE)
       .withTelemetry("FlywheelMotor", TelemetryVerbosity.HIGH)
       .withSupplyCurrentLimit(Amps.of(40))
       .withMotorInverted(false)
       .withClosedLoopRampRate(Seconds.of(0.25))
       .withOpenLoopRampRate(Seconds.of(0.25))   
-      .withFeedforward(new SimpleMotorFeedforward(0.2, 0.12, 0))
+      .withFeedforward(new SimpleMotorFeedforward(0.31148, 0.12197, 0.0057185))
       .withControlMode(ControlMode.CLOSED_LOOP);
 
 
