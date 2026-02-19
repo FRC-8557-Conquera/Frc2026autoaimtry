@@ -43,10 +43,14 @@ public class RobotContainer {
   private final JoystickButton triggerButton = new JoystickButton(driver2, 1);
 
   private final JoystickButton feederAl= new JoystickButton(driver2, 3);
+  private final JoystickButton feederTers= new JoystickButton(driver2, 4);
+
   private final JoystickButton spindexerF = new JoystickButton(driver2, 5);
   private final JoystickButton spindexerR = new JoystickButton(driver2, 6);
+  private final JoystickButton sysIDButton = new JoystickButton(driver2, 7);
   JoystickButton hubButton  = new JoystickButton(driver2, 11);
   JoystickButton dumpButton = new JoystickButton(driver2, 12);
+  
 
   public final SwerveSubsystem s_Swerve = new SwerveSubsystem();
   private final TurretSubsystem turret = new TurretSubsystem();
@@ -98,13 +102,16 @@ public class RobotContainer {
       spindexer.spinForward();
     }));
 
-    triggerButton.whileTrue(flywheel.setVelocity(RotationsPerSecond.of(90))).onFalse(flywheel.setVelocity(RotationsPerSecond.of(0)));
+    triggerButton.whileTrue(flywheel.setVelocity(RotationsPerSecond.of(60))).onFalse(flywheel.setVelocity(RotationsPerSecond.of(0)));
 
     turretButtonLeft.whileTrue(turret.rotateLeft()).onFalse(turret.stop());
     turretButtonRight.whileTrue(turret.rotateRight()).onFalse(turret.stop());
 
-    feederAl.whileTrue(feeder.reverse()).onFalse(feeder.stop());
-   
+    sysIDButton.whileTrue(flywheel.sysId());
+
+    feederAl.whileTrue(feeder.feed()).onFalse(feeder.stop());
+    feederTers.whileTrue(feeder.reverse()).onFalse(feeder.stop());
+
     spindexerF.whileTrue(spindexer.spinForward()).onFalse(spindexer.stop());
     spindexerR.whileTrue(spindexer.spinReverse()).onFalse(spindexer.stop());
 

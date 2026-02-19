@@ -124,8 +124,8 @@ public final class Constants {
     public static final IdleMode idleMode = IdleMode.kBrake;
     public static final boolean inverted = false;
 
-    public static final double feedSpeed = 0.7;
-    public static final double reverseSpeed = -0.5;
+    public static final double feedSpeed = -0.5;
+    public static final double reverseSpeed = 0.5;
   }
 
   /* ===================== TURRET ===================== */

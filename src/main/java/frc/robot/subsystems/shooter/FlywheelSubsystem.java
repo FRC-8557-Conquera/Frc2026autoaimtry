@@ -44,13 +44,11 @@ public class FlywheelSubsystem extends SubsystemBase
       .withGearing(new MechanismGearing(1))                      
       .withIdleMode(MotorMode.COAST)
       .withTelemetry("FlywheelMotor", TelemetryVerbosity.HIGH)
-      .withStatorCurrentLimit(Amps.of(100))
-      .withSupplyCurrentLimit(Amps.of(70))
+      .withSupplyCurrentLimit(Amps.of(40))
       .withMotorInverted(false)
       .withClosedLoopRampRate(Seconds.of(0.25))
       .withOpenLoopRampRate(Seconds.of(0.25))   
       .withFeedforward(new SimpleMotorFeedforward(0.2, 0.12, 0))
-      .withSimFeedforward(new SimpleMotorFeedforward(0, 0, 0))
       .withControlMode(ControlMode.CLOSED_LOOP);
 
 
@@ -60,6 +58,7 @@ public class FlywheelSubsystem extends SubsystemBase
       .withDiameter(Inches.of(4))
       .withMass(Pounds.of(1))
       .withTelemetry("FlywheelMech", TelemetryVerbosity.HIGH)
+      .withSoftLimit(RotationsPerSecond.of(-100), RotationsPerSecond.of(100))
       .withSpeedometerSimulation(RotationsPerSecond.of(120));
 
   private final FlyWheel flywheel = new FlyWheel(flywheelConfig);
@@ -67,7 +66,7 @@ public class FlywheelSubsystem extends SubsystemBase
   public FlywheelSubsystem() {}
 
   public void deneme(){
-    flywheel.set(-0.7);
+    flywheel.set(-1);
   }
   public void denemeStop() {
     flywheel.set(0);
