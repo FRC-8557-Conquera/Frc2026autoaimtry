@@ -53,8 +53,8 @@ public class RobotContainer {
 
   public final SwerveSubsystem s_Swerve = new SwerveSubsystem();
   private final TurretSubsystem turret = new TurretSubsystem();
-  private final FeederSubsystem feeder = new FeederSubsystem();
   private final FlywheelSubsystem flywheel = new FlywheelSubsystem();
+  private final FeederSubsystem feeder = new FeederSubsystem(flywheel);
   private final ShooterSubsystem shooter = new ShooterSubsystem(s_Swerve);
   private final SpindexerSubsystem spindexer = new SpindexerSubsystem();
 
@@ -95,14 +95,17 @@ public class RobotContainer {
     dumpButton.whileTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.DUMP)));
     dumpButton.whileFalse(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
 
-    triggerButton.whileTrue(Commands.run(() -> flywheel.setVelocity(RotationsPerSecond.of(45)).schedule(), flywheel)).onFalse(Commands.runOnce(() -> flywheel.setVelocity(RotationsPerSecond.of(0)).schedule(), flywheel));
+    Command flywheelRunCommand = Commands.run(() -> flywheel.setVelocity(RotationsPerSecond.of(45)).schedule(), flywheel);
+    Command flywheelStopCommand = Commands.runOnce(() -> flywheel.setVelocity(RotationsPerSecond.of(0)).schedule(), flywheel);
+
+    triggerButton.whileTrue(flywheelRunCommand).onFalse(flywheelStopCommand);
 
     turretButtonLeft.whileTrue(turret.rotateLeft()).onFalse(turret.stop());
     turretButtonRight.whileTrue(turret.rotateRight()).onFalse(turret.stop());
 
     sysIDButton.whileTrue(flywheel.sysId());
 
-    feederAl.whileTrue(feeder.dutyCycleFeed()).onFalse(feeder.stop());
+    feederAl.whileTrue(Commands.parallel(feeder.dutyCycleFeed(), flywheelRunCommand)).onFalse(Commands.parallel(feeder.stop(), flywheelStopCommand));
     feederTers.whileTrue(feeder.dutyCycleReverse()).onFalse(feeder.stop());
 
     spindexerF.whileTrue(spindexer.spinForward()).onFalse(spindexer.stop());

@@ -40,11 +40,11 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 public class FlywheelSubsystem extends SubsystemBase
 {
   private final TalonFX flywheelMotor    = new TalonFX(Flywheel.flywheelMotor);
-  private double setPoint = 0.0;
+  private double setPoint = 0.0; // in RPS
   private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
       .withClosedLoopController(0.3,0.0, 0.001, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))        // TODO: Change the PID values
       .withGearing(new MechanismGearing(1))                      
-      .withIdleMode(MotorMode.BRAKE)
+      .withIdleMode(MotorMode.COAST)
       .withTelemetry("FlywheelMotor", TelemetryVerbosity.HIGH)
       .withSupplyCurrentLimit(Amps.of(80))
       .withMotorInverted(false)
@@ -73,7 +73,11 @@ public class FlywheelSubsystem extends SubsystemBase
     return flywheel.getSpeed();
   }
 
-    public Command setVelocity(AngularVelocity speed)
+  public double getSetpoint() {
+    return setPoint;
+  }
+
+  public Command setVelocity(AngularVelocity speed)
   {
     setPoint = speed.in(RotationsPerSecond);
     return flywheel.setSpeed(speed);
@@ -86,11 +90,7 @@ public class FlywheelSubsystem extends SubsystemBase
 
   public Command setVelocity(Supplier<AngularVelocity> speed)
   {
-    return flywheel.setSpeed(() -> {
-      AngularVelocity s = speed.get();
-      setPoint = s.in(RotationsPerSecond);   // ⭐ yine kaydet
-      return s;
-    });
+    return flywheel.setSpeed(speed);
   }
 
   public Command setDutyCycle(Supplier<Double> dutyCycle)
@@ -124,5 +124,9 @@ public class FlywheelSubsystem extends SubsystemBase
     return flywheel.setSpeed(RotationsPerSecond.of(speed.in(MetersPerSecond) / Flywheel.flywheelDiameter.times(Math.PI).in(Meters)));
   }
 
+  public boolean shouldOtherSystemsStop() {
+    return getVelocity().in(RotationsPerSecond) < getSetpoint()
+        && getSetpoint() - getVelocity().in(RotationsPerSecond) > 0.1;
+  }
 }
 
