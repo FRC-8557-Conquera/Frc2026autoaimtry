@@ -45,30 +45,31 @@ public class TurretSubsystem extends SubsystemBase {
 
         private final SparkMax turretMotor = new SparkMax(Constants.Turret.turretMotor, MotorType.kBrushless);
         private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
-                .withClosedLoopController(0.001, 0.0, 0.0002, DegreesPerSecond.of(90),DegreesPerSecondPerSecond.of(70)) // TODO: Change the PID values
-                .withGearing(new MechanismGearing(16)) 
-                .withIdleMode(MotorMode.BRAKE)
-                .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
-                .withStatorCurrentLimit(Amps.of(40))
-                .withMotorInverted(false)
-                .withClosedLoopRampRate(Seconds.of(0.25))
-                .withOpenLoopRampRate(Seconds.of(0.25))
-                .withFeedforward(new SimpleMotorFeedforward(0, 0, 0, 0.02))
-                .withControlMode(ControlMode.CLOSED_LOOP);
-        
+                        .withClosedLoopController(0.01, 0.0, 0.0002, DegreesPerSecond.of(90),
+                                        DegreesPerSecondPerSecond.of(70)) // TODO: Change the PID values
+                        .withGearing(new MechanismGearing(16))
+                        .withIdleMode(MotorMode.BRAKE)
+                        .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
+                        .withStatorCurrentLimit(Amps.of(40))
+                        .withMotorInverted(true)
+                        .withClosedLoopRampRate(Seconds.of(0.25))
+                        .withOpenLoopRampRate(Seconds.of(0.25))
+                        .withFeedforward(new SimpleMotorFeedforward(0, 0, 0, 0.02))
+                        .withControlMode(ControlMode.CLOSED_LOOP);
+
         private final SmartMotorController turretSMC = new SparkWrapper(turretMotor,
                         DCMotor.getNEO(1),
                         motorConfig);
         private final PivotConfig turretConfig = new PivotConfig(turretSMC)
-                        .withStartingPosition(Degrees.of(Constants.Turret.encoderOffsetDeg)) // Starting position of the
-                        .withWrapping(Degrees.of(-180), Degrees.of(180)) // Wrap around at -180 and 180 degrees
+                      //  .withStartingPosition(Degrees.of(Constants.Turret.encoderOffsetDeg)) // Starting position of the
+                        //.withWrapping(Degrees.of(-180), Degrees.of(180)) // Wrap around at -180 and 180 degrees
                         .withTelemetry("TurretMech", TelemetryVerbosity.HIGH); // Telemetry
 
         private final Pivot turret = new Pivot(turretConfig);
 
         public TurretSubsystem() {
                 turretMotor.getEncoder().setPosition(getAbsoluteAngle());
-                setDefaultCommand(turret.setAngle(() -> targetAngle));
+               // setDefaultCommand(turret.setAngle(() -> targetAngle));
         }
 
         public Command setAngle(Angle angle) {
@@ -82,23 +83,26 @@ public class TurretSubsystem extends SubsystemBase {
         public Angle getAngle() {
                 return turret.getAngle();
         }
+
         private Angle targetAngle = Degrees.of(0);
 
         public void setTargetAngle(Angle angle) {
-        targetAngle = angle;
+                targetAngle = angle;
         }
 
         public Angle getTargetAngle() {
-        return targetAngle;
+                return targetAngle;
         }
 
         private double getAbsoluteAngle() {
-            double raw = ((turretThroughBoreEncoder.get())) * 360.0 - Constants.Turret.encoderOffsetDeg;
-            if (raw > 180) raw -= 360;
-            if (raw < -180) raw += 360;
-            return raw;
+                double raw = ((turretThroughBoreEncoder.get())) * 360.0 - Constants.Turret.encoderOffsetDeg;
+                if (raw > 180)
+                        raw -= 360;
+                if (raw < -180)
+                        raw += 360;
+                return raw;
         }
-        
+
         public Command sysId() {
                 return turret.sysId(
                                 Volts.of(4.0), // maximumVoltage
@@ -107,29 +111,29 @@ public class TurretSubsystem extends SubsystemBase {
         }
 
         public Command rotateLeft() {
-                return run(() -> turret.setMechanismVelocitySetpoint(DegreesPerSecond.of(-120)));
+                return run(() -> turretSMC.setDutyCycle(-0.2));
         }
 
         public Command rotateRight() {
-                return run(() -> turret.setMechanismVelocitySetpoint(DegreesPerSecond.of(120)));
+                return run(() -> turretSMC.setDutyCycle(0.2));
         }
 
         public Command stop() {
-                return runOnce(() -> turret.setMechanismVelocitySetpoint(DegreesPerSecond.of(0)));
+                return runOnce(() -> turretSMC.setDutyCycle(0));
         }
 
         @Override
         public void periodic() {
-            turret.updateTelemetry();
+                turret.updateTelemetry();
 
-            if (!turretZeroed) {
-                if (startTime == 0) {
-                        startTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
-                } else if (edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - startTime > 2.0) {
-                        turretMotor.getEncoder().setPosition(getAbsoluteAngle());
-                        turretZeroed = true;                        
+                if (!turretZeroed) {
+                        if (startTime == 0) {
+                                startTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
+                        } else if (edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - startTime > 2.0) {
+                                turretMotor.getEncoder().setPosition(getAbsoluteAngle());
+                                turretZeroed = true;
+                        }
                 }
-            }
         }
 
         @Override

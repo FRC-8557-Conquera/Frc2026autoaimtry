@@ -42,7 +42,7 @@ public class FlywheelSubsystem extends SubsystemBase
   private final TalonFX flywheelMotor    = new TalonFX(Flywheel.flywheelMotor);
   private double setPoint = 0.0; // in RPS
   private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
-      .withClosedLoopController(0.3,0.0, 0.001, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))        // TODO: Change the PID values
+      .withClosedLoopController(0.25,0.0, 0.001, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))        // TODO: Change the PID values
       .withGearing(new MechanismGearing(1))                      
       .withIdleMode(MotorMode.COAST)
       .withTelemetry("FlywheelMotor", TelemetryVerbosity.HIGH)
@@ -124,9 +124,10 @@ public class FlywheelSubsystem extends SubsystemBase
     return flywheel.setSpeed(RotationsPerSecond.of(speed.in(MetersPerSecond) / Flywheel.flywheelDiameter.times(Math.PI).in(Meters)));
   }
 
-  public boolean shouldOtherSystemsStop() {
-    return getVelocity().in(RotationsPerSecond) < getSetpoint()
-        && getSetpoint() - getVelocity().in(RotationsPerSecond) > 0.1;
+  public boolean isAtSpeed() {
+        double velocity = getVelocity().in(RotationsPerSecond);
+    return Math.abs(setPoint - velocity) < 2.0; // tolerans (RPS)
   }
 }
+
 

@@ -29,6 +29,7 @@ import frc.robot.subsystems.spindexer.SpindexerSubsystem;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 import swervelib.SwerveInputStream;
 
+
 public class RobotContainer {
 
   private final Joystick driver = new Joystick(0);
@@ -39,7 +40,7 @@ public class RobotContainer {
 
   private final JoystickButton wowButton = new JoystickButton(driver2, 10);
   private final JoystickButton turretButtonLeft = new JoystickButton(driver2, 8);
-  private final JoystickButton turretButtonRight = new JoystickButton(driver2, 2);
+  private final JoystickButton turretButtonRight = new JoystickButton(driver2, 9);
   private final JoystickButton triggerButton = new JoystickButton(driver2, 1);
 
   private final JoystickButton feederAl = new JoystickButton(driver2, 3);
@@ -53,8 +54,9 @@ public class RobotContainer {
 
   public final SwerveSubsystem s_Swerve = new SwerveSubsystem();
   private final TurretSubsystem turret = new TurretSubsystem();
-  private final FlywheelSubsystem flywheel = new FlywheelSubsystem();
-  private final FeederSubsystem feeder = new FeederSubsystem(flywheel);
+    private final FlywheelSubsystem flywheel = new FlywheelSubsystem();
+  private final FeederSubsystem feeder = new FeederSubsystem();
+
   private final ShooterSubsystem shooter = new ShooterSubsystem(s_Swerve);
   private final SpindexerSubsystem spindexer = new SpindexerSubsystem();
 
@@ -94,18 +96,17 @@ public class RobotContainer {
 
     dumpButton.whileTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.DUMP)));
     dumpButton.whileFalse(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
-
-    Command flywheelRunCommand = Commands.run(() -> flywheel.setVelocity(RotationsPerSecond.of(45)).schedule(), flywheel);
-    Command flywheelStopCommand = Commands.runOnce(() -> flywheel.setVelocity(RotationsPerSecond.of(0)).schedule(), flywheel);
-
-    triggerButton.whileTrue(flywheelRunCommand).onFalse(flywheelStopCommand);
+   
+    triggerButton.whileTrue(
+    Commands.run(() -> { flywheel.setVelocity(RotationsPerSecond.of(50)).schedule();if (flywheel.isAtSpeed()) { feeder.dutyCycleFeed().schedule(); } else {feeder.stop().schedule();   }})).onFalse(
+    Commands.runOnce(() -> {flywheel.setVelocity(RotationsPerSecond.of(0)).schedule(); feeder.stop().schedule();}));
 
     turretButtonLeft.whileTrue(turret.rotateLeft()).onFalse(turret.stop());
     turretButtonRight.whileTrue(turret.rotateRight()).onFalse(turret.stop());
 
     sysIDButton.whileTrue(flywheel.sysId());
 
-    feederAl.whileTrue(Commands.parallel(feeder.dutyCycleFeed(), flywheelRunCommand)).onFalse(Commands.parallel(feeder.stop(), flywheelStopCommand));
+    feederAl.whileTrue(feeder.dutyCycleFeed()).onFalse(feeder.stop());
     feederTers.whileTrue(feeder.dutyCycleReverse()).onFalse(feeder.stop());
 
     spindexerF.whileTrue(spindexer.spinForward()).onFalse(spindexer.stop());
