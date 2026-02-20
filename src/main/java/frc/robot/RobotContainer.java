@@ -29,7 +29,6 @@ import frc.robot.subsystems.spindexer.SpindexerSubsystem;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 import swervelib.SwerveInputStream;
 
-
 public class RobotContainer {
 
   private final Joystick driver = new Joystick(0);
@@ -43,15 +42,14 @@ public class RobotContainer {
   private final JoystickButton turretButtonRight = new JoystickButton(driver2, 2);
   private final JoystickButton triggerButton = new JoystickButton(driver2, 1);
 
-  private final JoystickButton feederAl= new JoystickButton(driver2, 3);
-  private final JoystickButton feederTers= new JoystickButton(driver2, 4);
+  private final JoystickButton feederAl = new JoystickButton(driver2, 3);
+  private final JoystickButton feederTers = new JoystickButton(driver2, 4);
 
   private final JoystickButton spindexerF = new JoystickButton(driver2, 5);
   private final JoystickButton spindexerR = new JoystickButton(driver2, 6);
   private final JoystickButton sysIDButton = new JoystickButton(driver2, 7);
-  JoystickButton hubButton  = new JoystickButton(driver2, 11);
+  JoystickButton hubButton = new JoystickButton(driver2, 11);
   JoystickButton dumpButton = new JoystickButton(driver2, 12);
-  
 
   public final SwerveSubsystem s_Swerve = new SwerveSubsystem();
   private final TurretSubsystem turret = new TurretSubsystem();
@@ -60,11 +58,10 @@ public class RobotContainer {
   private final ShooterSubsystem shooter = new ShooterSubsystem(s_Swerve);
   private final SpindexerSubsystem spindexer = new SpindexerSubsystem();
 
-
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(
-          s_Swerve.getSwerveDrive(),
-          () -> -driver.getY(),
-          () -> -driver.getX())
+      s_Swerve.getSwerveDrive(),
+      () -> -driver.getY(),
+      () -> -driver.getX())
       .withControllerRotationAxis(() -> -Math.pow(driver.getRawAxis(4), 3))
       .deadband(Constants.Swerve.stickDeadband)
       .scaleTranslation(0.8) // YAVASLATMA!!!!
@@ -85,9 +82,9 @@ public class RobotContainer {
     configureButtonBindings();
     m_chooser = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData(m_chooser);
-    
+
     turret.setDefaultCommand(
-    turret.setAngle(() -> shooter.getTurretSetpoint()));
+        turret.setAngle(() -> shooter.getTurretSetpoint()));
   }
 
   private void configureButtonBindings() {
@@ -98,13 +95,7 @@ public class RobotContainer {
     dumpButton.whileTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.DUMP)));
     dumpButton.whileFalse(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
 
-    wowButton.whileTrue(new InstantCommand(() -> {
-      feeder.reverse();
-      flywheel.setVelocity(RotationsPerSecond.of(90));
-      spindexer.spinForward();
-    }));
-
-    triggerButton.whileTrue(flywheel.setVelocity(RotationsPerSecond.of(60))).onFalse(flywheel.setVelocity(RotationsPerSecond.of(0)));
+    triggerButton.whileTrue(Commands.run(() -> flywheel.setVelocity(RotationsPerSecond.of(45)).schedule(), flywheel)).onFalse(Commands.runOnce(() -> flywheel.setVelocity(RotationsPerSecond.of(0)).schedule(), flywheel));
 
     turretButtonLeft.whileTrue(turret.rotateLeft()).onFalse(turret.stop());
     turretButtonRight.whileTrue(turret.rotateRight()).onFalse(turret.stop());

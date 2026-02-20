@@ -20,6 +20,7 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.Supplier;
@@ -34,20 +35,21 @@ import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 import frc.robot.Constants.Flywheel;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 public class FlywheelSubsystem extends SubsystemBase
 {
   private final TalonFX flywheelMotor    = new TalonFX(Flywheel.flywheelMotor);
-
+  private double setPoint = 0.0;
   private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
-      .withClosedLoopController(0.15,0, 0, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))        // TODO: Change the PID values
+      .withClosedLoopController(0.3,0.0, 0.001, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))        // TODO: Change the PID values
       .withGearing(new MechanismGearing(1))                      
       .withIdleMode(MotorMode.BRAKE)
       .withTelemetry("FlywheelMotor", TelemetryVerbosity.HIGH)
-      .withSupplyCurrentLimit(Amps.of(40))
+      .withSupplyCurrentLimit(Amps.of(80))
       .withMotorInverted(false)
-      .withClosedLoopRampRate(Seconds.of(0.25))
-      .withOpenLoopRampRate(Seconds.of(0.25))   
+      .withClosedLoopRampRate(Seconds.of(0))
+      .withOpenLoopRampRate(Seconds.of(0))   
       .withFeedforward(new SimpleMotorFeedforward(0.31148, 0.12197, 0.0057185))
       .withControlMode(ControlMode.CLOSED_LOOP);
 
@@ -65,19 +67,15 @@ public class FlywheelSubsystem extends SubsystemBase
 
   public FlywheelSubsystem() {}
 
-  public void deneme(){
-    flywheel.set(-1);
-  }
-  public void denemeStop() {
-    flywheel.set(0);
-  }
+
   public AngularVelocity getVelocity()
   {
     return flywheel.getSpeed();
   }
 
-  public Command setVelocity(AngularVelocity speed)
+    public Command setVelocity(AngularVelocity speed)
   {
+    setPoint = speed.in(RotationsPerSecond);
     return flywheel.setSpeed(speed);
   }
 
@@ -88,7 +86,11 @@ public class FlywheelSubsystem extends SubsystemBase
 
   public Command setVelocity(Supplier<AngularVelocity> speed)
   {
-    return flywheel.setSpeed(speed);
+    return flywheel.setSpeed(() -> {
+      AngularVelocity s = speed.get();
+      setPoint = s.in(RotationsPerSecond);   // ⭐ yine kaydet
+      return s;
+    });
   }
 
   public Command setDutyCycle(Supplier<Double> dutyCycle)
@@ -104,6 +106,11 @@ public class FlywheelSubsystem extends SubsystemBase
   @Override
   public void periodic()
   {
+    double velocityRPS = getVelocity().in(RotationsPerSecond);
+    double error = setPoint - velocityRPS;
+    SmartDashboard.putNumber("Flywheel/Velocity", velocityRPS);
+    SmartDashboard.putNumber("Flywheel/Setpoint", setPoint);
+    SmartDashboard.putNumber("Flywheel/Error", error);
     flywheel.updateTelemetry();
   }
 
