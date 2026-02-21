@@ -12,6 +12,7 @@ import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.google.flatbuffers.Constants;
 import com.revrobotics.spark.SparkMax;
@@ -42,15 +43,15 @@ public class FlywheelSubsystem extends SubsystemBase
   private final TalonFX flywheelMotor    = new TalonFX(Flywheel.flywheelMotor);
   private double setPoint = 0.0; // in RPS
   private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
-      .withClosedLoopController(0.25,0.0, 0.001, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))        // TODO: Change the PID values
+      .withClosedLoopController(0.2,0.0, 0.005, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))        // TODO: Change the PID values
       .withGearing(new MechanismGearing(1))                      
-      .withIdleMode(MotorMode.COAST)
+      .withIdleMode(MotorMode.BRAKE)
       .withTelemetry("FlywheelMotor", TelemetryVerbosity.HIGH)
       .withSupplyCurrentLimit(Amps.of(80))
       .withMotorInverted(false)
       .withClosedLoopRampRate(Seconds.of(0))
       .withOpenLoopRampRate(Seconds.of(0))   
-      .withFeedforward(new SimpleMotorFeedforward(0.31148, 0.12197, 0.0057185))
+      .withFeedforward(new SimpleMotorFeedforward(0.42049, 0.11603, 0.0090764))
       .withControlMode(ControlMode.CLOSED_LOOP);
 
 
@@ -101,6 +102,7 @@ public class FlywheelSubsystem extends SubsystemBase
   public Command sysId()
   {
     return flywheel.sysId(Volts.of(10), Volts.of(1).per(Second), Seconds.of(5));
+    
   }
 
   @Override
