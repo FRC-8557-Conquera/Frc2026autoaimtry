@@ -19,8 +19,23 @@ import frc.robot.Constants.Feeder;
 
 public class FeederSubsystem extends SubsystemBase {
 
-  private final SparkMax feederMotor = new SparkMax(Feeder.feederMotor, MotorType.kBrushless);
-  private final SparkClosedLoopController sparkClosedLoopController = feederMotor.getClosedLoopController();
+  private final SparkMax feederMotor = new SparkMax(Constants.Feeder.feederMotor, MotorType.kBrushless);
+  private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
+                  .withClosedLoopController(0.01, 0.0, 0.0002, DegreesPerSecond.of(90),
+                                  DegreesPerSecondPerSecond.of(70)) // TODO: Change the PID values
+                  .withGearing(new MechanismGearing(4))
+                  .withIdleMode(MotorMode.BRAKE)
+                  .withTelemetry("FeederMotor", TelemetryVerbosity.HIGH)
+                  .withStatorCurrentLimit(Amps.of(40))
+                  .withMotorInverted(true)
+                  .withClosedLoopRampRate(Seconds.of(0))
+                  .withOpenLoopRampRate(Seconds.of(0))
+                  .withFeedforward(new SimpleMotorFeedforward(0, 0, 0, 0.02))
+                  .withControlMode(ControlMode.CLOSED_LOOP);
+
+  private final SmartMotorController feederSMC = new SparkWrapper(feederMotor,
+                  DCMotor.getNEO(1),
+                  motorConfig);
 
   public FeederSubsystem() {
     SparkMaxConfig config = new SparkMaxConfig();
@@ -31,7 +46,6 @@ public class FeederSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-        SmartDashboard.putNumber("Feeder Encoder", getVelocity());
   }
 
   public Command dutyCycleFeed() {
@@ -43,7 +57,7 @@ public class FeederSubsystem extends SubsystemBase {
   }
   // run forward
   public Command feed() {
-    return run(() -> sparkClosedLoopController.setSetpoint(Feeder.feedSpeed * Feeder.feederMaxSpeed.in(RPM), ControlType.kVelocity));
+    return run(() -> {});
   }
 
   // reverse
