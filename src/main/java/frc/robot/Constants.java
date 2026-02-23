@@ -162,8 +162,8 @@ public final class Constants {
 
     /* ===================== FIELD ===================== */
   public static final class fieldConstants{
-    public static final Pose2d BLUE_HUB_POSE =new Pose2d(4.6, 4.05, new Rotation2d());
-    public static final Pose2d RED_HUB_POSE =  new Pose2d(11.9,4.05,new Rotation2d());
+    public static final Pose2d BLUE_HUB_POSE =new Pose2d(4.6, 4.04, new Rotation2d());
+    public static final Pose2d RED_HUB_POSE =  new Pose2d(11.9,4.04,new Rotation2d());
   }
 
 }

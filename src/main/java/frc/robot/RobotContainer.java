@@ -108,7 +108,7 @@ public class RobotContainer {
 
     turretButtonLeft.whileTrue(turret.rotateDutyCycle(0.1)).onFalse(turret.stop());
     turretButtonRight.whileTrue(turret.rotateDutyCycle(-0.1)).onFalse(turret.stop());
-    turretZero.onTrue(turret.setAngle(Degrees.of(30))).onFalse(turret.stop());
+    turretZero.onTrue(turret.setAngle(Degrees.of(0))).onFalse(turret.stop());
 
     sysIDButton.whileTrue(flywheel.sysId());
     turretSysID.whileTrue(turret.sysId());
