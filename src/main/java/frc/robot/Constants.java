@@ -125,17 +125,16 @@ public final class Constants {
     public static final IdleMode idleMode = IdleMode.kBrake;
     public static final boolean inverted = false;
 
-    public static final double feedSpeed = -0.7;
-    public static final double reverseSpeed = 0.7;
+    public static final double feedSpeed = -1;
+    public static final double reverseSpeed = 1;
 
-    public static final AngularVelocity feederMaxSpeed = RPM.of(5000);
   }
 
   /* ===================== TURRET ===================== */
   public static final class Turret {
     public static final int turretMotor = 41;
-    public static final int encoderPort = 0; // EXAMPLE CHANGE THIS VALUE
-    public static final double encoderOffsetDeg = 123.4; // EXAMPLE CHANGE THIS VALUE
+    public static final int encoderPort = 5; 
+    public static final double encoderOffset = 0.2507; 
   }
 
   /* ===================== FLYWHEEL ===================== */

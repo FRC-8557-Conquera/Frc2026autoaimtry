@@ -6,6 +6,8 @@ import static edu.wpi.first.units.Units.DegreesPerSecond;
 import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Pounds;
+import static edu.wpi.first.units.Units.Rotation;
+import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
@@ -22,6 +24,7 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
@@ -37,6 +40,7 @@ import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.local.SparkWrapper;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class TurretSubsystem extends SubsystemBase {
         private boolean turretZeroed = false;
@@ -45,30 +49,28 @@ public class TurretSubsystem extends SubsystemBase {
 
         private final SparkMax turretMotor = new SparkMax(Constants.Turret.turretMotor, MotorType.kBrushless);
         private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
-                        .withClosedLoopController(0.01, 0.0, 0.0002, DegreesPerSecond.of(90),
+                        .withClosedLoopController(3, 0.0, 0.0002, DegreesPerSecond.of(90),
                                         DegreesPerSecondPerSecond.of(70)) // TODO: Change the PID values
                         .withGearing(new MechanismGearing(16))
                         .withIdleMode(MotorMode.BRAKE)
                         .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
-                        .withStatorCurrentLimit(Amps.of(40))
+                        .withStatorCurrentLimit(Amps.of(60))
                         .withMotorInverted(true)
-                        .withClosedLoopRampRate(Seconds.of(0.25))
-                        .withOpenLoopRampRate(Seconds.of(0.25))
-                        .withFeedforward(new SimpleMotorFeedforward(0, 0, 0, 0.02))
+                        .withClosedLoopRampRate(Seconds.of(0))
+                        .withOpenLoopRampRate(Seconds.of(0))
+                        .withFeedforward(new SimpleMotorFeedforward(0, 0, 0))
+                        .withSoftLimit(Rotations.of(-0.5), Rotations.of(0.5))
                         .withControlMode(ControlMode.CLOSED_LOOP);
 
         private final SmartMotorController turretSMC = new SparkWrapper(turretMotor,
                         DCMotor.getNEO(1),
                         motorConfig);
         private final PivotConfig turretConfig = new PivotConfig(turretSMC)
-                      //  .withStartingPosition(Degrees.of(Constants.Turret.encoderOffsetDeg)) // Starting position of the
-                        //.withWrapping(Degrees.of(-180), Degrees.of(180)) // Wrap around at -180 and 180 degrees
                         .withTelemetry("TurretMech", TelemetryVerbosity.HIGH); // Telemetry
 
         private final Pivot turret = new Pivot(turretConfig);
 
         public TurretSubsystem() {
-                turretMotor.getEncoder().setPosition(getAbsoluteAngle());
                // setDefaultCommand(turret.setAngle(() -> targetAngle));
         }
 
@@ -79,7 +81,9 @@ public class TurretSubsystem extends SubsystemBase {
         public Command setAngle(Supplier<Angle> angleSupplier) {
                 return turret.setAngle(angleSupplier);
         }
-
+        public void setAngleDirect(Angle angle){
+                turretSMC.setPosition(angle);
+        }
         public Angle getAngle() {
                 return turret.getAngle();
         }
@@ -95,11 +99,7 @@ public class TurretSubsystem extends SubsystemBase {
         }
 
         private double getAbsoluteAngle() {
-                double raw = ((turretThroughBoreEncoder.get())) * 360.0 - Constants.Turret.encoderOffsetDeg;
-                if (raw > 180)
-                        raw -= 360;
-                if (raw < -180)
-                        raw += 360;
+                double raw = ((turretThroughBoreEncoder.get() - Constants.Turret.encoderOffset) % 1 + 0.5) % 1 - 0.5;
                 return raw;
         }
 
@@ -110,12 +110,8 @@ public class TurretSubsystem extends SubsystemBase {
                                 Seconds.of(8.0)); // duration
         }
 
-        public Command rotateLeft() {
-                return run(() -> turretSMC.setDutyCycle(-0.2));
-        }
-
-        public Command rotateRight() {
-                return run(() -> turretSMC.setDutyCycle(0.2));
+        public Command rotateDutyCycle(double dutyCycle) {
+                return run(() -> turretSMC.setDutyCycle(dutyCycle));
         }
 
         public Command stop() {
@@ -125,12 +121,16 @@ public class TurretSubsystem extends SubsystemBase {
         @Override
         public void periodic() {
                 turret.updateTelemetry();
+                SmartDashboard.putNumber("TurretEncoder", turretThroughBoreEncoder.get());
+                SmartDashboard.putNumber("TurretRaw", getAbsoluteAngle());
+                SmartDashboard.putNumber("TurretRelative", turret.getAngle().in(Rotations));
+                SmartDashboard.putBoolean("TurretConnected", turretThroughBoreEncoder.isConnected());
 
                 if (!turretZeroed) {
                         if (startTime == 0) {
                                 startTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
                         } else if (edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - startTime > 2.0) {
-                                turretMotor.getEncoder().setPosition(getAbsoluteAngle());
+                                turretMotor.getEncoder().setPosition(getAbsoluteAngle() / 4);
                                 turretZeroed = true;
                         }
                 }

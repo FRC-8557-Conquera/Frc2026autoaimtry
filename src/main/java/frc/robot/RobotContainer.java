@@ -4,11 +4,15 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
+
+import org.dyn4j.dynamics.joint.AngleJoint;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -38,8 +42,10 @@ public class RobotContainer {
   private final JoystickButton zeroGyro = new JoystickButton(driver, 3);
   private final JoystickButton xLock = new JoystickButton(driver, 6);
 
-  private final JoystickButton wowButton = new JoystickButton(driver2, 10);
-  private final JoystickButton turretButtonLeft = new JoystickButton(driver2, 8);
+  private final JoystickButton turretSysID = new JoystickButton(driver2, 10);
+    private final JoystickButton turretZero = new JoystickButton(driver2,2);
+
+  private final JoystickButton turretButtonLeft = new JoystickButton(driver2,8);
   private final JoystickButton turretButtonRight = new JoystickButton(driver2, 9);
   private final JoystickButton triggerButton = new JoystickButton(driver2, 1);
 
@@ -85,8 +91,7 @@ public class RobotContainer {
     m_chooser = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData(m_chooser);
 
-    turret.setDefaultCommand(
-        turret.setAngle(() -> shooter.getTurretSetpoint()));
+    //turret.setDefaultCommand(turret.setAngle(() -> shooter.getTurretSetpoint()));
   }
 
   private void configureButtonBindings() {
@@ -98,16 +103,18 @@ public class RobotContainer {
     dumpButton.whileFalse(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
    
     triggerButton.whileTrue(
-    Commands.run(() -> { flywheel.setVelocity(RotationsPerSecond.of(40)).schedule();feeder.dutyCycleFeed().schedule();})).onFalse(
+    Commands.run(() -> { flywheel.setVelocity(RotationsPerSecond.of(40)).schedule();feeder.feed().schedule();})).onFalse(
     Commands.runOnce(() -> {flywheel.setVelocity(RotationsPerSecond.of(0)).schedule(); feeder.stop().schedule();}));
 
-    turretButtonLeft.whileTrue(turret.rotateLeft()).onFalse(turret.stop());
-    turretButtonRight.whileTrue(turret.rotateRight()).onFalse(turret.stop());
+    turretButtonLeft.whileTrue(turret.rotateDutyCycle(0.1)).onFalse(turret.stop());
+    turretButtonRight.whileTrue(turret.rotateDutyCycle(-0.1)).onFalse(turret.stop());
+    turretZero.onTrue(turret.setAngle(Degrees.of(30))).onFalse(turret.stop());
 
     sysIDButton.whileTrue(flywheel.sysId());
+    turretSysID.whileTrue(turret.sysId());
 
-    feederAl.whileTrue(feeder.dutyCycleFeed()).onFalse(feeder.stop());
-    feederTers.whileTrue(feeder.dutyCycleReverse()).onFalse(feeder.stop());
+    feederAl.whileTrue(feeder.feed()).onFalse(feeder.stop());
+    feederTers.whileTrue(feeder.reverse()).onFalse(feeder.stop());
 
     spindexerF.whileTrue(spindexer.spinForward()).onFalse(spindexer.stop());
     spindexerR.whileTrue(spindexer.spinReverse()).onFalse(spindexer.stop());

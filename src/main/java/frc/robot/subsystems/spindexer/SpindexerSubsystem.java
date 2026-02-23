@@ -20,6 +20,7 @@ public class SpindexerSubsystem extends SubsystemBase {
     config.idleMode(IdleMode.kBrake).inverted(false).smartCurrentLimit(60);
     spindexerMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
   }
+  
 
   public Command spinForward() {
     return run(() -> spindexerMotor.set(Spindexer.feedSpeed));
