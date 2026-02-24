@@ -134,7 +134,8 @@ public final class Constants {
   public static final class Turret {
     public static final int turretMotor = 41;
     public static final int encoderPort = 5; 
-    public static final double encoderOffset = 0.2507; 
+    public static final double encoderOffset = 0.470; 
+    public static final double turretDist = -0.141;
   }
 
   /* ===================== FLYWHEEL ===================== */

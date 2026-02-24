@@ -273,7 +273,7 @@ public void periodic() {
         Pose2d usefulPose     = poseEstimate.pose.toPose2d();
         double distanceToPose = usefulPose.getTranslation().getDistance(swerveDrive.getPose().getTranslation());
 
-        if (poseEstimate.tagCount > 0 && distanceToPose < 1.5 && poseEstimate.getAvgTagAmbiguity() < 0.3)
+        if (poseEstimate.tagCount > 0 && poseEstimate.getAvgTagAmbiguity() < 0.3)
         {
           swerveDrive.addVisionMeasurement(usefulPose, poseEstimate.timestampSeconds);
         } 

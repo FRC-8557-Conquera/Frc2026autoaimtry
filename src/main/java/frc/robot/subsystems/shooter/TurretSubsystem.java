@@ -1,6 +1,7 @@
 package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Degree;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.DegreesPerSecond;
 import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
@@ -8,6 +9,8 @@ import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.Rotation;
 import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
+import static edu.wpi.first.units.Units.RotationsPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
@@ -58,6 +61,7 @@ public class TurretSubsystem extends SubsystemBase {
                         .withMotorInverted(true)
                         .withClosedLoopRampRate(Seconds.of(0))
                         .withOpenLoopRampRate(Seconds.of(0))
+                        .withSoftLimit(Rotations.of(-0.5), Rotations.of(0.5))
                         .withFeedforward(new SimpleMotorFeedforward(0, 0, 0))
                         .withControlMode(ControlMode.CLOSED_LOOP);
 
@@ -73,15 +77,15 @@ public class TurretSubsystem extends SubsystemBase {
         private final Pivot turret = new Pivot(turretConfig);
 
         public TurretSubsystem() {
-               // setDefaultCommand(turret.setAngle(() -> targetAngle));
+        
         }
 
         public Command setAngle(Angle angle) {
-                return turret.setAngle(angle);
+                return turret.setAngle(angle.plus(Rotations.of(0.25)));
         }
 
         public Command setAngle(Supplier<Angle> angleSupplier) {
-                return turret.setAngle(angleSupplier);
+                return turret.setAngle(() -> angleSupplier.get().plus(Rotations.of(0.25)));
         }
         public void setAngleDirect(Angle angle){
                 turretSMC.setPosition(angle);
@@ -127,6 +131,7 @@ public class TurretSubsystem extends SubsystemBase {
                 SmartDashboard.putNumber("TurretRaw", getAbsoluteAngle());
                 SmartDashboard.putNumber("TurretRelative", turret.getAngle().in(Rotations));
                 SmartDashboard.putBoolean("TurretConnected", turretThroughBoreEncoder.isConnected());
+                SmartDashboard.putNumber("TurretAngle", turret.getMechanismSetpoint().isPresent() ? turret.getMechanismSetpoint().get().in(Degrees) : 0);
 
 
                 if (!turretZeroed) {

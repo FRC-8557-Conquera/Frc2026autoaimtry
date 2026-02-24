@@ -6,6 +6,7 @@ import com.pathplanner.lib.util.GeometryUtil;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -14,12 +15,15 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 import frc.robot.Constants.fieldConstants;
+import frc.robot.Constants;
 import frc.robot.Constants.Shooter;
+import frc.robot.Constants.Turret;
 
 public class ShooterSubsystem {
 
     private final SwerveSubsystem swerve;
     private ShotIntent intent = ShotIntent.OFF;
+    public TurretSubsystem turret = new TurretSubsystem();
 
     private Pose2d getHubPose() {
     var alliance = DriverStation.getAlliance();
@@ -59,20 +63,26 @@ public class ShooterSubsystem {
 
     public Angle getTurretSetpoint() {
         if (intent == ShotIntent.HUB) {
-            Pose2d pose = swerve.getPose();
+            Pose2d robotPose = swerve.getPose();
+            Pose2d rotationPose = new Pose2d(
+                robotPose.getRotation().getCos(),
+                robotPose.getRotation().getSin(),
+                Rotation2d.kZero
+            );
+            Pose2d turretPose = new Pose2d(robotPose.minus(rotationPose.times(-Turret.turretDist)).toMatrix());
             Rotation2d fieldAngle =
                 getHubPose().getTranslation()
-                    .minus(pose.getTranslation())
+                    .minus(turretPose.getTranslation())
                     .getAngle();
 
             return Degrees.of(
-                fieldAngle.minus(pose.getRotation()).getDegrees()
+                fieldAngle.minus(robotPose.getRotation()).getDegrees()
             );
         }
         if (intent == ShotIntent.DUMP) {
             return Degrees.of(0); 
         }
-        return Degrees.of(0); 
+        return Degrees.of(-90); 
     }
 
     public AngularVelocity getFlywheelSetpoint() {
