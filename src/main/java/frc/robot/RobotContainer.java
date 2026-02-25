@@ -59,12 +59,12 @@ public class RobotContainer {
   JoystickButton dumpButton = new JoystickButton(driver2, 12);
 
   public final SwerveSubsystem s_Swerve = new SwerveSubsystem();
-    private final FlywheelSubsystem flywheel = new FlywheelSubsystem();
   private final FeederSubsystem feeder = new FeederSubsystem();
 
   private final ShooterSubsystem shooter = new ShooterSubsystem(s_Swerve);
   
   private final TurretSubsystem turret = shooter.turret;
+  private final FlywheelSubsystem flywheel = shooter.flywheel;
   private final SpindexerSubsystem spindexer = new SpindexerSubsystem();
 
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(
@@ -106,7 +106,7 @@ public class RobotContainer {
 
     turretButtonLeft.whileTrue(turret.rotateDutyCycle(0.1)).onFalse(turret.stop());
     turretButtonRight.whileTrue(turret.rotateDutyCycle(-0.1)).onFalse(turret.stop());
-    turretZero.onTrue(turret.setAngle(Degrees.of(0))).onFalse(turret.stop());
+    turretZero.onTrue(turret.setAngle(Degrees.of(90))).onFalse(turret.stop());
 
     sysIDButton.whileTrue(flywheel.sysId());
     turretSysID.whileTrue(turret.sysId());

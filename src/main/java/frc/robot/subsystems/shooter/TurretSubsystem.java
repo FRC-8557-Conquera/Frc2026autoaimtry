@@ -7,6 +7,7 @@ import static edu.wpi.first.units.Units.DegreesPerSecond;
 import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Pounds;
+import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Rotation;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
@@ -53,14 +54,14 @@ public class TurretSubsystem extends SubsystemBase {
 
         private final SparkMax turretMotor = new SparkMax(Constants.Turret.turretMotor, MotorType.kBrushless);
         private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
-                        .withClosedLoopController(3, 0.0, 0.0002) // TODO: Change the PID values
+                        .withClosedLoopController(1.5, 0, 0)// TODO: Change the PID values
                         .withGearing(new MechanismGearing(16))
                         .withIdleMode(MotorMode.BRAKE)
                         .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
                         .withStatorCurrentLimit(Amps.of(60))
                         .withMotorInverted(true)
-                        .withClosedLoopRampRate(Seconds.of(0))
-                        .withOpenLoopRampRate(Seconds.of(0))
+                        .withClosedLoopRampRate(Seconds.of(0.25))
+                        .withOpenLoopRampRate(Seconds.of(0.25))
                         .withSoftLimit(Rotations.of(-0.5), Rotations.of(0.5))
                         .withFeedforward(new SimpleMotorFeedforward(0, 0, 0))
                         .withControlMode(ControlMode.CLOSED_LOOP);
@@ -71,7 +72,6 @@ public class TurretSubsystem extends SubsystemBase {
         private final PivotConfig turretConfig = new PivotConfig(turretSMC)
                         .withMOI(Meters.of(0.24), Pounds.of(2))
                         .withStartingPosition(Rotations.of(0))
-                        .withHardLimit(Rotations.of(-0.6), Rotations.of(0.6))
                         .withTelemetry("TurretMech", TelemetryVerbosity.HIGH); // Telemetry
 
         private final Pivot turret = new Pivot(turretConfig);
@@ -81,11 +81,11 @@ public class TurretSubsystem extends SubsystemBase {
         }
 
         public Command setAngle(Angle angle) {
-                return turret.setAngle(angle.plus(Rotations.of(0.25)));
+                return turret.setAngle(angle.minus(Rotations.of(0.25)));
         }
 
         public Command setAngle(Supplier<Angle> angleSupplier) {
-                return turret.setAngle(() -> angleSupplier.get().plus(Rotations.of(0.25)));
+                return turret.setAngle(() -> angleSupplier.get().minus(Rotations.of(0.25)));
         }
         public void setAngleDirect(Angle angle){
                 turretSMC.setPosition(angle);
@@ -111,7 +111,7 @@ public class TurretSubsystem extends SubsystemBase {
 
         public Command sysId() {
                 return turret.sysId(
-                                Volts.of(4.0), // maximumVoltage
+                                Volts.of(7.0), // maximumVoltage
                                 Volts.per(Second).of(0.5), // step
                                 Seconds.of(8.0)); // duration
         }
