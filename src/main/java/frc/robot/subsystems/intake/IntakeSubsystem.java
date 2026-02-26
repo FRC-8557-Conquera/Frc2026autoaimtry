@@ -2,14 +2,10 @@ package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.*;
 
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.TalonFX;
-
-import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.config.SparkMaxConfig;
-import com.revrobotics.spark.SparkBase.ResetMode;
-import com.revrobotics.spark.SparkBase.PersistMode;
-import com.revrobotics.spark.config.SparkBaseConfig;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.measure.Angle;
@@ -32,14 +28,14 @@ public class IntakeSubsystem extends SubsystemBase {
       new DutyCycleEncoder(Intake.intakeRightEncoderPort);
 
   public IntakeSubsystem() {
-    /* SparkMaxConfig config = new SparkMaxConfig();
-    config.idleMode(SparkBaseConfig.IdleMode.kBrake).smartCurrentLimit(30);
-    leftMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+    TalonFXConfiguration armConfig = new TalonFXConfiguration();
+    armConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+    armConfig.CurrentLimits.StatorCurrentLimit = 30;
+    armConfig.CurrentLimits.StatorCurrentLimitEnable = true;
 
-    SparkMaxConfig follow = new SparkMaxConfig();
-    follow.follow(leftMotor, true);
-    rightMotor.configure(follow, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters); */
-    // TODO: Configure intake motors
+    leftMotor.getConfigurator().apply(armConfig);
+    rightMotor.getConfigurator().apply(armConfig);
+    rightMotor.setControl(new Follower(leftMotor.getDeviceID(), true));
   }
   public Angle getAngle() {
     double leftDeg  = leftEncoder.get()  * 360.0 - Intake.intakeLeftEncoderOffsetDeg;
