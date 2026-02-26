@@ -41,7 +41,7 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 public class FlywheelSubsystem extends SubsystemBase
 {
-  private final TalonFX flywheelMotor    = new TalonFX(Flywheel.flywheelMotor);
+  private final TalonFX flywheelMotor    = new TalonFX(Flywheel.flywheelMotor, "*");
   private double setPoint = 0.0; // in RPS
   private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
       .withClosedLoopController(0.2,0.0, 0.005, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))        // TODO: Change the PID values
