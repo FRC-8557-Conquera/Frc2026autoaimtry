@@ -21,9 +21,9 @@ import frc.robot.Constants.Intake;
 
 public class IntakeSubsystem extends SubsystemBase {
 
-  private final SparkMax leftMotor = new SparkMax(Intake.intakeLeft, MotorType.kBrushless);
-  private final SparkMax rightMotor = new SparkMax(Intake.intakeRight, MotorType.kBrushless);
-  private final TalonFX roller = new TalonFX(Intake.intakeRoller);
+  private final TalonFX leftMotor = new TalonFX(Intake.intakeLeft, "*");
+  private final TalonFX rightMotor = new TalonFX(Intake.intakeRight, "*");
+  private final TalonFX roller = new TalonFX(Intake.intakeRoller, "*");
 
 
   private final DutyCycleEncoder leftEncoder =
@@ -32,14 +32,14 @@ public class IntakeSubsystem extends SubsystemBase {
       new DutyCycleEncoder(Intake.intakeRightEncoderPort);
 
   public IntakeSubsystem() {
-    SparkMaxConfig config = new SparkMaxConfig();
+    /* SparkMaxConfig config = new SparkMaxConfig();
     config.idleMode(SparkBaseConfig.IdleMode.kBrake).smartCurrentLimit(30);
     leftMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
     SparkMaxConfig follow = new SparkMaxConfig();
     follow.follow(leftMotor, true);
-    rightMotor.configure(follow, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters);
-  
+    rightMotor.configure(follow, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters); */
+    // TODO: Configure intake motors
   }
   public Angle getAngle() {
     double leftDeg  = leftEncoder.get()  * 360.0 - Intake.intakeLeftEncoderOffsetDeg;
