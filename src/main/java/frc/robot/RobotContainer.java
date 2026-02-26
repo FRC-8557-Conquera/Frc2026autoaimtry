@@ -102,7 +102,7 @@ public class RobotContainer {
     dumpButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
    
     triggerButton.whileTrue(
-    Commands.run(() -> { flywheel.setVelocity(RotationsPerSecond.of(40)).schedule();feeder.feed().schedule();})).onFalse(
+    Commands.run(() -> { shooter.debugShoot().schedule(); feeder.feed().schedule();})).onFalse(
     Commands.runOnce(() -> {flywheel.setVelocity(RotationsPerSecond.of(0)).schedule(); feeder.stop().schedule();}));
 
     turretButtonLeft.whileTrue(turret.rotateDutyCycle(0.05)).onFalse(turret.stop());
