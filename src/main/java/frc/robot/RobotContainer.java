@@ -93,6 +93,7 @@ public class RobotContainer {
     SmartDashboard.putData(m_chooser);
 
     turret.setDefaultCommand(turret.setAngle(() -> shooter.getTurretSetpoint()));
+    s_Swerve.zeroGyroWithAlliance();
   }
 
   private void configureButtonBindings() {
@@ -104,12 +105,11 @@ public class RobotContainer {
     Commands.run(() -> { flywheel.setVelocity(RotationsPerSecond.of(40)).schedule();feeder.feed().schedule();})).onFalse(
     Commands.runOnce(() -> {flywheel.setVelocity(RotationsPerSecond.of(0)).schedule(); feeder.stop().schedule();}));
 
-    turretButtonLeft.whileTrue(turret.rotateDutyCycle(0.1)).onFalse(turret.stop());
-    turretButtonRight.whileTrue(turret.rotateDutyCycle(-0.1)).onFalse(turret.stop());
-    turretZero.onTrue(turret.setAngle(Degrees.of(90))).onFalse(turret.stop());
+    turretButtonLeft.whileTrue(turret.rotateDutyCycle(0.05)).onFalse(turret.stop());
+    turretButtonRight.whileTrue(turret.rotateDutyCycle(-0.05)).onFalse(turret.stop());
+    turretZero.onTrue(turret.setAngle(Degrees.of(0))).onFalse(turret.stop());
 
     sysIDButton.whileTrue(flywheel.sysId());
-    turretSysID.whileTrue(turret.sysId());
 
     feederAl.whileTrue(feeder.feed()).onFalse(feeder.stop());
     feederTers.whileTrue(feeder.reverse()).onFalse(feeder.stop());

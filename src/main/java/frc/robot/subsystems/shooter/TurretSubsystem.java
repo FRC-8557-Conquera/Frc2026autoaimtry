@@ -24,6 +24,7 @@ import com.ctre.phoenix6.hardware.TalonFXS;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -63,7 +64,6 @@ public class TurretSubsystem extends SubsystemBase {
                         .withClosedLoopRampRate(Seconds.of(0.25))
                         .withOpenLoopRampRate(Seconds.of(0.25))
                         .withSoftLimit(Rotations.of(-0.5), Rotations.of(0.5))
-                        .withFeedforward(new SimpleMotorFeedforward(0, 0, 0))
                         .withControlMode(ControlMode.CLOSED_LOOP);
 
         private final SmartMotorController turretSMC = new SparkWrapper(turretMotor,
@@ -73,6 +73,7 @@ public class TurretSubsystem extends SubsystemBase {
                         .withMOI(Meters.of(0.24), Pounds.of(2))
                         .withStartingPosition(Rotations.of(0))
                         .withTelemetry("TurretMech", TelemetryVerbosity.HIGH); // Telemetry
+                        
 
         private final Pivot turret = new Pivot(turretConfig);
 
@@ -81,11 +82,14 @@ public class TurretSubsystem extends SubsystemBase {
         }
 
         public Command setAngle(Angle angle) {
-                return turret.setAngle(angle.minus(Rotations.of(0.25)));
+                Angle offsetAngle = angle.minus(Rotations.of(0.25));
+                Angle wrapped = Rotations.of(MathUtil.inputModulus(offsetAngle.in(Rotations), -0.5, 0.5));
+                return turret.setAngle(wrapped);
         }
 
         public Command setAngle(Supplier<Angle> angleSupplier) {
-                return turret.setAngle(() -> angleSupplier.get().minus(Rotations.of(0.25)));
+                Supplier<Angle> wrapped = () -> Rotations.of(MathUtil.inputModulus(angleSupplier.get().minus(Rotations.of(0.25)).in(Rotations), -0.5, 0.5));
+                return turret.setAngle(wrapped);
         }
         public void setAngleDirect(Angle angle){
                 turretSMC.setPosition(angle);
@@ -109,12 +113,6 @@ public class TurretSubsystem extends SubsystemBase {
                 return raw;
         }
 
-        public Command sysId() {
-                return turret.sysId(
-                                Volts.of(7.0), // maximumVoltage
-                                Volts.per(Second).of(0.5), // step
-                                Seconds.of(8.0)); // duration
-        }
 
         public Command rotateDutyCycle(double dutyCycle) {
                 return run(() -> turretSMC.setDutyCycle(dutyCycle));
