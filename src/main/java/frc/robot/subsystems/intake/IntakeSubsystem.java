@@ -2,9 +2,11 @@ package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.*;
 
+import com.ctre.phoenix.motorcontrol.FollowerType;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.MathUtil;
@@ -23,7 +25,6 @@ public class IntakeSubsystem extends SubsystemBase {
 
   private IntakePosition position = IntakePosition.UP;
 
-
   private final DutyCycleEncoder leftEncoder =
       new DutyCycleEncoder(Intake.intakeLeftEncoderPort);
   private final DutyCycleEncoder rightEncoder =
@@ -32,12 +33,12 @@ public class IntakeSubsystem extends SubsystemBase {
   public IntakeSubsystem() {
     TalonFXConfiguration armConfig = new TalonFXConfiguration();
     armConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-    armConfig.CurrentLimits.StatorCurrentLimit = 30;
+    armConfig.CurrentLimits.StatorCurrentLimit = 40;
     armConfig.CurrentLimits.StatorCurrentLimitEnable = true;
 
     leftMotor.getConfigurator().apply(armConfig);
     rightMotor.getConfigurator().apply(armConfig);
-    rightMotor.setControl(new Follower(leftMotor.getDeviceID(), true));
+    rightMotor.setControl(new Follower(leftMotor.getDeviceID(), MotorAlignmentValue.Aligned));
   }
   public Angle getAngle() {
     double leftDeg  = leftEncoder.get()  * 360.0 - Intake.intakeLeftEncoderOffsetDeg;
@@ -55,10 +56,6 @@ public class IntakeSubsystem extends SubsystemBase {
     return runOnce(() -> position = IntakePosition.DOWN);
   }
 
-  public Command halfopen() {
-    return runOnce(() -> position = IntakePosition.HALF);
-  }
-
   public Command rollerIn() {
     return run(() -> roller.set(Intake.rollerInSpeed));
   }
@@ -71,7 +68,6 @@ public class IntakeSubsystem extends SubsystemBase {
     return run(() -> roller.set(0));
   }
 
- 
   @Override
   public void periodic() {
     double current = getAngle().in(Degrees);
@@ -88,5 +84,11 @@ public class IntakeSubsystem extends SubsystemBase {
 
     leftMotor.set(output);
   }
+  public enum IntakePosition {
+    UP,
+    DOWN,
+    HALF
+} 
 }
+
 

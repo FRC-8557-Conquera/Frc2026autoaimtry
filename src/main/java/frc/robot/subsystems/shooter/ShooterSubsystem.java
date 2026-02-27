@@ -146,8 +146,11 @@ public class ShooterSubsystem extends SubsystemBase {
    public LinearVelocity getBaseExitVelocity(double distance) {
     double rps = flywheelMap.get(distance) + Shooter.flywheelOffsetRPS;
     return MetersPerSecond.of(rps);
-    }
-
 }
-
-
+    
+public enum ShotIntent {
+    HUB,
+    DUMP,
+    OFF
+}
+}

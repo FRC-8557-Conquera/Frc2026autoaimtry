@@ -94,16 +94,16 @@ public final class Constants {
 
     public static final Angle MIN_ANGLE = Angle.ofBaseUnits(-20, Degrees);                        //TODO: Change this value
     public static final Angle MAX_ANGLE = Angle.ofBaseUnits(100, Degrees);      //TODO: Change this value
-    
-    public static final double intakeLeftEncoderOffsetDeg = 123.4; // EXAMPLE CHANGE THIS VALUE
-    public static final double intakeRightEncoderOffsetDeg = 123.4; // EXAMPLE CHANGE THIS VALUE
 
     public static final int intakeRoller = 30;
     public static final int intakeLeft = 31;
     public static final int intakeRight = 32;
 
-    public static final int intakeLeftEncoderPort = 1; // EXAMPLE CHANGE THIS VALUE
+    public static final int intakeLeftEncoderPort = 7; 
     public static final int intakeRightEncoderPort = 2; // EXAMPLE CHANGE THIS VALUE
+       
+    public static final double intakeLeftEncoderOffsetDeg = 123.4; // EXAMPLE CHANGE THIS VALUE
+    public static final double intakeRightEncoderOffsetDeg = 123.4; // EXAMPLE CHANGE THIS VALUE
 
     public static final double rollerInSpeed = 1.0;
     public static final double rollerOutSpeed = -1.0;
@@ -141,9 +141,9 @@ public final class Constants {
 
   public static final class Flywheel{
     public static final int flywheelMotor = 40;
-    public static final double MAX_RPS = 90;
-    public static final double MIN_RPS = 10;
     public static final Distance flywheelDiameter = Inches.of(4);
+    public static final double MAX_RPS = 100.0; // TODO: tune this
+    public static final double MIN_RPS = 0.0;   // TODO: tune this
   }
   /* ===================== SHOOTER ===================== */
   public static final class Shooter {

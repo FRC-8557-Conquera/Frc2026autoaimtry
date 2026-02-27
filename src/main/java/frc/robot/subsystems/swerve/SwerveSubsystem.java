@@ -54,7 +54,9 @@ public class SwerveSubsystem extends SubsystemBase {
   Field2d field;
   SwerveDrive swerveDrive; 
   LimelightPoseEstimator limelightBackPoseEstimator;
+  LimelightPoseEstimator limelightFrontPoseEstimator;
   Limelight limelightBack = new Limelight("limelight-back");
+  Limelight limelightFront = new Limelight("limelight-front");
   private File swerveJsonDirectory = new File(Filesystem.getDeployDirectory(), "swerve");
 
   public SwerveSubsystem() {
@@ -117,18 +119,6 @@ public class SwerveSubsystem extends SubsystemBase {
 
   public Rotation2d getHeading() {
     return getPose().getRotation();
-  }
-
-  public void turnToAngle(Supplier<Rotation2d> angle) {
-  }
-  public ChassisSpeeds getTargetSpeeds(double xInput, double yInput, Rotation2d angle) {
-    Translation2d scaledInputs = SwerveMath.cubeTranslation(new Translation2d(xInput, yInput));
-    return swerveDrive.swerveController.getTargetSpeeds(
-        scaledInputs.getX(),
-        scaledInputs.getY(),
-        angle.getRadians(),
-        getHeading().getRadians(),
-        Constants.Swerve.maxSpeed);
   }
 
   public void drive(ChassisSpeeds velocity) {
@@ -226,16 +216,25 @@ public class SwerveSubsystem extends SubsystemBase {
   }
   
   public void setupLimelight(){
-    limelightBack.getSettings()
-             .withPipelineIndex(0)
-             .withLimelightLEDMode(LEDMode.PipelineControl).save();
-      limelightBackPoseEstimator = limelightBack.createPoseEstimator(EstimationMode.MEGATAG2);
-      swerveDrive.setVisionMeasurementStdDevs(VecBuilder.fill(0.05, 0.05, 0.022));
-  }
+
+  limelightBack.getSettings()
+      .withPipelineIndex(0)
+      .withLimelightLEDMode(LEDMode.PipelineControl)
+      .save();
+
+  limelightFront.getSettings()
+      .withPipelineIndex(0)
+      .withLimelightLEDMode(LEDMode.PipelineControl)
+      .save();
+
+  limelightBackPoseEstimator = limelightBack.createPoseEstimator(EstimationMode.MEGATAG2);
+  limelightFrontPoseEstimator = limelightFront.createPoseEstimator(EstimationMode.MEGATAG2);
+  
+  swerveDrive.setVisionMeasurementStdDevs(VecBuilder.fill(0.05, 0.05, 0.022));
+}
 
 @Override
 public void periodic() {
-
     double yawVelocity = swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond);
 
         limelightBack.getSettings()
@@ -243,32 +242,26 @@ public void periodic() {
                                                      new AngularVelocity3d(DegreesPerSecond.of(0),
                                                                            DegreesPerSecond.of(0),
                                                                            DegreesPerSecond.of(yawVelocity))));
-            
-    Optional<PoseEstimate> est1 = limelightBackPoseEstimator.getPoseEstimate();
-    
-    if (est1.isPresent()) 
-      { 
-        PoseEstimate     poseEstimate = est1.get();
-        SmartDashboard.putNumber("Avg Tag Ambiguity", poseEstimate.getAvgTagAmbiguity());
-        SmartDashboard.putNumber("Min Tag Ambiguity", poseEstimate.getMinTagAmbiguity());
-        SmartDashboard.putNumber("Max Tag Ambiguity", poseEstimate.getMaxTagAmbiguity());
-        SmartDashboard.putNumber("Avg Distance", poseEstimate.avgTagDist);
-        SmartDashboard.putNumber("Avg Tag Area", poseEstimate.avgTagArea);
-        SmartDashboard.putNumber("Odom Pose/x", swerveDrive.getPose().getX());
-        SmartDashboard.putNumber("Odom Pose/y", swerveDrive.getPose().getY());
-        SmartDashboard.putNumber("Odom Pose/degrees", swerveDrive.getPose().getRotation().getDegrees());
-        SmartDashboard.putNumber("Limelight Pose/x", poseEstimate.pose.getX());
-        SmartDashboard.putNumber("Limelight Pose/y", poseEstimate.pose.getY());
-        SmartDashboard.putNumber("Limelight Pose/degrees", poseEstimate.pose.toPose2d().getRotation().getDegrees());
-      
-        Pose2d usefulPose     = poseEstimate.pose.toPose2d();
-        double distanceToPose = usefulPose.getTranslation().getDistance(swerveDrive.getPose().getTranslation());
-
-        if (poseEstimate.tagCount > 0 && poseEstimate.getAvgTagAmbiguity() < 0.3)
-        {
-          swerveDrive.addVisionMeasurement(usefulPose, poseEstimate.timestampSeconds);
-        } 
-      } 
+        limelightFront.getSettings()
+             .withRobotOrientation(new Orientation3d(swerveDrive.getGyro().getRotation3d(),
+                                                     new AngularVelocity3d(DegreesPerSecond.of(0),
+                                                                           DegreesPerSecond.of(0),
+                                                                           DegreesPerSecond.of(yawVelocity))));
+    addVisionFromEstimator(limelightBackPoseEstimator);
+    addVisionFromEstimator(limelightFrontPoseEstimator);  
     field.setRobotPose(swerveDrive.getPose());
+  }
+
+    private void addVisionFromEstimator(LimelightPoseEstimator estimator) {
+    Optional<PoseEstimate> est = estimator.getPoseEstimate();
+
+    if (est.isPresent()) {
+      PoseEstimate poseEstimate = est.get();
+      
+    if (poseEstimate.tagCount > 0 && poseEstimate.getAvgTagAmbiguity() < 0.3) {
+        Pose2d visionPose = poseEstimate.pose.toPose2d();
+        swerveDrive.addVisionMeasurement(visionPose,poseEstimate.timestampSeconds);
+      }
+    }
   }
 }

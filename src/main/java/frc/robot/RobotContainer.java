@@ -27,7 +27,7 @@ import frc.robot.Constants.Spindexer;
 import frc.robot.subsystems.feeder.FeederSubsystem;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
-import frc.robot.subsystems.shooter.ShotIntent;
+import frc.robot.subsystems.shooter.ShooterSubsystem.ShotIntent;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.subsystems.spindexer.SpindexerSubsystem;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
@@ -42,9 +42,7 @@ public class RobotContainer {
   private final JoystickButton zeroGyro = new JoystickButton(driver, 3);
   private final JoystickButton xLock = new JoystickButton(driver, 6);
 
-  private final JoystickButton turretSysID = new JoystickButton(driver2, 10);
-    private final JoystickButton turretZero = new JoystickButton(driver2,2);
-
+  private final JoystickButton turretZero = new JoystickButton(driver2,2);
   private final JoystickButton turretButtonLeft = new JoystickButton(driver2,8);
   private final JoystickButton turretButtonRight = new JoystickButton(driver2, 9);
   private final JoystickButton triggerButton = new JoystickButton(driver2, 1);
@@ -54,9 +52,11 @@ public class RobotContainer {
 
   private final JoystickButton spindexerF = new JoystickButton(driver2, 5);
   private final JoystickButton spindexerR = new JoystickButton(driver2, 6);
-  private final JoystickButton sysIDButton = new JoystickButton(driver2, 7);
+  private final JoystickButton flywheelSysID = new JoystickButton(driver2, 7);
   JoystickButton hubButton = new JoystickButton(driver2, 11);
   JoystickButton dumpButton = new JoystickButton(driver2, 12);
+  JoystickButton offButton = new JoystickButton(driver2, 10);
+
 
   public final SwerveSubsystem s_Swerve = new SwerveSubsystem();
   private final FeederSubsystem feeder = new FeederSubsystem();
@@ -99,7 +99,8 @@ public class RobotContainer {
   private void configureButtonBindings() {
 
     hubButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.HUB)));
-    dumpButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
+    dumpButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.DUMP)));
+    offButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
    
     triggerButton.whileTrue(
     Commands.run(() -> { shooter.debugShoot().schedule(); feeder.feed().schedule();})).onFalse(
@@ -109,7 +110,7 @@ public class RobotContainer {
     turretButtonRight.whileTrue(turret.rotateDutyCycle(-0.05)).onFalse(turret.stop());
     turretZero.onTrue(turret.setAngle(Degrees.of(0))).onFalse(turret.stop());
 
-    sysIDButton.whileTrue(flywheel.sysId());
+    flywheelSysID.whileTrue(flywheel.sysId());
 
     feederAl.whileTrue(feeder.feed()).onFalse(feeder.stop());
     feederTers.whileTrue(feeder.reverse()).onFalse(feeder.stop());
