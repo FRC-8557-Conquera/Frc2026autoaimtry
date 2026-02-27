@@ -37,7 +37,7 @@ import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 import frc.robot.Constants.Flywheel;
-import static edu.wpi.first.units.Units.RotationsPerSecond;
+
 
 public class FlywheelSubsystem extends SubsystemBase
 {
