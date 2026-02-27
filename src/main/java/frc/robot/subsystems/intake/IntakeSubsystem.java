@@ -21,6 +21,8 @@ public class IntakeSubsystem extends SubsystemBase {
   private final TalonFX rightMotor = new TalonFX(Intake.intakeRight, "*");
   private final TalonFX roller = new TalonFX(Intake.intakeRoller, "*");
 
+  private IntakePosition position = IntakePosition.UP;
+
 
   private final DutyCycleEncoder leftEncoder =
       new DutyCycleEncoder(Intake.intakeLeftEncoderPort);
@@ -50,11 +52,15 @@ public class IntakeSubsystem extends SubsystemBase {
   }
 
   public Command open() {
-    return runOnce(() -> setTargetAngle(Degrees.of(120)));
+    return runOnce(() -> position = IntakePosition.UP);
   }
 
   public Command close() {
-    return runOnce(() -> setTargetAngle(Degrees.of(10)));
+    return runOnce(() -> position = IntakePosition.DOWN);
+  }
+
+  public Command halfopen() {
+    return runOnce(() -> position = IntakePosition.HALF);
   }
 
   public Command rollerIn() {
@@ -73,7 +79,8 @@ public class IntakeSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     double current = getAngle().in(Degrees);
-    double target = Intake.targetAngle.in(Degrees);
+    // TODO: Yerin, yukarisinin ve 45in encoderdan degerlerini al
+    double target = (position == IntakePosition.UP ? 90 : (position == IntakePosition.HALF ? 45 : 0));
 
     double error = MathUtil.inputModulus(target - current, -180, 180);
 
@@ -86,3 +93,4 @@ public class IntakeSubsystem extends SubsystemBase {
     leftMotor.set(output);
   }
 }
+
