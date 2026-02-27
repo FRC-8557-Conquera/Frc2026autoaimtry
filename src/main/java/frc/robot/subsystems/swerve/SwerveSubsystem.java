@@ -119,15 +119,6 @@ public class SwerveSubsystem extends SubsystemBase {
     return getPose().getRotation();
   }
 
-  public Rotation2d calculateHubAngle() {
-    Translation2d hub = new Translation2d(12.742, 4.238); 
-    Translation2d pos = getPose().getTranslation();
-
-    double angle = Math.asin(pos.minus(hub).dot(new Translation2d(0,1)) / pos.getDistance(hub));
-    angle += Math.PI/2;
-    return new Rotation2d(angle);
-  }
-
   public void turnToAngle(Supplier<Rotation2d> angle) {
   }
   public ChassisSpeeds getTargetSpeeds(double xInput, double yInput, Rotation2d angle) {
