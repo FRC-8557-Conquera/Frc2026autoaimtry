@@ -47,10 +47,6 @@ public class IntakeSubsystem extends SubsystemBase {
     return Degrees.of((leftDeg + rightDeg) / 2.0);
   }
 
-  public void setTargetAngle(Angle angle) {
-    Intake.targetAngle = Degrees.of(MathUtil.clamp(angle.in(Degrees), Intake.MIN_ANGLE.in(Degrees), Intake.MAX_ANGLE.in(Degrees)));
-  }
-
   public Command open() {
     return runOnce(() -> position = IntakePosition.UP);
   }
@@ -80,7 +76,7 @@ public class IntakeSubsystem extends SubsystemBase {
   public void periodic() {
     double current = getAngle().in(Degrees);
     // TODO: Yerin, yukarisinin ve 45in encoderdan degerlerini al
-    double target = (position == IntakePosition.UP ? 90 : (position == IntakePosition.HALF ? 45 : 0));
+    double target = (position == IntakePosition.UP ? 90 : (position == IntakePosition.HALF ? 45 : 15));
 
     double error = MathUtil.inputModulus(target - current, -180, 180);
 

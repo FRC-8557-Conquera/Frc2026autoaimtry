@@ -109,7 +109,6 @@ public final class Constants {
     public static final double rollerOutSpeed = -1.0;
 
     public static final double kP = 0.03;  // tune later
-    public static Angle targetAngle = Degrees.of(90);
   }
 
   /* ===================== SPINDEXER ===================== */
