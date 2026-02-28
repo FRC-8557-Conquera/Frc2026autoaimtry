@@ -25,6 +25,7 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.Constants.Spindexer;
 import frc.robot.subsystems.feeder.FeederSubsystem;
+import frc.robot.subsystems.intake.IntakeSubsystem;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem.ShotIntent;
@@ -43,8 +44,8 @@ public class RobotContainer {
   private final JoystickButton xLock = new JoystickButton(driver, 6);
 
   private final JoystickButton turretZero = new JoystickButton(driver2,2);
-  private final JoystickButton turretButtonLeft = new JoystickButton(driver2,8);
-  private final JoystickButton turretButtonRight = new JoystickButton(driver2, 9);
+ // private final JoystickButton turretButtonLeft = new JoystickButton(driver2,8);
+ // private final JoystickButton turretButtonRight = new JoystickButton(driver2, 9);
   private final JoystickButton triggerButton = new JoystickButton(driver2, 1);
 
   private final JoystickButton feederAl = new JoystickButton(driver2, 3);
@@ -52,10 +53,13 @@ public class RobotContainer {
 
   private final JoystickButton spindexerF = new JoystickButton(driver2, 5);
   private final JoystickButton spindexerR = new JoystickButton(driver2, 6);
-  private final JoystickButton flywheelSysID = new JoystickButton(driver2, 7);
+  //private final JoystickButton flywheelSysID = new JoystickButton(driver2, 7);
+  private final JoystickButton intakeAc = new JoystickButton(driver2, 7);
+  private final JoystickButton intakeKapa = new JoystickButton(driver2, 8);
+  private final JoystickButton intakeAl = new JoystickButton(driver2, 9);
   JoystickButton hubButton = new JoystickButton(driver2, 11);
   JoystickButton dumpButton = new JoystickButton(driver2, 12);
-  JoystickButton offButton = new JoystickButton(driver2, 10);
+  
 
 
   public final SwerveSubsystem s_Swerve = new SwerveSubsystem();
@@ -66,6 +70,7 @@ public class RobotContainer {
   private final TurretSubsystem turret = shooter.turret;
   private final FlywheelSubsystem flywheel = shooter.flywheel;
   private final SpindexerSubsystem spindexer = new SpindexerSubsystem();
+  private final IntakeSubsystem intake = new IntakeSubsystem();
 
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(
       s_Swerve.getSwerveDrive(),
@@ -100,18 +105,19 @@ public class RobotContainer {
 
     hubButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.HUB)));
     dumpButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.DUMP)));
-    offButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
+    //offButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
    
     triggerButton.whileTrue(
     Commands.run(() -> { shooter.debugShoot().schedule(); feeder.feed().schedule();})).onFalse(
     Commands.runOnce(() -> {flywheel.setVelocity(RotationsPerSecond.of(0)).schedule(); feeder.stop().schedule();}));
 
-    turretButtonLeft.whileTrue(turret.rotateDutyCycle(0.05)).onFalse(turret.stop());
-    turretButtonRight.whileTrue(turret.rotateDutyCycle(-0.05)).onFalse(turret.stop());
+    //turretButtonLeft.whileTrue(turret.rotateDutyCycle(0.05)).onFalse(turret.stop());
+    //turretButtonRight.whileTrue(turret.rotateDutyCycle(-0.05)).onFalse(turret.stop());
     turretZero.onTrue(turret.setAngle(Degrees.of(0))).onFalse(turret.stop());
 
-    flywheelSysID.whileTrue(flywheel.sysId());
-
+   // flywheelSysID.whileTrue(flywheel.sysId());
+    intakeAc.onTrue(intake.open());
+    intakeKapa.onTrue(intake.close());
     feederAl.whileTrue(feeder.feed()).onFalse(feeder.stop());
     feederTers.whileTrue(feeder.reverse()).onFalse(feeder.stop());
 

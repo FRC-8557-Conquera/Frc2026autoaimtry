@@ -2,7 +2,6 @@ package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.*;
 
-import com.ctre.phoenix.motorcontrol.FollowerType;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -12,6 +11,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -25,10 +25,8 @@ public class IntakeSubsystem extends SubsystemBase {
 
   private IntakePosition position = IntakePosition.UP;
 
-  private final DutyCycleEncoder leftEncoder =
-      new DutyCycleEncoder(Intake.intakeLeftEncoderPort);
-  private final DutyCycleEncoder rightEncoder =
-      new DutyCycleEncoder(Intake.intakeRightEncoderPort);
+
+  private final DutyCycleEncoder encoder = new DutyCycleEncoder(Intake.intakeEncoderPort);
 
   public IntakeSubsystem() {
     TalonFXConfiguration armConfig = new TalonFXConfiguration();
@@ -41,11 +39,9 @@ public class IntakeSubsystem extends SubsystemBase {
     rightMotor.setControl(new Follower(leftMotor.getDeviceID(), MotorAlignmentValue.Aligned));
   }
   public Angle getAngle() {
-    double leftDeg  = leftEncoder.get()  * 360.0 - Intake.intakeLeftEncoderOffsetDeg;
-    double rightDeg = rightEncoder.get() * 360.0 - Intake.intakeRightEncoderOffsetDeg;
-    leftDeg  = MathUtil.inputModulus(leftDeg,  -180, 180);
-    rightDeg = MathUtil.inputModulus(rightDeg, -180, 180);
-    return Degrees.of((leftDeg + rightDeg) / 2.0);
+    double deg  = encoder.get()  * 360.0 - Intake.intakeEncoderOffsetDeg;
+    deg  = MathUtil.inputModulus(deg,  -180, 180);
+    return Degrees.of(deg);
   }
 
   public Command open() {
@@ -54,6 +50,10 @@ public class IntakeSubsystem extends SubsystemBase {
 
   public Command close() {
     return runOnce(() -> position = IntakePosition.DOWN);
+  }
+
+  public Command halfopen() {
+    return runOnce(() -> position = IntakePosition.HALF);
   }
 
   public Command rollerIn() {
@@ -68,11 +68,14 @@ public class IntakeSubsystem extends SubsystemBase {
     return run(() -> roller.set(0));
   }
 
+ 
   @Override
   public void periodic() {
     double current = getAngle().in(Degrees);
+    SmartDashboard.putNumber("Intake Encoder Left", encoder.get());
+    SmartDashboard.putBoolean("Intake Encoder Connected", encoder.isConnected());
     // TODO: Yerin, yukarisinin ve 45in encoderdan degerlerini al
-    double target = (position == IntakePosition.UP ? 90 : (position == IntakePosition.HALF ? 45 : 15));
+    double target = (position == IntakePosition.UP ? 90 : (position == IntakePosition.HALF ? 45 : 0));
 
     double error = MathUtil.inputModulus(target - current, -180, 180);
 
@@ -82,13 +85,12 @@ public class IntakeSubsystem extends SubsystemBase {
     if (current <= Intake.MIN_ANGLE.in(Degrees) && output < 0) output = 0;
     if (current >= Intake.MAX_ANGLE.in(Degrees) && output > 0) output = 0;
 
-    leftMotor.set(output);
+    // leftMotor.set(output);
   }
-  public enum IntakePosition {
+    public enum IntakePosition {
     UP,
     DOWN,
     HALF
 } 
 }
-
 
