@@ -8,19 +8,13 @@ import com.pathplanner.lib.path.PathConstraints;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -52,7 +46,7 @@ import limelight.networktables.LimelightPoseEstimator.EstimationMode;
 public class SwerveSubsystem extends SubsystemBase {
 
   Field2d field;
-  SwerveDrive swerveDrive; 
+  SwerveDrive swerveDrive;
   LimelightPoseEstimator limelightBackPoseEstimator;
   LimelightPoseEstimator limelightFrontPoseEstimator;
   Limelight limelightBack = new Limelight("limelight-back");
@@ -235,33 +229,77 @@ public class SwerveSubsystem extends SubsystemBase {
 
 @Override
 public void periodic() {
-    double yawVelocity = swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond);
+    double yawRateDegS = swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond);
 
-        limelightBack.getSettings()
-             .withRobotOrientation(new Orientation3d(swerveDrive.getGyro().getRotation3d(),
-                                                     new AngularVelocity3d(DegreesPerSecond.of(0),
-                                                                           DegreesPerSecond.of(0),
-                                                                           DegreesPerSecond.of(yawVelocity))));
-        limelightFront.getSettings()
-             .withRobotOrientation(new Orientation3d(swerveDrive.getGyro().getRotation3d(),
-                                                     new AngularVelocity3d(DegreesPerSecond.of(0),
-                                                                           DegreesPerSecond.of(0),
-                                                                           DegreesPerSecond.of(yawVelocity))));
-    addVisionFromEstimator(limelightBackPoseEstimator);
-    addVisionFromEstimator(limelightFrontPoseEstimator);  
+    Orientation3d orientation = new Orientation3d(
+        swerveDrive.getGyro().getRotation3d(),
+        new AngularVelocity3d(
+            DegreesPerSecond.of(0),
+            DegreesPerSecond.of(0),
+            DegreesPerSecond.of(yawRateDegS)));
+
+    limelightBack.getSettings().withRobotOrientation(orientation).save();
+    limelightFront.getSettings().withRobotOrientation(orientation).save();
+
+    updateVisionCombined();
     field.setRobotPose(swerveDrive.getPose());
   }
 
-    private void addVisionFromEstimator(LimelightPoseEstimator estimator) {
-    Optional<PoseEstimate> est = estimator.getPoseEstimate();
+  private void updateVisionCombined() {
+    Optional<PoseEstimate> backOpt  = limelightBackPoseEstimator.getPoseEstimate();
+    Optional<PoseEstimate> frontOpt = limelightFrontPoseEstimator.getPoseEstimate();
 
-    if (est.isPresent()) {
-      PoseEstimate poseEstimate = est.get();
-      
-    if (poseEstimate.tagCount > 0 && poseEstimate.getAvgTagAmbiguity() < 0.3) {
-        Pose2d visionPose = poseEstimate.pose.toPose2d();
-        swerveDrive.addVisionMeasurement(visionPose,poseEstimate.timestampSeconds);
-      }
+    boolean backValid  = backOpt.isPresent()
+        && backOpt.get().tagCount > 0
+        && backOpt.get().getAvgTagAmbiguity() < 0.3;
+    boolean frontValid = frontOpt.isPresent()
+        && frontOpt.get().tagCount > 0
+        && frontOpt.get().getAvgTagAmbiguity() < 0.3;
+
+    if (backValid && frontValid) {
+      PoseEstimate back  = backOpt.get();
+      PoseEstimate front = frontOpt.get();
+
+      // Weight = (1 - ambiguity): lower ambiguity → higher trust
+      double wB = 1.0 - back.getAvgTagAmbiguity();
+      double wF = 1.0 - front.getAvgTagAmbiguity();
+      double total = wB + wF;
+      wB /= total;
+      wF /= total;
+
+      Pose2d bPose = back.pose.toPose2d();
+      Pose2d fPose = front.pose.toPose2d();
+
+      double x = wB * bPose.getX() + wF * fPose.getX();
+      double y = wB * bPose.getY() + wF * fPose.getY();
+
+      // Average rotation via unit-vector interpolation to handle wrap-around correctly
+      double bAngle = bPose.getRotation().getRadians();
+      double fAngle = fPose.getRotation().getRadians();
+      Rotation2d avgRot = new Rotation2d(
+          wB * Math.cos(bAngle) + wF * Math.cos(fAngle),
+          wB * Math.sin(bAngle) + wF * Math.sin(fAngle));
+
+      double timestamp = wB * back.timestampSeconds + wF * front.timestampSeconds;
+
+      swerveDrive.addVisionMeasurement(new Pose2d(x, y, avgRot), timestamp);
+
+      SmartDashboard.putString("Vision/Source", "Both (weighted)");
+      SmartDashboard.putNumber("Vision/WeightBack",  wB);
+      SmartDashboard.putNumber("Vision/WeightFront", wF);
+
+    } else if (backValid) {
+      PoseEstimate back = backOpt.get();
+      swerveDrive.addVisionMeasurement(back.pose.toPose2d(), back.timestampSeconds);
+      SmartDashboard.putString("Vision/Source", "Back only");
+
+    } else if (frontValid) {
+      PoseEstimate front = frontOpt.get();
+      swerveDrive.addVisionMeasurement(front.pose.toPose2d(), front.timestampSeconds);
+      SmartDashboard.putString("Vision/Source", "Front only");
+
+    } else {
+      SmartDashboard.putString("Vision/Source", "None");
     }
   }
 }
