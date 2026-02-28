@@ -7,8 +7,11 @@ import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.path.PathConstraints;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -224,7 +227,7 @@ public class SwerveSubsystem extends SubsystemBase {
   limelightBackPoseEstimator = limelightBack.createPoseEstimator(EstimationMode.MEGATAG2);
   limelightFrontPoseEstimator = limelightFront.createPoseEstimator(EstimationMode.MEGATAG2);
   
-  swerveDrive.setVisionMeasurementStdDevs(VecBuilder.fill(0.05, 0.05, 0.022));
+  // Per-measurement stddevs are computed dynamically in updateVisionCombined()
 }
 
 @Override
@@ -282,7 +285,10 @@ public void periodic() {
 
       double timestamp = wB * back.timestampSeconds + wF * front.timestampSeconds;
 
-      swerveDrive.addVisionMeasurement(new Pose2d(x, y, avgRot), timestamp);
+      double avgDist = wB * back.avgTagDist + wF * front.avgTagDist;
+      int totalTags  = back.tagCount + front.tagCount;
+      swerveDrive.addVisionMeasurement(new Pose2d(x, y, avgRot), timestamp,
+          visionStdDevs(totalTags, avgDist));
 
       SmartDashboard.putString("Vision/Source", "Both (weighted)");
       SmartDashboard.putNumber("Vision/WeightBack",  wB);
@@ -290,16 +296,24 @@ public void periodic() {
 
     } else if (backValid) {
       PoseEstimate back = backOpt.get();
-      swerveDrive.addVisionMeasurement(back.pose.toPose2d(), back.timestampSeconds);
+      swerveDrive.addVisionMeasurement(back.pose.toPose2d(), back.timestampSeconds,
+          visionStdDevs(back.tagCount, back.avgTagDist));
       SmartDashboard.putString("Vision/Source", "Back only");
 
     } else if (frontValid) {
       PoseEstimate front = frontOpt.get();
-      swerveDrive.addVisionMeasurement(front.pose.toPose2d(), front.timestampSeconds);
+      swerveDrive.addVisionMeasurement(front.pose.toPose2d(), front.timestampSeconds,
+          visionStdDevs(front.tagCount, front.avgTagDist));
       SmartDashboard.putString("Vision/Source", "Front only");
 
     } else {
       SmartDashboard.putString("Vision/Source", "None");
     }
+  }
+
+  private Matrix<N3, N1> visionStdDevs(int tagCount, double avgDistMeters) {
+    double distFactor = 1.0 + (avgDistMeters * avgDistMeters) / 30.0;
+    double xy = (tagCount >= 2 ? 0.5 : 4.0) * distFactor;
+    return VecBuilder.fill(xy, xy, 9999999);
   }
 }
