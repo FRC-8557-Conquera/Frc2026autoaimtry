@@ -73,6 +73,7 @@ public class IntakeSubsystem extends SubsystemBase {
   public void periodic() {
     double current = getAngle().in(Degrees);
     SmartDashboard.putNumber("Intake Encoder Left", encoder.get());
+    SmartDashboard.putNumber("Intake Relative Encoder", leftMotor.getPosition().getValueAsDouble());
     SmartDashboard.putBoolean("Intake Encoder Connected", encoder.isConnected());
     // TODO: Yerin, yukarisinin ve 45in encoderdan degerlerini al
     double target = (position == IntakePosition.UP ? 90 : (position == IntakePosition.HALF ? 45 : 0));
