@@ -78,11 +78,11 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     private void buildLookupTables() {
-        flywheelMap.put(1.5, 55.0);         // distance to RPS
-        flywheelMap.put(2.0, 65.0);
-        flywheelMap.put(2.5, 75.0);
-        flywheelMap.put(3.0, 85.0);
-        flywheelMap.put(3.5, 95.0);
+        flywheelMap.put(3.12, 34.2);         // distance to RPS
+        flywheelMap.put(2.03, 31.829);      //değişebilir çok iyi değildi
+        flywheelMap.put(3.828, 37.66);
+        flywheelMap.put(2.5, 33.2);
+        flywheelMap.put(5.38, 41.0);
 
     }
 
@@ -133,7 +133,7 @@ public class ShooterSubsystem extends SubsystemBase {
                     .getTranslation()
                     .getDistance(getHubPose().getTranslation());
 
-            return RotationsPerSecond.of(flywheelMap.get(distance)+Shooter.flywheelOffsetRPS);
+            return RotationsPerSecond.of(flywheelMap.get(distance));
         }
 
         if (intent == ShotIntent.DUMP) {

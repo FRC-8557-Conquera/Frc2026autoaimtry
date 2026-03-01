@@ -19,9 +19,9 @@ import frc.robot.Constants.Intake;
 
 public class IntakeSubsystem extends SubsystemBase {
 
-  private final TalonFX leftMotor = new TalonFX(Intake.intakeLeft, "*");
-  private final TalonFX rightMotor = new TalonFX(Intake.intakeRight, "*");
-  private final TalonFX roller = new TalonFX(Intake.intakeRoller, "*");
+  private final TalonFX leftMotor = new TalonFX(Intake.intakeLeft);
+  private final TalonFX rightMotor = new TalonFX(Intake.intakeRight);
+  private final TalonFX roller = new TalonFX(Intake.intakeRoller);
 
   private IntakePosition position = IntakePosition.UP;
 
@@ -36,7 +36,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
     leftMotor.getConfigurator().apply(armConfig);
     rightMotor.getConfigurator().apply(armConfig);
-    rightMotor.setControl(new Follower(leftMotor.getDeviceID(), MotorAlignmentValue.Aligned));
+    rightMotor.setControl(new Follower(leftMotor.getDeviceID(), MotorAlignmentValue.Opposed));
   }
   public Angle getAngle() {
     double deg  = encoder.get()  * 360.0 - Intake.intakeEncoderOffsetDeg;
@@ -73,6 +73,7 @@ public class IntakeSubsystem extends SubsystemBase {
   public void periodic() {
     double current = getAngle().in(Degrees);
     SmartDashboard.putNumber("Intake Encoder Left", encoder.get());
+    SmartDashboard.putNumber("Intake Encoder ", current);
     SmartDashboard.putNumber("Intake Relative Encoder", leftMotor.getPosition().getValueAsDouble());
     SmartDashboard.putBoolean("Intake Encoder Connected", encoder.isConnected());
     // TODO: Yerin, yukarisinin ve 45in encoderdan degerlerini al

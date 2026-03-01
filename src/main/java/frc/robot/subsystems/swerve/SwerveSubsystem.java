@@ -72,7 +72,6 @@ public class SwerveSubsystem extends SubsystemBase {
     swerveDrive.setAutoCenteringModules(false);
     swerveDrive.setHeadingCorrection(false);
     setupLimelight();
-    setupPathPlanner();
   }
 
   public void setupPathPlanner() {
@@ -312,8 +311,6 @@ public void periodic() {
   }
 
   private Matrix<N3, N1> visionStdDevs(int tagCount, double avgDistMeters) {
-    double distFactor = 1.0 + (avgDistMeters * avgDistMeters) / 30.0;
-    double xy = (tagCount >= 2 ? 0.5 : 4.0) * distFactor;
-    return VecBuilder.fill(xy, xy, 9999999);
+    return VecBuilder.fill(0.07, 0.07, 9999999);
   }
 }

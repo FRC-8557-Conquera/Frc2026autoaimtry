@@ -8,7 +8,7 @@
   "drive": {
     "type": "krakenx60",
     "id": 11,
-    "canbus": "*"
+    "canbus": ""
   },
   "inverted": {
     "drive": false,
@@ -22,7 +22,7 @@
   "encoder": {
     "type": "cancoder",
     "id": 51,
-    "canbus": "*"
+    "canbus": null
   },
   "absoluteEncoderInverted": false
 

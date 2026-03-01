@@ -95,7 +95,7 @@ public final class Constants {
     public static final Angle MIN_ANGLE = Angle.ofBaseUnits(-20, Degrees);                        //TODO: Change this value
     public static final Angle MAX_ANGLE = Angle.ofBaseUnits(100, Degrees);      //TODO: Change this value
     
-    public static final double intakeEncoderOffsetDeg = 0; // EXAMPLE CHANGE THIS VALUE
+    public static final double intakeEncoderOffsetDeg = 0.6339 * 360 ; 
 
     public static final int intakeRoller = 30;
     public static final int intakeLeft = 31;
@@ -103,8 +103,8 @@ public final class Constants {
 
     public static final int intakeEncoderPort = 7;
 
-    public static final double rollerInSpeed = 1.0;
-    public static final double rollerOutSpeed = -1.0;
+    public static final double rollerInSpeed = 0.25;
+    public static final double rollerOutSpeed = -0.25;
 
     public static final double kP = 0.03;  // tune later
   }
