@@ -91,21 +91,26 @@ public class RobotContainer {
   Command FOdriveAngularVelocity = s_Swerve.driveFieldOriented(driveAngularVelocity);
   Command FOdriveDirectAngle = s_Swerve.driveFieldOriented(driveDirectAngle);
 
-  SendableChooser<Command> m_chooser = new SendableChooser<>();
+  SendableChooser<Command> m_chooser;
 
   public RobotContainer() {
 
-    
+    // 1. Register NamedCommands BEFORE AutoBuilder.configure()
     NamedCommands.registerCommand("taretbah", turret.setAngle(shooter.getTurretSetpoint()));
     NamedCommands.registerCommand("tüküğr", flywheel.setVelocity(shooter.getFlywheelSetpoint()));
     NamedCommands.registerCommand("intakeall", intake.rollerIn());
     NamedCommands.registerCommand("spinsexer", new ShootCommand(spindexer,3));
-    
+
+    // 2. Now configure PathPlanner (AutoBuilder.configure runs here)
+    s_Swerve.setupPathPlanner();
+
+    // 3. Build chooser from PathPlanner auto files
+    m_chooser = AutoBuilder.buildAutoChooser();
+    SmartDashboard.putData("Auto Chooser", m_chooser);
+
     DriverStation.silenceJoystickConnectionWarning(true);
     s_Swerve.setDefaultCommand(FOdriveAngularVelocity);
     configureButtonBindings();
-    
-    SmartDashboard.putData(m_chooser);
 
     turret.setDefaultCommand(turret.setAngle(() -> shooter.getTurretSetpoint()));
     s_Swerve.zeroGyroWithAlliance();
