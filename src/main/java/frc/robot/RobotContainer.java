@@ -26,6 +26,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.Constants.Spindexer;
+import frc.robot.commands.IntakeAlCommand;
 import frc.robot.commands.ShootCommand;
 import frc.robot.subsystems.feeder.FeederSubsystem;
 import frc.robot.subsystems.intake.IntakeSubsystem;
@@ -99,7 +100,9 @@ public class RobotContainer {
     NamedCommands.registerCommand("taretbah", turret.setAngle(shooter.getTurretSetpoint()));
     NamedCommands.registerCommand("tüküğr", flywheel.setVelocity(shooter.getFlywheelSetpoint()));
     NamedCommands.registerCommand("intakeall", intake.rollerIn());
-    NamedCommands.registerCommand("spinsexer", new ShootCommand(spindexer,3));
+
+    NamedCommands.registerCommand("intake", new IntakeAlCommand(intake, 4));
+    NamedCommands.registerCommand("tumsel", new ShootCommand(spindexer,feeder,shooter,3));
 
     // 2. Now configure PathPlanner (AutoBuilder.configure runs here)
     s_Swerve.setupPathPlanner();

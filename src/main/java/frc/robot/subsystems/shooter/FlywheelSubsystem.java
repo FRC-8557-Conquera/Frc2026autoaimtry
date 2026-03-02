@@ -95,7 +95,7 @@ public class FlywheelSubsystem extends SubsystemBase
     return flywheel.setSpeed(speed);
   }
 
-  
+
 
   public Command setDutyCycle(Supplier<Double> dutyCycle)
   {

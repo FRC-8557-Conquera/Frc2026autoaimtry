@@ -252,12 +252,12 @@ public void periodic() {
     Optional<PoseEstimate> frontOpt = limelightFrontPoseEstimator.getPoseEstimate();
 
     boolean backValid  = backOpt.isPresent()
-        && backOpt.get().tagCount > 0
-        && backOpt.get().getAvgTagAmbiguity() < 0.3;
+        && backOpt.get().tagCount > 0;
     boolean frontValid = frontOpt.isPresent()
-        && frontOpt.get().tagCount > 0
-        && frontOpt.get().getAvgTagAmbiguity() < 0.3;
-
+        && frontOpt.get().tagCount > 0;
+      
+    SmartDashboard.putBoolean("Back Valid", backValid);
+    SmartDashboard.putBoolean("Front Valıd", frontValid);
     if (backValid && frontValid) {
       PoseEstimate back  = backOpt.get();
       PoseEstimate front = frontOpt.get();

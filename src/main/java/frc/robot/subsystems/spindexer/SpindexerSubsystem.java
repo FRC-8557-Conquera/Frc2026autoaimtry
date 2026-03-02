@@ -33,4 +33,11 @@ public class SpindexerSubsystem extends SubsystemBase {
   public Command stop() {
     return runOnce(() -> spindexerMotor.set(0));
   }
+  public void setMotor(){
+    spindexerMotor.set(Spindexer.feedSpeed);
+  }
+  public void stopMotor(){
+    spindexerMotor.set(0);
+  }
 }
+

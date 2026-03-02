@@ -103,8 +103,8 @@ public final class Constants {
 
     public static final int intakeEncoderPort = 7;
 
-    public static final double rollerInSpeed = 0.25;
-    public static final double rollerOutSpeed = -0.25;
+    public static final double rollerInSpeed = 0.5;
+    public static final double rollerOutSpeed = -0.5;
 
     public static final double kP = 0.03;  // tune later
   }
