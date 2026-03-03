@@ -4,19 +4,19 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
-import com.pathplanner.lib.path.PathConstraints;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.numbers.N1;
-import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
@@ -24,43 +24,32 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-
+import frc.robot.LimelightHelpers;
+import frc.robot.LimelightHelpers.PoseEstimate;
 
 import static edu.wpi.first.units.Units.DegreesPerSecond;
 
 import java.io.File;
-import java.util.Optional;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 import swervelib.SwerveDrive;
 import swervelib.SwerveModule;
-import swervelib.math.SwerveMath;
 import swervelib.parser.SwerveParser;
 import swervelib.telemetry.SwerveDriveTelemetry;
-import limelight.Limelight;
-import limelight.networktables.AngularVelocity3d;
-import limelight.networktables.LimelightPoseEstimator;
-import limelight.networktables.LimelightSettings.LEDMode;
-import limelight.networktables.Orientation3d;
-import limelight.networktables.PoseEstimate;
-import limelight.networktables.LimelightPoseEstimator.EstimationMode;
-
 
 public class SwerveSubsystem extends SubsystemBase {
 
+  private static final String LIMELIGHT_BACK  = "limelight-back";
+  private static final String LIMELIGHT_FRONT = "limelight-front";
+
   Field2d field;
   SwerveDrive swerveDrive;
-  LimelightPoseEstimator limelightBackPoseEstimator;
-  LimelightPoseEstimator limelightFrontPoseEstimator;
-  Limelight limelightBack = new Limelight("limelight-back");
-  Limelight limelightFront = new Limelight("limelight-front");
   private File swerveJsonDirectory = new File(Filesystem.getDeployDirectory(), "swerve");
 
   public SwerveSubsystem() {
     try {
       swerveDrive = new SwerveParser(swerveJsonDirectory).createSwerveDrive(Constants.Swerve.maxSpeed);
-    } catch (Exception e)
-     {
+    } catch (Exception e) {
       throw new RuntimeException(e);
     }
     SwerveDriveTelemetry.verbosity = SwerveDriveTelemetry.TelemetryVerbosity.HIGH;
@@ -71,15 +60,16 @@ public class SwerveSubsystem extends SubsystemBase {
     swerveDrive.setModuleStateOptimization(true);
     swerveDrive.setAutoCenteringModules(false);
     swerveDrive.setHeadingCorrection(false);
-    setupLimelight();
+    LimelightHelpers.setPipelineIndex(LIMELIGHT_BACK,  0);
+    LimelightHelpers.setPipelineIndex(LIMELIGHT_FRONT, 0);
   }
 
   public void setupPathPlanner() {
-     RobotConfig config;
+    RobotConfig config;
     try {
       config = RobotConfig.fromGUISettings();
       boolean enableFeedforward = true;
-      
+
       AutoBuilder.configure(
           this::getPose,
           this::resetOdometry,
@@ -124,8 +114,8 @@ public class SwerveSubsystem extends SubsystemBase {
   public Command driveCommand(
       DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX) {
     return run(() -> {
-      double x = MathUtil.applyDeadband(translationX.getAsDouble(), 0.1);
-      double y = MathUtil.applyDeadband(translationY.getAsDouble(), 0.1);
+      double x     = MathUtil.applyDeadband(translationX.getAsDouble(), 0.1);
+      double y     = MathUtil.applyDeadband(translationY.getAsDouble(), 0.1);
       double omega = MathUtil.applyDeadband(angularRotationX.getAsDouble(), 0.1);
 
       swerveDrive.drive(
@@ -210,104 +200,78 @@ public class SwerveSubsystem extends SubsystemBase {
   public void setChassisSpeeds(ChassisSpeeds chassisSpeeds) {
     swerveDrive.drive(chassisSpeeds);
   }
-  
-  public void setupLimelight(){
 
-  limelightBack.getSettings()
-      .withPipelineIndex(0)
-      .withLimelightLEDMode(LEDMode.PipelineControl)
-      .save();
-
-  limelightFront.getSettings()
-      .withPipelineIndex(0)
-      .withLimelightLEDMode(LEDMode.PipelineControl)
-      .save();
-
-  limelightBackPoseEstimator = limelightBack.createPoseEstimator(EstimationMode.MEGATAG2);
-  limelightFrontPoseEstimator = limelightFront.createPoseEstimator(EstimationMode.MEGATAG2);
-  
-  // Per-measurement stddevs are computed dynamically in updateVisionCombined()
-}
-
-@Override
-public void periodic() {
+  @Override
+  public void periodic() {
+    double yawDeg      = Units.radiansToDegrees(swerveDrive.getGyro().getRotation3d().getZ());
     double yawRateDegS = swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond);
 
-    Orientation3d orientation = new Orientation3d(
-        swerveDrive.getGyro().getRotation3d(),
-        new AngularVelocity3d(
-            DegreesPerSecond.of(0),
-            DegreesPerSecond.of(0),
-            DegreesPerSecond.of(yawRateDegS)));
-
-    limelightBack.getSettings().withRobotOrientation(orientation).save();
-    limelightFront.getSettings().withRobotOrientation(orientation).save();
+    LimelightHelpers.SetRobotOrientation(LIMELIGHT_BACK,  yawDeg, yawRateDegS, 0, 0, 0, 0);
+    LimelightHelpers.SetRobotOrientation(LIMELIGHT_FRONT, yawDeg, yawRateDegS, 0, 0, 0, 0);
 
     updateVisionCombined();
     field.setRobotPose(swerveDrive.getPose());
   }
 
   private void updateVisionCombined() {
-    Optional<PoseEstimate> backOpt  = limelightBackPoseEstimator.getPoseEstimate();
-    Optional<PoseEstimate> frontOpt = limelightFrontPoseEstimator.getPoseEstimate();
+    PoseEstimate back  = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LIMELIGHT_BACK);
+    PoseEstimate front = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LIMELIGHT_FRONT);
 
-    boolean backValid  = backOpt.isPresent()
-        && backOpt.get().tagCount > 0;
-    boolean frontValid = frontOpt.isPresent()
-        && frontOpt.get().tagCount > 0;
-      
-    SmartDashboard.putBoolean("Back Valid", backValid);
-    SmartDashboard.putBoolean("Front Valıd", frontValid);
+    boolean backValid  = back  != null && back.tagCount  > 0;
+    boolean frontValid = front != null && front.tagCount > 0;
+
+    SmartDashboard.putBoolean("Back Valid",    backValid);
+    SmartDashboard.putBoolean("Front Valid",   frontValid);
+    SmartDashboard.putNumber("Back/TagCount",  back  != null ? back.tagCount  : -1);
+    SmartDashboard.putNumber("Front/TagCount", front != null ? front.tagCount : -1);
+
     if (backValid && frontValid) {
-      PoseEstimate back  = backOpt.get();
-      PoseEstimate front = frontOpt.get();
-
-      // Weight = (1 - ambiguity): lower ambiguity → higher trust
-      double wB = 1.0 - back.getAvgTagAmbiguity();
-      double wF = 1.0 - front.getAvgTagAmbiguity();
+      double wB = 1.0 - avgAmbiguity(back);
+      double wF = 1.0 - avgAmbiguity(front);
       double total = wB + wF;
       wB /= total;
       wF /= total;
 
-      Pose2d bPose = back.pose.toPose2d();
-      Pose2d fPose = front.pose.toPose2d();
+      double x = wB * back.pose.getX() + wF * front.pose.getX();
+      double y = wB * back.pose.getY() + wF * front.pose.getY();
 
-      double x = wB * bPose.getX() + wF * fPose.getX();
-      double y = wB * bPose.getY() + wF * fPose.getY();
-
-      // Average rotation via unit-vector interpolation to handle wrap-around correctly
-      double bAngle = bPose.getRotation().getRadians();
-      double fAngle = fPose.getRotation().getRadians();
+      double bAngle = back.pose.getRotation().getRadians();
+      double fAngle = front.pose.getRotation().getRadians();
       Rotation2d avgRot = new Rotation2d(
           wB * Math.cos(bAngle) + wF * Math.cos(fAngle),
           wB * Math.sin(bAngle) + wF * Math.sin(fAngle));
 
       double timestamp = wB * back.timestampSeconds + wF * front.timestampSeconds;
+      double avgDist   = wB * back.avgTagDist + wF * front.avgTagDist;
+      int    totalTags = back.tagCount + front.tagCount;
 
-      double avgDist = wB * back.avgTagDist + wF * front.avgTagDist;
-      int totalTags  = back.tagCount + front.tagCount;
       swerveDrive.addVisionMeasurement(new Pose2d(x, y, avgRot), timestamp,
           visionStdDevs(totalTags, avgDist));
 
-      SmartDashboard.putString("Vision/Source", "Both (weighted)");
+      SmartDashboard.putString("Vision/Source",     "Both (weighted)");
       SmartDashboard.putNumber("Vision/WeightBack",  wB);
       SmartDashboard.putNumber("Vision/WeightFront", wF);
 
     } else if (backValid) {
-      PoseEstimate back = backOpt.get();
-      swerveDrive.addVisionMeasurement(back.pose.toPose2d(), back.timestampSeconds,
+      swerveDrive.addVisionMeasurement(back.pose, back.timestampSeconds,
           visionStdDevs(back.tagCount, back.avgTagDist));
       SmartDashboard.putString("Vision/Source", "Back only");
 
     } else if (frontValid) {
-      PoseEstimate front = frontOpt.get();
-      swerveDrive.addVisionMeasurement(front.pose.toPose2d(), front.timestampSeconds,
+      swerveDrive.addVisionMeasurement(front.pose, front.timestampSeconds,
           visionStdDevs(front.tagCount, front.avgTagDist));
       SmartDashboard.putString("Vision/Source", "Front only");
 
     } else {
       SmartDashboard.putString("Vision/Source", "None");
     }
+  }
+
+  private double avgAmbiguity(PoseEstimate est) {
+    if (est.rawFiducials == null || est.rawFiducials.length == 0) return 1.0;
+    double sum = 0;
+    for (var f : est.rawFiducials) sum += f.ambiguity;
+    return sum / est.rawFiducials.length;
   }
 
   private Matrix<N3, N1> visionStdDevs(int tagCount, double avgDistMeters) {
