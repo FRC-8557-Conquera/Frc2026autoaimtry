@@ -28,7 +28,7 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     m_robotContainer = new RobotContainer();
-    m_robotContainer.zeroGyro();
+    m_robotContainer.s_Swerve.zeroGyroWithAlliance();
   }
 
   @Override
@@ -44,7 +44,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousInit() {
-    m_robotContainer.zeroGyro();
+    m_robotContainer.s_Swerve.zeroGyroWithAlliance();
     m_robotContainer.resetOdometry(new Pose2d(0, 0, Rotation2d.kZero));
     m_robotContainer.setMotorBrake(true);
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
@@ -62,7 +62,7 @@ public class Robot extends TimedRobot {
     if (m_autonomousCommand != null) {
       m_autonomousCommand.cancel();
     }
-    m_robotContainer.zeroGyro();
+    m_robotContainer.s_Swerve.zeroGyroWithAlliance();
   }
 
   @Override
