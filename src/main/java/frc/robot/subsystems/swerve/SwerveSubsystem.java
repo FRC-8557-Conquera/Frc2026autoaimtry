@@ -215,12 +215,25 @@ public class SwerveSubsystem extends SubsystemBase {
     field.setRobotPose(swerveDrive.getPose());
   }
 
+  private static final double MAX_AMBIGUITY    = 0.3;
+  private static final double MAX_TAG_DIST_M   = 4.5;
+  private static final double MAX_YAW_RATE_DPS = 720.0;
+
+  private boolean isValidEstimate(PoseEstimate est) {
+    if (est == null || est.tagCount == 0) return false;
+    if (est.avgTagDist > MAX_TAG_DIST_M) return false;
+    if (avgAmbiguity(est) > MAX_AMBIGUITY) return false;
+    double yawRateDegS = swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond);
+    if (Math.abs(yawRateDegS) > MAX_YAW_RATE_DPS) return false;
+    return true;
+  }
+
   private void updateVisionCombined() {
     PoseEstimate back  = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LIMELIGHT_BACK);
     PoseEstimate front = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LIMELIGHT_FRONT);
 
-    boolean backValid  = back  != null && back.tagCount  > 0;
-    boolean frontValid = front != null && front.tagCount > 0;
+    boolean backValid  = isValidEstimate(back);
+    boolean frontValid = isValidEstimate(front);
 
     SmartDashboard.putBoolean("Back Valid",    backValid);
     SmartDashboard.putBoolean("Front Valid",   frontValid);
