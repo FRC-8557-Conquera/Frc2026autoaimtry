@@ -76,9 +76,11 @@ public class SwerveSubsystem extends SubsystemBase {
           this::getChassisSpeeds,
           (speedsRobotRelative, moduleFeedForwards) -> {
             if (enableFeedforward) {
+              SwerveModuleState[] states = swerveDrive.kinematics.toSwerveModuleStates(speedsRobotRelative);
+              SwerveDriveKinematics.desaturateWheelSpeeds(states, swerveDrive.getMaximumChassisVelocity());
               swerveDrive.drive(
                   speedsRobotRelative,
-                  swerveDrive.kinematics.toSwerveModuleStates(speedsRobotRelative),
+                  states,
                   moduleFeedForwards.linearForces());
             } else {
               swerveDrive.setChassisSpeeds(speedsRobotRelative);
