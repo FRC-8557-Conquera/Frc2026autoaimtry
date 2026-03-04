@@ -50,13 +50,13 @@ public class RobotContainer {
   private final JoystickButton xLock = new JoystickButton(driver, 6);
 
   private final JoystickButton turretZero = new JoystickButton(driver2,2);
-  private final JoystickButton turretButtonLeft = new JoystickButton(driver2,8);
-    private final JoystickButton turretButtonRight = new JoystickButton(driver2,7);
+  private final JoystickButton turretButtonLeft = new JoystickButton(driver2,7);
+    private final JoystickButton turretButtonRight = new JoystickButton(driver2,8);
 
   private final JoystickButton triggerButton = new JoystickButton(driver2, 1);
 
-  private final JoystickButton feederAl = new JoystickButton(driver2, 3);
-  private final JoystickButton feederTers = new JoystickButton(driver2, 4);
+  private final JoystickButton feederAl = new JoystickButton(driver2, 4);
+  private final JoystickButton feederTers = new JoystickButton(driver2, 3);
 
   private final JoystickButton spindexerF = new JoystickButton(driver2, 5);
   private final JoystickButton spindexerR = new JoystickButton(driver2, 6);
@@ -105,6 +105,7 @@ public class RobotContainer {
     NamedCommands.registerCommand("dump", new DumpCommand(spindexer, feeder, shooter,3));
     NamedCommands.registerCommand("intake", new IntakeAlCommand(intake, 4));
     NamedCommands.registerCommand("tumsel", new ShootCommand(spindexer,feeder,shooter,6));
+    NamedCommands.registerCommand("manuelshoot", flywheel.setVelocity(RotationsPerSecond.of(33.5)));
 
     // 2. Now configure PathPlanner (AutoBuilder.configure runs here)
     s_Swerve.setupPathPlanner();
@@ -117,7 +118,7 @@ public class RobotContainer {
     s_Swerve.setDefaultCommand(FOdriveAngularVelocity);
     configureButtonBindings();
 
-    turret.setDefaultCommand(turret.setAngle(() -> shooter.getTurretSetpoint()));
+   // turret.setDefaultCommand(turret.setAngle(() -> shooter.getTurretSetpoint()));
     s_Swerve.zeroGyroWithAlliance();
 
     
@@ -125,14 +126,15 @@ public class RobotContainer {
 
   private void configureButtonBindings() {
 
-    hubButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.HUB)));
-    dumpButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.DUMP)));
-    offButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
+   // hubButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.HUB)));
+   //dumpButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.DUMP)));
+   // offButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
    
-    triggerButton.whileTrue(
-    Commands.run(() -> { flywheel.setVelocity(() -> shooter.getFlywheelSetpoint()).schedule(); feeder.feed().schedule(); spindexer.spinReverse().schedule();})).onFalse(
-    Commands.runOnce(() -> {flywheel.setVelocity(RotationsPerSecond.of(0)).schedule(); feeder.stop().schedule(); spindexer.stop().schedule();}));
+    //triggerButton.whileTrue(
+    //Commands.run(() -> { flywheel.setVelocity(() -> shooter.getFlywheelSetpoint()).schedule(); feeder.feed().schedule(); spindexer.spinReverse().schedule();})).onFalse(
+    //Commands.runOnce(() -> {flywheel.setVelocity(RotationsPerSecond.of(0)).schedule(); feeder.stop().schedule(); spindexer.stop().schedule();}));
 
+    triggerButton.whileTrue(flywheel.setVelocity(RotationsPerSecond.of(33.5)));
     turretButtonLeft.whileTrue(turret.rotateDutyCycle(0.05)).onFalse(turret.stop());
     turretButtonRight.whileTrue(turret.rotateDutyCycle(-0.05)).onFalse(turret.stop());
     turretZero.onTrue(turret.setAngle(Degrees.of(0))).onFalse(turret.stop());
