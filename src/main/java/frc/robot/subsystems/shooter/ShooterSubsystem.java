@@ -115,7 +115,7 @@ public class ShooterSubsystem extends SubsystemBase {
     if (intent == ShotIntent.DUMP) {
         return Degrees.of(Rotation2d.k180deg.minus(robotPose.getRotation()).getDegrees());
     }
-    return Degrees.of(90);
+    return Degrees.of(0);
     }
     
     public double getMagnitude(Transform2d pose) {

@@ -40,7 +40,7 @@ public class IntakeAlCommand extends Command {
 
     @Override
     public void end(boolean interrupted) {
-        intake.rollerIn();
+        intake.rollerStop();
         timer.stop();
     }
 }

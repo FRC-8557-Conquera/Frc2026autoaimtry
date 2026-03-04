@@ -205,7 +205,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-    double yawDeg      = Units.radiansToDegrees(swerveDrive.getGyro().getRotation3d().getZ());
+    double yawDeg      = Units.radiansToDegrees(swerveDrive.getPose().getRotation().getRadians());
     double yawRateDegS = swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond);
 
     LimelightHelpers.SetRobotOrientation(LIMELIGHT_BACK,  yawDeg, yawRateDegS, 0, 0, 0, 0);

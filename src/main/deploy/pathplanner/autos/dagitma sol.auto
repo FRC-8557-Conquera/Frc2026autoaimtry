@@ -7,13 +7,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "New New New Path"
+            "pathName": "bumptan"
           }
         },
         {
-          "type": "wait",
+          "type": "path",
           "data": {
-            "waitTime": 0.5
+            "pathName": "dagitma alma"
           }
         },
         {
@@ -21,24 +21,18 @@
           "data": {
             "commands": [
               {
-                "type": "path",
-                "data": {
-                  "pathName": "New New New New Path"
-                }
-              },
-              {
                 "type": "named",
                 "data": {
                   "name": "intake"
                 }
+              },
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "New Path"
+                }
               }
             ]
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "tumsel"
           }
         }
       ]
