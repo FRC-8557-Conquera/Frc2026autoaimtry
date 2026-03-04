@@ -3,6 +3,7 @@ package frc.robot.subsystems.shooter;
 import static edu.wpi.first.units.Units.*;
 
 import com.pathplanner.lib.util.GeometryUtil;
+import com.thethriftybot.wrappers.RobotStateWrapper;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -88,33 +89,32 @@ public class ShooterSubsystem extends SubsystemBase {
 
 
     public Angle getTurretSetpoint() {
+        Pose2d robotPose = swerve.getPose();
         if (intent == ShotIntent.HUB) {
-          Pose2d robotPose = swerve.getPose();
+        Translation2d turretOffset =
+            new Translation2d(Turret.turretDist,0); 
 
-    Translation2d turretOffset =
-        new Translation2d(Turret.turretDist,0); 
+        Translation2d turretFieldPosition =
+            robotPose.getTranslation().plus(
+                turretOffset.rotateBy(robotPose.getRotation())
+            );
 
-    Translation2d turretFieldPosition =
-        robotPose.getTranslation().plus(
-            turretOffset.rotateBy(robotPose.getRotation())
-        );
+        Translation2d toHub =
+            getHubPose().getTranslation()
+                .minus(turretFieldPosition);
 
-    Translation2d toHub =
-        getHubPose().getTranslation()
-            .minus(turretFieldPosition);
+        Rotation2d fieldAngle = toHub.getAngle();
 
-    Rotation2d fieldAngle = toHub.getAngle();
-
-    Rotation2d turretRelative =
-        fieldAngle
-            .minus(robotPose.getRotation()); 
-    double setpointDeg = turretRelative.getDegrees();
-    double wrapped = MathUtil.inputModulus(setpointDeg, -180, 180);
-    return Degrees.of(wrapped);
+        Rotation2d turretRelative =
+            fieldAngle
+                .minus(robotPose.getRotation()); 
+        double setpointDeg = turretRelative.getDegrees();
+        double wrapped = MathUtil.inputModulus(setpointDeg, -180, 180);
+        return Degrees.of(wrapped);
     }
     if (intent == ShotIntent.DUMP) {
-        return Degrees.of(0); 
-        }
+        return Degrees.of(Rotation2d.k180deg.minus(robotPose.getRotation()).getDegrees());
+    }
     return Degrees.of(90);
     }
     

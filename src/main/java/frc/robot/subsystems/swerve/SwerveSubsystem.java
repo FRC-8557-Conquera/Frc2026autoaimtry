@@ -86,7 +86,7 @@ public class SwerveSubsystem extends SubsystemBase {
           },
           new PPHolonomicDriveController(
               new PIDConstants(5, 0, 0),
-              new PIDConstants(4, 0, 0)),
+              new PIDConstants(7, 0, 0)),
           config,
           () -> {
             var alliance = DriverStation.getAlliance();

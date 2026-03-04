@@ -26,6 +26,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.Constants.Spindexer;
+import frc.robot.commands.DumpCommand;
 import frc.robot.commands.IntakeAlCommand;
 import frc.robot.commands.ShootCommand;
 import frc.robot.subsystems.feeder.FeederSubsystem;
@@ -100,7 +101,7 @@ public class RobotContainer {
     NamedCommands.registerCommand("taretbah", turret.setAngle(shooter.getTurretSetpoint()));
     NamedCommands.registerCommand("tüküğr", flywheel.setVelocity(shooter.getFlywheelSetpoint()));
     NamedCommands.registerCommand("intakeall", intake.rollerIn());
-
+    NamedCommands.registerCommand("dump", new DumpCommand(spindexer, feeder, shooter,3));
     NamedCommands.registerCommand("intake", new IntakeAlCommand(intake, 4));
     NamedCommands.registerCommand("tumsel", new ShootCommand(spindexer,feeder,shooter,3));
 
@@ -128,8 +129,8 @@ public class RobotContainer {
     //offButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
    
     triggerButton.whileTrue(
-    Commands.run(() -> { flywheel.setVelocity(() -> shooter.getFlywheelSetpoint()).schedule(); feeder.feed().schedule();})).onFalse(
-    Commands.runOnce(() -> {flywheel.setVelocity(RotationsPerSecond.of(0)).schedule(); feeder.stop().schedule();}));
+    Commands.run(() -> { flywheel.setVelocity(() -> shooter.getFlywheelSetpoint()).schedule(); feeder.feed().schedule(); spindexer.spinReverse().schedule();})).onFalse(
+    Commands.runOnce(() -> {flywheel.setVelocity(RotationsPerSecond.of(0)).schedule(); feeder.stop().schedule(); spindexer.stop().schedule();}));
 
     turretButtonLeft.whileTrue(turret.rotateDutyCycle(0.05)).onFalse(turret.stop());
     //turretButtonRight.whileTrue(turret.rotateDutyCycle(-0.05)).onFalse(turret.stop());
