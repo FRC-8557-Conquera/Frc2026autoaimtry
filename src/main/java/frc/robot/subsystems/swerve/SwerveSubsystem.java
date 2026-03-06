@@ -10,6 +10,7 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
@@ -18,6 +19,7 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -62,6 +64,7 @@ public class SwerveSubsystem extends SubsystemBase {
     swerveDrive.setHeadingCorrection(false);
     LimelightHelpers.setPipelineIndex(LIMELIGHT_BACK,  0);
     LimelightHelpers.setPipelineIndex(LIMELIGHT_FRONT, 0);
+    setupPathPlanner();
   }
 
   public void setupPathPlanner() {
@@ -145,19 +148,16 @@ public class SwerveSubsystem extends SubsystemBase {
     swerveDrive.resetOdometry(pose);
   }
 
-  private boolean isRedAlliance() {
-    var alliance = DriverStation.getAlliance();
-    return alliance.isPresent() ? alliance.get() == DriverStation.Alliance.Red : false;
-  }
-
   public void zeroGyroWithAlliance() {
-    if (isRedAlliance()) {
-      zeroGyro();
-      resetOdometry(new Pose2d(getPose().getTranslation(), Rotation2d.fromDegrees(180)));
+    if (DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red) {
+        zeroGyro();
+        resetOdometry(new Pose2d(getPose().getTranslation(), Rotation2d.fromDegrees(180)));
     } else {
-      zeroGyro();
+        zeroGyro();
+        resetOdometry(new Pose2d(0, 0, new Rotation2d()));
     }
-  }
+}
+  
 
   public void lock() {
     swerveDrive.lockPose();
@@ -205,19 +205,19 @@ public class SwerveSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-    double yawDeg      = Units.radiansToDegrees(swerveDrive.getPose().getRotation().getRadians());
+    double yawDeg = getHeading().getDegrees();
     double yawRateDegS = swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond);
 
     LimelightHelpers.SetRobotOrientation(LIMELIGHT_BACK,  yawDeg, yawRateDegS, 0, 0, 0, 0);
     LimelightHelpers.SetRobotOrientation(LIMELIGHT_FRONT, yawDeg, yawRateDegS, 0, 0, 0, 0);
 
-    updateVisionCombined();
+    updateVision();
     field.setRobotPose(swerveDrive.getPose());
   }
 
   private static final double MAX_AMBIGUITY    = 0.3;
-  private static final double MAX_TAG_DIST_M   = 4.5;
-  private static final double MAX_YAW_RATE_DPS = 720.0;
+  private static final double MAX_TAG_DIST_M   = 5;
+  private static final double MAX_YAW_RATE_DPS = 1000;
 
   private boolean isValidEstimate(PoseEstimate est) {
     if (est == null || est.tagCount == 0) return false;
@@ -228,7 +228,7 @@ public class SwerveSubsystem extends SubsystemBase {
     return true;
   }
 
-  private void updateVisionCombined() {
+  private void updateVision() {
     PoseEstimate back  = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LIMELIGHT_BACK);
     PoseEstimate front = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LIMELIGHT_FRONT);
 
@@ -240,32 +240,24 @@ public class SwerveSubsystem extends SubsystemBase {
     SmartDashboard.putNumber("Back/TagCount",  back  != null ? back.tagCount  : -1);
     SmartDashboard.putNumber("Front/TagCount", front != null ? front.tagCount : -1);
 
+    Rotation3d rot = swerveDrive.getGyro().getRotation3d();
+    double pitch = Math.abs(Units.radiansToDegrees(rot.getY()));
+    double roll  = Math.abs(Units.radiansToDegrees(rot.getX()));
+
+    if (pitch > 8 || roll > 8) return;
+    if (Math.abs(swerveDrive.getRobotVelocity().vxMetersPerSecond) > 4) return;
+
     if (backValid && frontValid) {
-      double wB = 1.0 - avgAmbiguity(back);
-      double wF = 1.0 - avgAmbiguity(front);
-      double total = wB + wF;
-      wB /= total;
-      wF /= total;
 
-      double x = wB * back.pose.getX() + wF * front.pose.getX();
-      double y = wB * back.pose.getY() + wF * front.pose.getY();
-
-      double bAngle = back.pose.getRotation().getRadians();
-      double fAngle = front.pose.getRotation().getRadians();
-      Rotation2d avgRot = new Rotation2d(
-          wB * Math.cos(bAngle) + wF * Math.cos(fAngle),
-          wB * Math.sin(bAngle) + wF * Math.sin(fAngle));
-
-      double timestamp = wB * back.timestampSeconds + wF * front.timestampSeconds;
-      double avgDist   = wB * back.avgTagDist + wF * front.avgTagDist;
-      int    totalTags = back.tagCount + front.tagCount;
-
-      swerveDrive.addVisionMeasurement(new Pose2d(x, y, avgRot), timestamp,
-          visionStdDevs(totalTags, avgDist));
-
-      SmartDashboard.putString("Vision/Source",     "Both (weighted)");
-      SmartDashboard.putNumber("Vision/WeightBack",  wB);
-      SmartDashboard.putNumber("Vision/WeightFront", wF);
+     if (front.avgTagDist > back.avgTagDist) {
+        swerveDrive.addVisionMeasurement(back.pose, back.timestampSeconds,
+            visionStdDevs(back.tagCount, back.avgTagDist));
+        SmartDashboard.putString("Vision/Source", "Both (back weighted)");
+      } else {
+        swerveDrive.addVisionMeasurement(front.pose, front.timestampSeconds,
+            visionStdDevs(front.tagCount, front.avgTagDist));
+        SmartDashboard.putString("Vision/Source", "Both (front weighted)");
+     }
 
     } else if (backValid) {
       swerveDrive.addVisionMeasurement(back.pose, back.timestampSeconds,
@@ -290,6 +282,6 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
   private Matrix<N3, N1> visionStdDevs(int tagCount, double avgDistMeters) {
-    return VecBuilder.fill(0.07, 0.07, 9999999);
+    return VecBuilder.fill(0.07, 0.07, Units.degreesToRadians(10));
   }
 }
