@@ -37,6 +37,7 @@ import frc.robot.subsystems.shooter.ShooterSubsystem.ShotIntent;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.subsystems.spindexer.SpindexerSubsystem;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
+import frc.robot.util.FuelSim;
 import frc.robot.commands.ShootCommand;
 import swervelib.SwerveInputStream;
 
@@ -66,7 +67,7 @@ public class RobotContainer {
   private final JoystickButton intakeAl = new JoystickButton(driver2, 9);
   JoystickButton hubButton = new JoystickButton(driver2, 11);
   JoystickButton dumpButton = new JoystickButton(driver2, 12);
-  
+  public FuelSim fuelSim = new FuelSim();  
 
 
   public final SwerveSubsystem s_Swerve = new SwerveSubsystem();
@@ -119,8 +120,6 @@ public class RobotContainer {
 
     turret.setDefaultCommand(turret.setAngle(() -> shooter.getTurretSetpoint()));
     s_Swerve.zeroGyroWithAlliance();
-
-    
   }
 
   private void configureButtonBindings() {

@@ -57,6 +57,8 @@ public class SwerveSubsystem extends SubsystemBase {
   LimelightPoseEstimator limelightFrontPoseEstimator;
   Limelight limelightBack = new Limelight("limelight-back");
   Limelight limelightFront = new Limelight("limelight-front");
+  boolean[] resultsPresent = {false, false};
+  boolean[] validReading = {false, false};
   private File swerveJsonDirectory = new File(Filesystem.getDeployDirectory(), "swerve");
 
   public SwerveSubsystem() {
@@ -247,8 +249,14 @@ public void periodic() {
                                                      new AngularVelocity3d(DegreesPerSecond.of(0),
                                                                            DegreesPerSecond.of(0),
                                                                            DegreesPerSecond.of(yawVelocity))));
-    addVisionFromEstimator(limelightBackPoseEstimator);
-    addVisionFromEstimator(limelightFrontPoseEstimator);  
+    addVisionFromEstimator(limelightBackPoseEstimator, 0);
+    addVisionFromEstimator(limelightFrontPoseEstimator, 1);
+    
+    SmartDashboard.putBoolean("Limelight Back Present", resultsPresent[0]);
+    SmartDashboard.putBoolean("Limelight Back Valid", validReading[0]);
+    SmartDashboard.putBoolean("Limelight Front Present", resultsPresent[1]);
+    SmartDashboard.putBoolean("Limelight Front Valid", validReading[1]);
+
     field.setRobotPose(swerveDrive.getPose());
   }
 
@@ -256,16 +264,23 @@ public void periodic() {
   //       back/front by (1 - ambiguity), blends poses via unit-vector rotation averaging, and
   //       uses per-measurement stddevs scaling with distance^2 / tagCount instead of the global
   //       setVisionMeasurementStdDevs call in setupLimelight().
-  private void addVisionFromEstimator(LimelightPoseEstimator estimator) {
+  private void addVisionFromEstimator(LimelightPoseEstimator estimator, int index) {
     Optional<PoseEstimate> est = estimator.getPoseEstimate();
 
     if (est.isPresent()) {
       PoseEstimate poseEstimate = est.get();
+      resultsPresent[index] = true;
       
     if (poseEstimate.tagCount > 0 && poseEstimate.getAvgTagAmbiguity() < 0.3) {
+        validReading[index] = true;
         Pose2d visionPose = poseEstimate.pose.toPose2d();
         swerveDrive.addVisionMeasurement(visionPose,poseEstimate.timestampSeconds);
+      } else {
+        validReading[index] = false;
       }
+    } else {
+      resultsPresent[index] = false;
+      validReading[index] = false;
     }
   }
 }
