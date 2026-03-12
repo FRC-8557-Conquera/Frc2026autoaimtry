@@ -22,6 +22,7 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -72,7 +73,7 @@ public class SwerveSubsystem extends SubsystemBase {
     field = new Field2d();
     SmartDashboard.putData("Field", field);
     swerveDrive.setModuleEncoderAutoSynchronize(false, 1);
-    swerveDrive.setAngularVelocityCompensation(true, true, 0.2);
+    swerveDrive.setAngularVelocityCompensation(true, true, 0.2); //
     swerveDrive.setModuleStateOptimization(true);
     swerveDrive.setAutoCenteringModules(false);
     swerveDrive.setHeadingCorrection(false);
@@ -237,6 +238,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
 @Override
 public void periodic() {
+  swerveDrive.updateOdometry();
     double yawVelocity = swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond);
 
         limelightBack.getSettings()
@@ -257,7 +259,7 @@ public void periodic() {
     SmartDashboard.putBoolean("Limelight Front Present", resultsPresent[1]);
     SmartDashboard.putBoolean("Limelight Front Valid", validReading[1]);
 
-    field.setRobotPose(swerveDrive.getPose());
+    //field.setRobotPose(swerveDrive.getPose());
   }
 
   // TODO: once basic vision is verified working, replace with updateVisionCombined() that weights

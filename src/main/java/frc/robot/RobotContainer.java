@@ -17,6 +17,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -92,8 +93,39 @@ public class RobotContainer {
   SwerveInputStream driveDirectAngle = driveAngularVelocity.copy()
       .withControllerHeadingAxis(() -> driver.getRawAxis(2), () -> driver.getRawAxis(3))
       .headingWhile(false);
+  
+    SwerveInputStream driveAngularVelocityKeyboard = SwerveInputStream.of(s_Swerve.getSwerveDrive(),
+                                                                        () -> -driver.getY(),
+                                                                        () -> -driver.getX())
+                                                                    .withControllerRotationAxis(() -> driver.getRawAxis(
+                                                                        4))
+                                                                    .deadband(0.1)
+                                                                    .scaleTranslation(0.8)
+                                                                    .allianceRelativeControl(true);
+  // Derive the heading axis with math!
+  SwerveInputStream driveDirectAngleKeyboard     = driveAngularVelocityKeyboard.copy()
+                                                                               .withControllerHeadingAxis(() ->
+                                                                                                              Math.sin(
+                                                                                                                  driver.getRawAxis(
+                                                                                                                      2) *
+                                                                                                                  Math.PI) *
+                                                                                                              (Math.PI *
+                                                                                                               2),
+                                                                                                          () ->
+                                                                                                              Math.cos(
+                                                                                                                  driver.getRawAxis(
+                                                                                                                      2) *
+                                                                                                                  Math.PI) *
+                                                                                                              (Math.PI *
+                                                                                                               2))
+                                                                               .headingWhile(true)
+                                                                               .translationHeadingOffset(true)
+                                                                               .translationHeadingOffset(Rotation2d.fromDegrees(
+                                                                                   0));
+
 
   Command FOdriveAngularVelocity = s_Swerve.driveFieldOriented(driveAngularVelocity);
+  Command FOdriveAngularVelocityKeyboard = s_Swerve.driveFieldOriented(driveAngularVelocityKeyboard);
   Command FOdriveDirectAngle = s_Swerve.driveFieldOriented(driveDirectAngle);
 
   SendableChooser<Command> m_chooser;
@@ -115,7 +147,9 @@ public class RobotContainer {
     SmartDashboard.putData("Auto Chooser", m_chooser);
 
     DriverStation.silenceJoystickConnectionWarning(true);
-    s_Swerve.setDefaultCommand(FOdriveAngularVelocity);
+    if(RobotBase.isSimulation()) {
+      s_Swerve.setDefaultCommand(FOdriveAngularVelocityKeyboard);
+    } else s_Swerve.setDefaultCommand(FOdriveAngularVelocity);
     configureButtonBindings();
 
     turret.setDefaultCommand(turret.setAngle(() -> shooter.getTurretSetpoint()));
@@ -123,7 +157,6 @@ public class RobotContainer {
   }
 
   private void configureButtonBindings() {
-
     hubButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.HUB)));
     dumpButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.DUMP)));
     offButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
