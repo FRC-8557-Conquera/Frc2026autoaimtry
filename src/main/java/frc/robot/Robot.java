@@ -113,39 +113,23 @@ public class Robot extends TimedRobot
     @Override
     public void testExit() {}
     
-    // Create and configure a drivetrain simulation configuration
-final DriveTrainSimulationConfig driveTrainSimulationConfig = DriveTrainSimulationConfig.Default()
-        // Specify gyro type (for realistic gyro drifting and error simulation)
-        .withGyro(COTS.ofNav2X())
-        // Specify swerve module (for realistic swerve dynamics)
-        .withSwerveModule(new SwerveModuleSimulationConfig(
-                DCMotor.getKrakenX60(1), // Drive motor is a Kraken X60
-                DCMotor.getNEO(1), // Steer motor is a Falcon 500
-                6.75, // Drive motor gear ratio.
-                12.8, // Steer motor gear ratio.
-                Volts.of(0.1), // Drive friction voltage.
-                Volts.of(0.1), // Steer friction voltage
-                Inches.of(2), // Wheel radius
-                KilogramSquareMeters.of(0.03), // Steer MOI
-                1.13)) // Wheel COF
-        // Configures the track length and track width (spacing between swerve modules)
-        .withTrackLengthTrackWidth(Inches.of(19.3), Inches.of(19.3))
-        // Configures the bumper size (dimensions of the robot bumper)
-        .withBumperSize(Inches.of(28.2677165), Inches.of(28.2677165));
+
 
     @Override
     public void simulationPeriodic() {
-        // robotContainer.fuelSim.updateSim();
+       
+        robotContainer.fuelSim.updateSim();
+        /* 
         SimulatedArena.getInstance().simulationPeriodic();
 
         SimulatedArena.getInstance().addGamePiece(new RebuiltFuelOnField(new Translation2d(3, 3)));
-
+        */
 
     }
     
     @Override
     public void simulationInit() {
-        /*FuelSim fuelSim = robotContainer.fuelSim;
+        FuelSim fuelSim = robotContainer.fuelSim;
         fuelSim.spawnStartingFuel();
         fuelSim.start();
         SmartDashboard.putData(Commands.runOnce(() -> {
@@ -153,11 +137,11 @@ final DriveTrainSimulationConfig driveTrainSimulationConfig = DriveTrainSimulati
                     fuelSim.spawnStartingFuel();
                 })
                 .withName("Reset Fuel")
-                .ignoringDisable(true));*/
-
+                .ignoringDisable(true));
+    /* 
     // Obtains the default instance of the simulation world, which is a Crescendo Arena.
     SimulatedArena.getInstance();
     // Overrides the default simulation
-    SimulatedArena.overrideInstance(new Arena2026Rebuilt());
+    SimulatedArena.overrideInstance(new Arena2026Rebuilt());*/
     }
 }

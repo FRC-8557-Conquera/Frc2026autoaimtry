@@ -14,6 +14,7 @@ import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Joystick;
@@ -29,6 +30,7 @@ import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.Constants.Spindexer;
 import frc.robot.commands.DumpCommand;
 import frc.robot.commands.IntakeAlCommand;
+import frc.robot.commands.MappleSimDrive;
 import frc.robot.commands.ShootCommand;
 import frc.robot.subsystems.feeder.FeederSubsystem;
 import frc.robot.subsystems.intake.IntakeSubsystem;
@@ -39,6 +41,7 @@ import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.subsystems.spindexer.SpindexerSubsystem;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 import frc.robot.util.FuelSim;
+import frc.robot.util.MapleSimSwerve;
 import frc.robot.commands.ShootCommand;
 import swervelib.SwerveInputStream;
 
@@ -68,7 +71,8 @@ public class RobotContainer {
   private final JoystickButton intakeAl = new JoystickButton(driver2, 9);
   JoystickButton hubButton = new JoystickButton(driver2, 11);
   JoystickButton dumpButton = new JoystickButton(driver2, 12);
-  public FuelSim fuelSim = new FuelSim();  
+  public FuelSim fuelSim = new FuelSim();
+  private MapleSimSwerve maplesim = new MapleSimSwerve();
 
 
   public final SwerveSubsystem s_Swerve = new SwerveSubsystem();
@@ -94,6 +98,7 @@ public class RobotContainer {
       .withControllerHeadingAxis(() -> driver.getRawAxis(2), () -> driver.getRawAxis(3))
       .headingWhile(false);
   
+    
     SwerveInputStream driveAngularVelocityKeyboard = SwerveInputStream.of(s_Swerve.getSwerveDrive(),
                                                                         () -> -driver.getY(),
                                                                         () -> -driver.getX())
@@ -103,7 +108,7 @@ public class RobotContainer {
                                                                     .scaleTranslation(0.8)
                                                                     .allianceRelativeControl(true);
   // Derive the heading axis with math!
-  SwerveInputStream driveDirectAngleKeyboard     = driveAngularVelocityKeyboard.copy()
+  SwerveInputStream driveDirectAngleKeyboard = driveAngularVelocityKeyboard.copy()
                                                                                .withControllerHeadingAxis(() ->
                                                                                                               Math.sin(
                                                                                                                   driver.getRawAxis(
@@ -127,7 +132,7 @@ public class RobotContainer {
   Command FOdriveAngularVelocity = s_Swerve.driveFieldOriented(driveAngularVelocity);
   Command FOdriveAngularVelocityKeyboard = s_Swerve.driveFieldOriented(driveAngularVelocityKeyboard);
   Command FOdriveDirectAngle = s_Swerve.driveFieldOriented(driveDirectAngle);
-
+  
   SendableChooser<Command> m_chooser;
 
   public RobotContainer() {
