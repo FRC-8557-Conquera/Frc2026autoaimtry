@@ -30,7 +30,6 @@ import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.Constants.Spindexer;
 import frc.robot.commands.DumpCommand;
 import frc.robot.commands.IntakeAlCommand;
-import frc.robot.commands.MappleSimDrive;
 import frc.robot.commands.ShootCommand;
 import frc.robot.subsystems.feeder.FeederSubsystem;
 import frc.robot.subsystems.intake.IntakeSubsystem;
@@ -42,7 +41,6 @@ import frc.robot.subsystems.spindexer.SpindexerSubsystem;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 import frc.robot.util.FuelSim;
 import frc.robot.util.MapleSimSwerve;
-import frc.robot.commands.ShootCommand;
 import swervelib.SwerveInputStream;
 
 
@@ -128,11 +126,10 @@ public class RobotContainer {
                                                                                .translationHeadingOffset(Rotation2d.fromDegrees(
                                                                                    0));
 
-
   Command FOdriveAngularVelocity = s_Swerve.driveFieldOriented(driveAngularVelocity);
   Command FOdriveAngularVelocityKeyboard = s_Swerve.driveFieldOriented(driveAngularVelocityKeyboard);
   Command FOdriveDirectAngle = s_Swerve.driveFieldOriented(driveDirectAngle);
-  
+  Command FOdriveAngularVelocitySim = maplesim.mapleFieldOrientedDrive(() -> driveAngularVelocity.get());
   SendableChooser<Command> m_chooser;
 
   public RobotContainer() {
@@ -153,7 +150,8 @@ public class RobotContainer {
 
     DriverStation.silenceJoystickConnectionWarning(true);
     if(RobotBase.isSimulation()) {
-      s_Swerve.setDefaultCommand(FOdriveAngularVelocityKeyboard);
+      // s_Swerve.setDefaultCommand(FOdriveAngularVelocitySim);
+      maplesim.setDefaultCommand(FOdriveAngularVelocitySim);
     } else s_Swerve.setDefaultCommand(FOdriveAngularVelocity);
     configureButtonBindings();
 

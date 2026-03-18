@@ -2,6 +2,9 @@ package frc.robot.util;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Volts;
+
+import java.util.function.Supplier;
+
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -11,8 +14,10 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Robot;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 import swervelib.SwerveDrive;
@@ -70,10 +75,15 @@ public class MapleSimSwerve implements MappleSimInterface{
         this.simulatedDrive.runChassisSpeeds(new ChassisSpeeds(translation.getX(), translation.getY(), rotation),new Translation2d(),fieldRelative,true);
     }*/
 
+    
     @Override
     public void drive(ChassisSpeeds speeds, boolean fieldRelative, boolean isOpenLoop) {
-        this.simulatedDrive.runChassisSpeeds(speeds,null, fieldRelative,isOpenLoop);
+        this.simulatedDrive.runChassisSpeeds(speeds, null, fieldRelative,isOpenLoop);
     }
+    
+    public Command mapleFieldOrientedDrive(Supplier<ChassisSpeeds> speeds){
+        return run(() ->drive(ChassisSpeeds.fromFieldRelativeSpeeds(speeds.get(), getGyroYaw()),true,false));//drive(ChassisSpeeds.fromFieldRelativeSpeeds(speeds, getGyroYaw()),true,false);
+    } // one to one copy of yagsl's interpretation of fieldOrientedDrive
 
     @Override
     public void setModuleStates(SwerveModuleState[] desiredStates) {
