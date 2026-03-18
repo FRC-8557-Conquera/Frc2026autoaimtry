@@ -78,11 +78,11 @@ public class MapleSimSwerve implements MappleSimInterface{
     
     @Override
     public void drive(ChassisSpeeds speeds, boolean fieldRelative, boolean isOpenLoop) {
-        this.simulatedDrive.runChassisSpeeds(speeds, null, fieldRelative,isOpenLoop);
+        this.simulatedDrive.runChassisSpeeds(speeds, new Translation2d(), fieldRelative,isOpenLoop);
     }
     
     public Command mapleFieldOrientedDrive(Supplier<ChassisSpeeds> speeds){
-        return run(() ->drive(ChassisSpeeds.fromFieldRelativeSpeeds(speeds.get(), getGyroYaw()),true,false));//drive(ChassisSpeeds.fromFieldRelativeSpeeds(speeds, getGyroYaw()),true,false);
+        return run(() ->drive(ChassisSpeeds.fromFieldRelativeSpeeds(speeds.get(), getGyroYaw()),false,false));//drive(ChassisSpeeds.fromFieldRelativeSpeeds(speeds, getGyroYaw()),true,false);
     } // one to one copy of yagsl's interpretation of fieldOrientedDrive
 
     @Override

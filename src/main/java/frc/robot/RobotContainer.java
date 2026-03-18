@@ -130,6 +130,7 @@ public class RobotContainer {
   Command FOdriveAngularVelocityKeyboard = s_Swerve.driveFieldOriented(driveAngularVelocityKeyboard);
   Command FOdriveDirectAngle = s_Swerve.driveFieldOriented(driveDirectAngle);
   Command FOdriveAngularVelocitySim = maplesim.mapleFieldOrientedDrive(() -> driveAngularVelocity.get());
+  Command tryi=maplesim.tri(() -> driveAngularVelocity.get());
   SendableChooser<Command> m_chooser;
 
   public RobotContainer() {
@@ -151,7 +152,7 @@ public class RobotContainer {
     DriverStation.silenceJoystickConnectionWarning(true);
     if(RobotBase.isSimulation()) {
       // s_Swerve.setDefaultCommand(FOdriveAngularVelocitySim);
-      maplesim.setDefaultCommand(FOdriveAngularVelocitySim);
+      maplesim.setDefaultCommand(tryi);
     } else s_Swerve.setDefaultCommand(FOdriveAngularVelocity);
     configureButtonBindings();
 
