@@ -30,10 +30,8 @@ import static edu.wpi.first.units.Units.*;
 
 public class HoodSubsystem extends SubsystemBase {
     private final TalonFX hoodMotor = new TalonFX(Hood.hoodMotor);
-    private final DutyCycleEncoder hoodEncoder =
-        new DutyCycleEncoder(Hood.encoderPort);
     private final SmartMotorControllerConfig hoodMotorConfig = new SmartMotorControllerConfig(this)
-            .withExternalEncoder(hoodEncoder)
+
             .withClosedLoopController(0, 0, 0, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))  // TODO: Change the PID values
             .withGearing(new MechanismGearing(GearBox.fromReductionStages(3, 4)))           //TODO: Set the correct gear ratio
             .withIdleMode(MotorMode.BRAKE)
