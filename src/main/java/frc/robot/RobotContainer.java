@@ -40,6 +40,7 @@ import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.subsystems.spindexer.SpindexerSubsystem;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
+import frc.robot.util.FuelSim;
 import frc.robot.commands.ShootCommand;
 import swervelib.SwerveInputStream;
 
@@ -69,6 +70,7 @@ public class RobotContainer {
   private final JoystickButton intakeAl = new JoystickButton(driver2, 9);
   JoystickButton hubButton = new JoystickButton(driver2, 11);
   JoystickButton dumpButton = new JoystickButton(driver2, 12);
+  public FuelSim fuelSim = new FuelSim();  
 
 
   public final SwerveSubsystem s_Swerve = new SwerveSubsystem();
