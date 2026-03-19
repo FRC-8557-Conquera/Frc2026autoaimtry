@@ -135,6 +135,18 @@ public final class Constants {
     public static final double turretDist = -0.141;
   }
 
+    public static final class Hood {
+
+    public static final int hoodMotor = 52;
+    public static final int encoderPort = 1; // EXAMPLE CHANGE THIS VALUE
+    public static final IdleMode idleMode = IdleMode.kBrake;
+    public static final boolean inverted = false;
+
+    public static final double minAngleDegrees = 5.0;
+    public static final double maxAngleDegrees = 100.0;
+    public static final double hoodOffsetDeg = 73.2; // EXAMPLE CHANGE THIS VALUE
+  }
+
   /* ===================== FLYWHEEL ===================== */
 
   public static final class Flywheel{
