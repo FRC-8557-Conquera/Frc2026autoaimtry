@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.util.FuelSim;
 import swervelib.simulation.ironmaple.simulation.SimulatedArena;
 import swervelib.simulation.ironmaple.simulation.drivesims.COTS;
 import swervelib.simulation.ironmaple.simulation.drivesims.configs.DriveTrainSimulationConfig;
@@ -119,6 +120,20 @@ public class Robot extends TimedRobot
     
     @Override
     public void simulationInit() {
- 
+        // Set up FuelSim ball simulation
+        FuelSim fuelSim = robotContainer.fuelSim;
+        fuelSim.registerRobot(
+            0.718, 0.718, 0.15, // bumper width/length (28.27"), bumper height (~6")
+            robotContainer.s_Swerve::getPose,
+            robotContainer.s_Swerve::getChassisSpeeds);
+        fuelSim.spawnStartingFuel();
+        fuelSim.start();
+
+        SmartDashboard.putData(Commands.runOnce(() -> {
+                    fuelSim.clearFuel();
+                    fuelSim.spawnStartingFuel();
+                })
+                .withName("Reset Fuel")
+                .ignoringDisable(true));
     }
 }
