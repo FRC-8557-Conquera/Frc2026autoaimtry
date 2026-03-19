@@ -37,6 +37,7 @@ public class ShooterSubsystem extends SubsystemBase {
     public ShotIntent intent = ShotIntent.OFF;
     public TurretSubsystem turret = new TurretSubsystem();
     public FlywheelSubsystem flywheel = new FlywheelSubsystem();
+    public HoodSubsystem hood = new HoodSubsystem();
     public GenericEntry entry;
 
     private Pose2d getHubPose() {
@@ -49,6 +50,7 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     private final InterpolatingDoubleTreeMap flywheelMap = new InterpolatingDoubleTreeMap();
+    private final InterpolatingDoubleTreeMap hoodMap = new InterpolatingDoubleTreeMap();
 
     public ShooterSubsystem(SwerveSubsystem swerve) {
         this.swerve = swerve;
@@ -79,6 +81,12 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     private void buildLookupTables() {
+        hoodMap.put(1.5, 20.0);             // distance to Hood angle
+        hoodMap.put(2.0, 28.0);
+        hoodMap.put(2.5, 35.0);
+        hoodMap.put(3.0, 42.0);
+        hoodMap.put(3.5, 48.0);
+
         flywheelMap.put(3.12, 34.2);         // distance to RPS
         flywheelMap.put(2.03, 31.829);      //değişebilir çok iyi değildi
         flywheelMap.put(3.828, 37.66);
@@ -141,6 +149,30 @@ public class ShooterSubsystem extends SubsystemBase {
         }
 
         return RotationsPerSecond.of(0);
+    }
+
+    public Angle getHoodSetpoint() {
+        if (intent == ShotIntent.HUB) {
+            double distance =
+                swerve.getPose()
+                    .getTranslation()
+                    .getDistance(getHubPose().getTranslation());
+
+            return Degrees.of(hoodMap.get(distance));
+        }
+
+        if (intent == ShotIntent.DUMP) {
+            return Degrees.of(15);
+        }
+
+        return Degrees.of(0);
+    }
+
+    // distance - latency comp distance
+    public Angle getHoodSetpoint(double distance) {
+        if(intent == ShotIntent.HUB) {
+            return Degrees.of(hoodMap.get(distance));
+        } else return getHoodSetpoint();
     }
 
    public LinearVelocity getBaseExitVelocity(double distance) {

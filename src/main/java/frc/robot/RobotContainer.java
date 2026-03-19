@@ -26,6 +26,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import frc.robot.Constants.Hood;
 import frc.robot.Constants.Spindexer;
 import frc.robot.commands.DumpCommand;
 import frc.robot.commands.IntakeAlCommand;
@@ -38,6 +39,7 @@ import frc.robot.subsystems.shooter.ShooterSubsystem.ShotIntent;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.subsystems.spindexer.SpindexerSubsystem;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
+import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.util.FuelSim;
 import frc.robot.commands.ShootCommand;
 import swervelib.SwerveInputStream;
@@ -75,8 +77,8 @@ public class RobotContainer {
   private final FeederSubsystem feeder = new FeederSubsystem();
 
   private final ShooterSubsystem shooter = new ShooterSubsystem(s_Swerve);
-  
   private final TurretSubsystem turret = shooter.turret;
+  private final HoodSubsystem hood = shooter.hood;
   private final FlywheelSubsystem flywheel = shooter.flywheel;
   private final SpindexerSubsystem spindexer = new SpindexerSubsystem();
   private final IntakeSubsystem intake = new IntakeSubsystem();
@@ -153,6 +155,7 @@ public class RobotContainer {
     configureButtonBindings();
 
     turret.setDefaultCommand(turret.setAngle(() -> shooter.getTurretSetpoint()));
+    hood.setDefaultCommand(hood.setAngle(() -> shooter.getHoodSetpoint()));
     s_Swerve.zeroGyroWithAlliance();
   }
 

@@ -175,5 +175,4 @@ public final class Constants {
     public static final Pose2d BLUE_HUB_POSE =new Pose2d(4.6, 4.04, new Rotation2d());
     public static final Pose2d RED_HUB_POSE =  new Pose2d(11.9,4.04,new Rotation2d());
   }
-
 }
