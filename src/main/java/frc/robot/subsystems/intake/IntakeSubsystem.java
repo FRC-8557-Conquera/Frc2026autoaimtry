@@ -87,7 +87,7 @@ public class IntakeSubsystem extends SubsystemBase {
     if (current <= Intake.MIN_ANGLE.in(Degrees) && output < 0) output = 0;
     if (current >= Intake.MAX_ANGLE.in(Degrees) && output > 0) output = 0;
 
-    // leftMotor.set(output);
+    leftMotor.set(output);
   }
     public enum IntakePosition {
     UP,

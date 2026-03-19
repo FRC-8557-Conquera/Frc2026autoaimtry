@@ -37,13 +37,13 @@ public class ShootCommand extends Command {
         timer.start();
     }
 
+        // ShootCommand.java içinde DOĞRU kullanım:
     @Override
     public void execute() {
         shooter.intent = ShotIntent.HUB;
-        turret.setAngle(shooter.getTurretSetpoint()).schedule();
-        spindexer.spinReverse().schedule();
-        feeder.feed().schedule();
-        flywheel.setVelocity(shooter.getFlywheelSetpoint()).schedule();
+        turret.setAngleDirect(shooter.getTurretSetpoint()); // Command dondurmeyen direkt set metodu lazim
+        spindexer.setMotor(); // Direkt motor gucunu verir
+        // feeder ve flywheel icin de command dondurmeyen, ornegin setSpeed() gibi bir metot yazin.
     }
 
     @Override

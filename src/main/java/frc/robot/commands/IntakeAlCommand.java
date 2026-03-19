@@ -30,7 +30,7 @@ public class IntakeAlCommand extends Command {
 
     @Override
     public void execute() {
-        intake.rollerIn().schedule();
+        intake.rollerIn();
     }
 
     @Override

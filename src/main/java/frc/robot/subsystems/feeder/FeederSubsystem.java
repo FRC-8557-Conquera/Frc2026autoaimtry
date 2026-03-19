@@ -82,12 +82,12 @@ public Command dutyCycleFeed() {
   }
   // run forward
   public Command feed() {
-    return run(() -> {feederSMC.setVelocity(RPM.of(5625));});
+    return run(() -> {feederSMC.setVelocity(RPM.of(3000));});
   }
 
   // reverse
   public Command reverse() {
-    return run(() -> {feederSMC.setVelocity(RPM.of(-5625));});
+    return run(() -> {feederSMC.setVelocity(RPM.of(-3000));});
   }
 
   // stop
