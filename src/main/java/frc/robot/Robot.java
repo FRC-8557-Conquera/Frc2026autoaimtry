@@ -115,7 +115,7 @@ public class Robot extends TimedRobot
 
     @Override
     public void simulationPeriodic() {
- 
+        robotContainer.fuelSim.updateSim();
     }
     
     @Override
