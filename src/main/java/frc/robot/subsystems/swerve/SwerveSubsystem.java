@@ -80,9 +80,9 @@ public class SwerveSubsystem extends SubsystemBase {
     setupLimelight();
     setupPathPlanner();
   }
-
+  
   public void setupPathPlanner() {
-     RobotConfig config;
+  RobotConfig config;
     try {
       config = RobotConfig.fromGUISettings();
       boolean enableFeedforward = true;

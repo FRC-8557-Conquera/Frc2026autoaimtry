@@ -1,4 +1,4 @@
-package frc.robot.util;
+package frc.robot.subsystems.MapleSimSwerve;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Volts;
@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 import swervelib.SwerveDrive;
@@ -28,11 +29,7 @@ import swervelib.simulation.ironmaple.simulation.drivesims.SwerveDriveSimulation
 import swervelib.simulation.ironmaple.simulation.drivesims.configs.DriveTrainSimulationConfig;
 import swervelib.simulation.ironmaple.simulation.drivesims.configs.SwerveModuleSimulationConfig;
 
-public class MapleSimSwerve implements MappleSimInterface{
-    // simulatedDrive MappleSim in swerve ü gibi bununla simnule etmemiz lazım ama yagsl SwerveDrive ile simule ediyor obje farklılığından simüle edemdim.
-    // drive methodu website da direk altaki gibi yazılmış onu command olarak çağırabiliriz ama FOangularDrive gibi olmaz muhtemelen
-    // polymorphism ile yazmayı dendedim(MappleSimSwerve extends SwerveDrive implements MappleSim interface) ki obje uyumsuzluğunun
-    // SwerveDrive s = new MappleSimSwerve(); daha sonra s.FOangularDrive ama SwerveDrive ı super() de initialize etmemi istedi o denemede ordan patladı
+public class MapleSimSwerve extends SubsystemBase implements MappleSimInterface{
     private final SelfControlledSwerveDriveSimulation simulatedDrive;
     private final Field2d field2d;
     
@@ -58,15 +55,16 @@ public class MapleSimSwerve implements MappleSimInterface{
 
     public MapleSimSwerve() {
         DriveTrainSimulationConfig config = driveTrainSimulationConfig;
+        
+        configurePPAutoBuilder(); // configures pathplanner
 
-        // Creating the SelfControlledSwerveDriveSimulation instance
         this.simulatedDrive = new SelfControlledSwerveDriveSimulation(
                 new SwerveDriveSimulation(config, new Pose2d(5, 5, new Rotation2d())));
 
         // Register the drivetrain simulation to the simulation world
         SimulatedArena.getInstance().addDriveTrainSimulation(simulatedDrive.getDriveTrainSimulation());
 
-        // A field2d widget for debugging
+        // A field2d widget for debugging DON'T REMOVE
         field2d = new Field2d();
         SmartDashboard.putData("simulation field", field2d);
     }
@@ -75,15 +73,11 @@ public class MapleSimSwerve implements MappleSimInterface{
         this.simulatedDrive.runChassisSpeeds(new ChassisSpeeds(translation.getX(), translation.getY(), rotation),new Translation2d(),fieldRelative,true);
     }*/
 
-    
     @Override
     public void drive(ChassisSpeeds speeds, boolean fieldRelative, boolean isOpenLoop) {
         this.simulatedDrive.runChassisSpeeds(speeds, new Translation2d(), fieldRelative,isOpenLoop);
-    }
+    } // in order to make it field relative you can either assign fieldRelativve boolean true or false in the source code it handles the complex parts
     
-    public Command mapleFieldOrientedDrive(Supplier<ChassisSpeeds> speeds){
-        return run(() ->drive(ChassisSpeeds.fromFieldRelativeSpeeds(speeds.get(), getGyroYaw()),false,false));//drive(ChassisSpeeds.fromFieldRelativeSpeeds(speeds, getGyroYaw()),true,false);
-    } // one to one copy of yagsl's interpretation of fieldOrientedDrive
 
     @Override
     public void setModuleStates(SwerveModuleState[] desiredStates) {

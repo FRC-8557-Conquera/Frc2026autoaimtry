@@ -12,6 +12,7 @@ import org.dyn4j.dynamics.joint.AngleJoint;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -31,6 +32,7 @@ import frc.robot.Constants.Spindexer;
 import frc.robot.commands.DumpCommand;
 import frc.robot.commands.IntakeAlCommand;
 import frc.robot.commands.ShootCommand;
+import frc.robot.subsystems.MapleSimSwerve.MapleSimSwerve;
 import frc.robot.subsystems.feeder.FeederSubsystem;
 import frc.robot.subsystems.intake.IntakeSubsystem;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
@@ -40,7 +42,6 @@ import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.subsystems.spindexer.SpindexerSubsystem;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 import frc.robot.util.FuelSim;
-import frc.robot.util.MapleSimSwerve;
 import swervelib.SwerveInputStream;
 
 
@@ -129,8 +130,16 @@ public class RobotContainer {
   Command FOdriveAngularVelocity = s_Swerve.driveFieldOriented(driveAngularVelocity);
   Command FOdriveAngularVelocityKeyboard = s_Swerve.driveFieldOriented(driveAngularVelocityKeyboard);
   Command FOdriveDirectAngle = s_Swerve.driveFieldOriented(driveDirectAngle);
-  Command FOdriveAngularVelocitySim = maplesim.mapleFieldOrientedDrive(() -> driveAngularVelocity.get());
-  Command tryi=maplesim.tri(() -> driveAngularVelocity.get());
+  Command FOdriveAngularVelocitySim=maplesim.run(() -> maplesim.drive(
+            new ChassisSpeeds(
+                 driver.getX() * 2.0,
+                -driver.getY() * 2.0,
+                -driver.getRawAxis(4) * 2.0
+            ),
+            true,
+            false
+        ));
+
   SendableChooser<Command> m_chooser;
 
   public RobotContainer() {
@@ -152,7 +161,7 @@ public class RobotContainer {
     DriverStation.silenceJoystickConnectionWarning(true);
     if(RobotBase.isSimulation()) {
       // s_Swerve.setDefaultCommand(FOdriveAngularVelocitySim);
-      maplesim.setDefaultCommand(tryi);
+      maplesim.setDefaultCommand(FOdriveAngularVelocitySim);
     } else s_Swerve.setDefaultCommand(FOdriveAngularVelocity);
     configureButtonBindings();
 

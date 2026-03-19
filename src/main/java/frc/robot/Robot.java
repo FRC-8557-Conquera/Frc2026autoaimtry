@@ -38,7 +38,10 @@ public class Robot extends TimedRobot
     
     public Robot()
     {
-        robotContainer = new RobotContainer();
+        if (edu.wpi.first.wpilibj.RobotBase.isSimulation()) {
+            SimulatedArena.overrideInstance(new Arena2026Rebuilt());
+    }
+    robotContainer = new RobotContainer();
     }
     
     
@@ -117,18 +120,14 @@ public class Robot extends TimedRobot
 
     @Override
     public void simulationPeriodic() {
-       
-        robotContainer.fuelSim.updateSim();
-        /* 
-        SimulatedArena.getInstance().simulationPeriodic();
-
-        SimulatedArena.getInstance().addGamePiece(new RebuiltFuelOnField(new Translation2d(3, 3)));
-        */
-
+    // robotContainer.fuelSim.updateSim();
+        
+    SimulatedArena.getInstance().simulationPeriodic();
     }
     
     @Override
     public void simulationInit() {
+        /*
         FuelSim fuelSim = robotContainer.fuelSim;
         fuelSim.spawnStartingFuel();
         fuelSim.start();
@@ -138,10 +137,6 @@ public class Robot extends TimedRobot
                 })
                 .withName("Reset Fuel")
                 .ignoringDisable(true));
-    /* 
-    // Obtains the default instance of the simulation world, which is a Crescendo Arena.
-    SimulatedArena.getInstance();
-    // Overrides the default simulation
-    SimulatedArena.overrideInstance(new Arena2026Rebuilt());*/
+    */
     }
 }
