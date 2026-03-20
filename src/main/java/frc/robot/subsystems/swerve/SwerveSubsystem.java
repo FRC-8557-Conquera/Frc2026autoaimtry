@@ -5,7 +5,12 @@ import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.path.PathConstraints;
-
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.PIDController;
@@ -53,6 +58,7 @@ import limelight.networktables.LimelightPoseEstimator.EstimationMode;
 public class SwerveSubsystem extends SubsystemBase {
 
   Field2d field;
+  private AprilTagFieldLayout fieldLayout;
   SwerveDrive swerveDrive; 
   LimelightPoseEstimator limelightBackPoseEstimator;
   LimelightPoseEstimator limelightFrontPoseEstimator;
@@ -65,8 +71,10 @@ public class SwerveSubsystem extends SubsystemBase {
   public SwerveSubsystem() {
     try {
       swerveDrive = new SwerveParser(swerveJsonDirectory).createSwerveDrive(Constants.Swerve.maxSpeed);
+      fieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
     } catch (Exception e)
      {
+      System.err.println("AprilTag Field Layout yüklenemedi! Simülasyon görüşü düzgün çalışmayabilir.");
       throw new RuntimeException(e);
     }
     SwerveDriveTelemetry.verbosity = SwerveDriveTelemetry.TelemetryVerbosity.HIGH;
@@ -79,6 +87,11 @@ public class SwerveSubsystem extends SubsystemBase {
     swerveDrive.setHeadingCorrection(false);
     setupLimelight();
     setupPathPlanner();
+    // Eğer kod simülasyonda çalışıyorsa robotu doğrudan sahanın içine (Örn: X=7.0, Y=4.0) yerleştir
+    if (edu.wpi.first.wpilibj.RobotBase.isSimulation()) {
+        // İstediğin başlangıç koordinatını buradan ayarlayabilirsin
+        swerveDrive.resetOdometry(new Pose2d(14.0, 4.0, Rotation2d.fromDegrees(180))); 
+    }
   }
 
   public void setupPathPlanner() {
@@ -236,36 +249,52 @@ public class SwerveSubsystem extends SubsystemBase {
   swerveDrive.setVisionMeasurementStdDevs(VecBuilder.fill(0.05, 0.05, 0.022));
 }
 
-@Override
-public void periodic() {
-  swerveDrive.updateOdometry();
-    double yawVelocity = swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond);
+  @Override
+  public void periodic() {
+    swerveDrive.updateOdometry();
+    
+    if (RobotBase.isReal()) {
+        double yawVelocity = swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond);
 
         limelightBack.getSettings()
-             .withRobotOrientation(new Orientation3d(swerveDrive.getGyro().getRotation3d(),
-                                                     new AngularVelocity3d(DegreesPerSecond.of(0),
-                                                                           DegreesPerSecond.of(0),
-                                                                           DegreesPerSecond.of(yawVelocity))));
+              .withRobotOrientation(new Orientation3d(swerveDrive.getGyro().getRotation3d(),
+                                                      new AngularVelocity3d(DegreesPerSecond.of(0),
+                                                                            DegreesPerSecond.of(0),
+                                                                            DegreesPerSecond.of(yawVelocity))));
         limelightFront.getSettings()
-             .withRobotOrientation(new Orientation3d(swerveDrive.getGyro().getRotation3d(),
-                                                     new AngularVelocity3d(DegreesPerSecond.of(0),
-                                                                           DegreesPerSecond.of(0),
-                                                                           DegreesPerSecond.of(yawVelocity))));
-    addVisionFromEstimator(limelightBackPoseEstimator, 0);
-    addVisionFromEstimator(limelightFrontPoseEstimator, 1);
+              .withRobotOrientation(new Orientation3d(swerveDrive.getGyro().getRotation3d(),
+                                                      new AngularVelocity3d(DegreesPerSecond.of(0),
+                                                                            DegreesPerSecond.of(0),
+                                                                            DegreesPerSecond.of(yawVelocity))));
+        addVisionFromEstimator(limelightBackPoseEstimator, 0);
+        addVisionFromEstimator(limelightFrontPoseEstimator, 1);
+    } else {
+        simulateVision();
+    }
     
     SmartDashboard.putBoolean("Limelight Back Present", resultsPresent[0]);
     SmartDashboard.putBoolean("Limelight Back Valid", validReading[0]);
     SmartDashboard.putBoolean("Limelight Front Present", resultsPresent[1]);
     SmartDashboard.putBoolean("Limelight Front Valid", validReading[1]);
-
-    //field.setRobotPose(swerveDrive.getPose());
   }
+  public Matrix<N3, N1> getVisionStdDevs(int tagCount, double avgDistance) {
+    if (tagCount == 0) return VecBuilder.fill(99999, 99999, 99999);
 
-  // TODO: once basic vision is verified working, replace with updateVisionCombined() that weights
-  //       back/front by (1 - ambiguity), blends poses via unit-vector rotation averaging, and
-  //       uses per-measurement stddevs scaling with distance^2 / tagCount instead of the global
-  //       setVisionMeasurementStdDevs call in setupLimelight().
+    // Temel sapma değerleri (Tag dibindeyken çok güvenilir)
+    double estStdDevsX = 0.05;
+    double estStdDevsY = 0.05;
+    double estHeadingStdDev = 0.01; // MegaTag2 için gyro zaten mükemmeldir, başlık sapmasını düşük tutarız
+
+    // Uzaklığın karesini tag sayısına bölüyoruz
+    double distanceMultiplier = Math.pow(avgDistance, 2) / tagCount;
+    
+    estStdDevsX += distanceMultiplier * 0.1;
+    estStdDevsY += distanceMultiplier * 0.1;
+    estHeadingStdDev += distanceMultiplier * 0.05;
+
+    return VecBuilder.fill(estStdDevsX, estStdDevsY, estHeadingStdDev);
+  }
+  
   private void addVisionFromEstimator(LimelightPoseEstimator estimator, int index) {
     Optional<PoseEstimate> est = estimator.getPoseEstimate();
 
@@ -273,10 +302,20 @@ public void periodic() {
       PoseEstimate poseEstimate = est.get();
       resultsPresent[index] = true;
       
-    if (poseEstimate.tagCount > 0 && poseEstimate.getAvgTagAmbiguity() < 0.3) {
+      if (poseEstimate.tagCount > 0 && poseEstimate.getAvgTagAmbiguity() < 0.3) {
         validReading[index] = true;
         Pose2d visionPose = poseEstimate.pose.toPose2d();
-        swerveDrive.addVisionMeasurement(visionPose,poseEstimate.timestampSeconds);
+        
+        // Dinamik std-dev ile gerçekçilik ve stabilite (PoseEstimate içinde avgTagDist mevcuttur)
+        double avgDist = poseEstimate.avgTagDist > 0 ? poseEstimate.avgTagDist : 3.0;
+        Matrix<N3, N1> stdDevs = getVisionStdDevs(poseEstimate.tagCount, avgDist);
+        
+        swerveDrive.addVisionMeasurement(visionPose, poseEstimate.timestampSeconds, stdDevs);
+
+        // AdvantageScope için görselleştirme datası
+        SmartDashboard.putNumberArray("AdvantageScope/Vision_" + (index == 0 ? "Back" : "Front"), 
+            new double[] {visionPose.getX(), visionPose.getY(), visionPose.getRotation().getRadians()});
+            
       } else {
         validReading[index] = false;
       }
@@ -285,4 +324,77 @@ public void periodic() {
       validReading[index] = false;
     }
   }
+  public void simulateVision() {
+    if (fieldLayout == null) return;
+
+    // Robotun anlık pozisyonu
+    Pose2d robotPose = swerveDrive.getPose();
+    double timestamp = Timer.getFPGATimestamp();
+
+    // 1. Kamera: ÖN LIMELIGHT (Robotun baktığı yön: 0 derece sapma)
+    simulateSingleCamera(robotPose, timestamp, 1, 0.0, 40.0, "Front");
+
+    // 2. Kamera: ARKA LIMELIGHT (Robotun tam tersi yön: 180 derece sapma)
+    simulateSingleCamera(robotPose, timestamp, 0, 180.0, 40.0, "Back");
+  }
+
+  /**
+   * Tek bir kameranın fiziksel görüşünü simüle eder.
+   * @param index 1: Front, 0: Back (resultsPresent array'i için)
+   * @param cameraYawOffset Kameranın robota göre montaj açısı (Ön: 0, Arka: 180)
+   * @param fovHalfAngle Kameranın görüş açısının yarısı (Limelight 3 için yatayda ~40 derece)
+   */
+  private void simulateSingleCamera(Pose2d robotPose, double timestamp, int index, double cameraYawOffset, double fovHalfAngle, String name) {
+    boolean seesTag = false;
+    double minDistance = Double.MAX_VALUE;
+    int visibleTags = 0;
+
+    for (var tag : fieldLayout.getTags()) {
+      Translation2d tagTranslation = tag.pose.toPose2d().getTranslation();
+      double distance = robotPose.getTranslation().getDistance(tagTranslation);
+
+      if (distance < 6.5) { 
+        Rotation2d angleToTag = tagTranslation.minus(robotPose.getTranslation()).getAngle();
+        Rotation2d cameraAngle = robotPose.getRotation().plus(Rotation2d.fromDegrees(cameraYawOffset));
+        
+        double relativeAngle = angleToTag.minus(cameraAngle).getDegrees();
+        relativeAngle = edu.wpi.first.math.MathUtil.inputModulus(relativeAngle, -180, 180);
+
+        if (Math.abs(relativeAngle) < fovHalfAngle) {
+          seesTag = true;
+          visibleTags++;
+          if (distance < minDistance) minDistance = distance;
+        }
+      }
+    }
+
+    if (seesTag) {
+      double noise = (minDistance * minDistance) * 0.005; 
+      
+      Pose2d noisyPose = new Pose2d(
+          robotPose.getX() + (Math.random() - 0.5) * noise,
+          robotPose.getY() + (Math.random() - 0.5) * noise,
+          robotPose.getRotation() // Açı her zaman robotPose ile BİREBİR aynıdır (MegaTag2)
+      );
+
+      var stdDevs = getVisionStdDevs(visibleTags, minDistance);
+      swerveDrive.addVisionMeasurement(noisyPose, timestamp, stdDevs);
+      
+      // KAMERA GÖRÜYOR: Veriyi yolla
+      SmartDashboard.putNumberArray("AdvantageScope/Vision_" + name + "_Sim", 
+          new double[] {noisyPose.getX(), noisyPose.getY(), noisyPose.getRotation().getRadians()});
+          
+      resultsPresent[index] = true;
+      validReading[index] = true;
+    } else {
+      // ÇÖZÜM: KAMERA KÖR OLDU: Sahneden dondurulmuş hayaleti SİL!
+      SmartDashboard.putNumberArray("AdvantageScope/Vision_" + name + "_Sim", new double[] {});
+      
+      resultsPresent[index] = false;
+      validReading[index] = false;
+    }
+  }
+  // Eğer kod simülasyonda çalışıyorsa robotu doğrudan sahanın içine (Örn: X=7.0, Y=4.0) yerleştir
+
+
 }

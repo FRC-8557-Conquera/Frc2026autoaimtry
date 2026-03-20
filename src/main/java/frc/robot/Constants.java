@@ -142,8 +142,8 @@ public final class Constants {
     public static final IdleMode idleMode = IdleMode.kBrake;
     public static final boolean inverted = false;
 
-    public static final double minAngleDegrees = 5.0;
-    public static final double maxAngleDegrees = 100.0;
+    public static final double minAngleDegrees = 20.0;
+    public static final double maxAngleDegrees = 40.0;
     public static final double hoodOffsetDeg = 73.2; // EXAMPLE CHANGE THIS VALUE
   }
 
@@ -172,7 +172,7 @@ public final class Constants {
 
     /* ===================== FIELD ===================== */
   public static final class fieldConstants{
-    public static final Pose2d BLUE_HUB_POSE =new Pose2d(4.6, 4.04, new Rotation2d());
-    public static final Pose2d RED_HUB_POSE =  new Pose2d(11.9,4.04,new Rotation2d());
+    public static final Pose2d BLUE_HUB_POSE =new Pose2d(4.6, 4.0, new Rotation2d());
+    public static final Pose2d RED_HUB_POSE =  new Pose2d(11.9,4.1,new Rotation2d());
   }
 }
