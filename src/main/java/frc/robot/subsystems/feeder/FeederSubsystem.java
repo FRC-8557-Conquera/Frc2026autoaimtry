@@ -73,9 +73,9 @@ public class FeederSubsystem extends SubsystemBase {
   public FeederSubsystem() {
 
   }
-public Command dutyCycleFeed() {
-  return run(() -> feederSMC.setDutyCycle(-Feeder.feedSpeed));
-}
+  public Command dutyCycleFeed() {
+    return run(() -> feederSMC.setDutyCycle(-Feeder.feedSpeed));
+  }
   @Override
   public void periodic() {
     feederSMC.updateTelemetry();
@@ -97,6 +97,10 @@ public Command dutyCycleFeed() {
 
   public double getVelocity() {
     return feederMotor.getEncoder().getVelocity();
+  }
+  // ShootOnTheMove gibi komutların execute döngüsünde anlık hız verebilmesi için
+  public void setSpeed(double speed) {
+    feederSMC.setDutyCycle(speed);
   }
   
 

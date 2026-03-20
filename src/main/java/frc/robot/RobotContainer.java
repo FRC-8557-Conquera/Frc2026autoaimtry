@@ -31,6 +31,7 @@ import frc.robot.Constants.Spindexer;
 import frc.robot.commands.DumpCommand;
 import frc.robot.commands.IntakeAlCommand;
 import frc.robot.commands.ShootCommand;
+import frc.robot.commands.ShootOnTheMoveCommand; // EKLENDİ
 import frc.robot.subsystems.feeder.FeederSubsystem;
 import frc.robot.subsystems.intake.IntakeSubsystem;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
@@ -41,9 +42,7 @@ import frc.robot.subsystems.spindexer.SpindexerSubsystem;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.util.FuelSim;
-import frc.robot.commands.ShootCommand;
 import swervelib.SwerveInputStream;
-
 
 public class RobotContainer {
 
@@ -53,9 +52,9 @@ public class RobotContainer {
   private final JoystickButton zeroGyro = new JoystickButton(driver, 3);
   private final JoystickButton xLock = new JoystickButton(driver, 6);
 
-  private final JoystickButton turretZero = new JoystickButton(driver2,2);
-  private final JoystickButton turretButtonLeft = new JoystickButton(driver2,8);
-    private final JoystickButton turretButtonRight = new JoystickButton(driver2,7);
+  private final JoystickButton turretZero = new JoystickButton(driver2, 2);
+  private final JoystickButton turretButtonLeft = new JoystickButton(driver2, 8);
+  private final JoystickButton turretButtonRight = new JoystickButton(driver2, 7);
 
   private final JoystickButton triggerButton = new JoystickButton(driver2, 1);
 
@@ -64,14 +63,14 @@ public class RobotContainer {
 
   private final JoystickButton spindexerF = new JoystickButton(driver2, 5);
   private final JoystickButton spindexerR = new JoystickButton(driver2, 6);
-  //private final JoystickButton flywheelSysID = new JoystickButton(driver2, 7);
   private final JoystickButton offButton = new JoystickButton(driver2, 10);
-  //private final JoystickButton intakeKapa = new JoystickButton(driver2, 8);
   private final JoystickButton intakeAl = new JoystickButton(driver2, 9);
+  
   JoystickButton hubButton = new JoystickButton(driver2, 11);
-  JoystickButton dumpButton = new JoystickButton(driver2, 12);
-  public FuelSim fuelSim = new FuelSim();  
+  JoystickButton sotmButton = new JoystickButton(driver2, 12); // EKLENDİ (Hareketli Atış Butonu)
+  JoystickButton dumpButton = new JoystickButton(driver2, 13); // Çakışmaması için 13'e alındı
 
+  public FuelSim fuelSim = new FuelSim();  
 
   public final SwerveSubsystem s_Swerve = new SwerveSubsystem();
   private final FeederSubsystem feeder = new FeederSubsystem();
@@ -83,48 +82,36 @@ public class RobotContainer {
   private final SpindexerSubsystem spindexer = new SpindexerSubsystem();
   private final IntakeSubsystem intake = new IntakeSubsystem();
 
+  // YAGSL Sürüş Komutu: Eğer SOTM aktifse joystick girdilerini %40'a düşürür (0.4 ile çarpar)
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(
       s_Swerve.getSwerveDrive(),
-      () -> -driver.getY(),
-      () -> -driver.getX())
-      .withControllerRotationAxis(() -> -Math.pow(driver.getRawAxis(4), 3))
+      () -> -driver.getY() * (shooter.getIntent() == ShotIntent.SOTM ? 0.4 : 1.0),
+      () -> -driver.getX() * (shooter.getIntent() == ShotIntent.SOTM ? 0.4 : 1.0))
+      .withControllerRotationAxis(() -> -Math.pow(driver.getRawAxis(4), 3) * (shooter.getIntent() == ShotIntent.SOTM ? 0.4 : 1.0))
       .deadband(Constants.Swerve.stickDeadband)
-      .scaleTranslation(0.8) // YAVASLATMA!!!!
+      .scaleTranslation(0.8) // Genel YAVASLATMA
       .allianceRelativeControl(true);
 
   SwerveInputStream driveDirectAngle = driveAngularVelocity.copy()
       .withControllerHeadingAxis(() -> driver.getRawAxis(2), () -> driver.getRawAxis(3))
       .headingWhile(false);
   
-    SwerveInputStream driveAngularVelocityKeyboard = SwerveInputStream.of(s_Swerve.getSwerveDrive(),
-                                                                        () -> -driver.getY(),
-                                                                        () -> -driver.getX())
-                                                                    .withControllerRotationAxis(() -> driver.getRawAxis(
-                                                                        4))
-                                                                    .deadband(0.1)
-                                                                    .scaleTranslation(0.8)
-                                                                    .allianceRelativeControl(true);
-  // Derive the heading axis with math!
-  SwerveInputStream driveDirectAngleKeyboard     = driveAngularVelocityKeyboard.copy()
-                                                                               .withControllerHeadingAxis(() ->
-                                                                                                              Math.sin(
-                                                                                                                  driver.getRawAxis(
-                                                                                                                      2) *
-                                                                                                                  Math.PI) *
-                                                                                                              (Math.PI *
-                                                                                                               2),
-                                                                                                          () ->
-                                                                                                              Math.cos(
-                                                                                                                  driver.getRawAxis(
-                                                                                                                      2) *
-                                                                                                                  Math.PI) *
-                                                                                                              (Math.PI *
-                                                                                                               2))
-                                                                               .headingWhile(true)
-                                                                               .translationHeadingOffset(true)
-                                                                               .translationHeadingOffset(Rotation2d.fromDegrees(
-                                                                                   0));
+  // Klavye / Simülasyon Sürüş Komutu: Aynı hız düşürme mantığı burada da var
+  SwerveInputStream driveAngularVelocityKeyboard = SwerveInputStream.of(
+      s_Swerve.getSwerveDrive(),
+      () -> -driver.getY() * (shooter.getIntent() == ShotIntent.SOTM ? 0.4 : 1.0),
+      () -> -driver.getX() * (shooter.getIntent() == ShotIntent.SOTM ? 0.4 : 1.0))
+      .withControllerRotationAxis(() -> driver.getRawAxis(4) * (shooter.getIntent() == ShotIntent.SOTM ? 0.4 : 1.0))
+      .deadband(0.1)
+      .scaleTranslation(0.8)
+      .allianceRelativeControl(true);
 
+  SwerveInputStream driveDirectAngleKeyboard = driveAngularVelocityKeyboard.copy()
+      .withControllerHeadingAxis(() -> Math.sin(driver.getRawAxis(2) * Math.PI) * (Math.PI * 2),
+                                 () -> Math.cos(driver.getRawAxis(2) * Math.PI) * (Math.PI * 2))
+      .headingWhile(true)
+      .translationHeadingOffset(true)
+      .translationHeadingOffset(Rotation2d.fromDegrees(0));
 
   Command FOdriveAngularVelocity = s_Swerve.driveFieldOriented(driveAngularVelocity);
   Command FOdriveAngularVelocityKeyboard = s_Swerve.driveFieldOriented(driveAngularVelocityKeyboard);
@@ -152,6 +139,7 @@ public class RobotContainer {
     if(RobotBase.isSimulation()) {
       s_Swerve.setDefaultCommand(FOdriveAngularVelocityKeyboard);
     } else s_Swerve.setDefaultCommand(FOdriveAngularVelocity);
+    
     configureButtonBindings();
 
     turret.setDefaultCommand(turret.setAngle(() -> shooter.getTurretSetpoint()));
@@ -164,6 +152,9 @@ public class RobotContainer {
     hubButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.HUB)));
     dumpButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.DUMP)));
     offButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
+    
+    // YENİ: Shoot On The Move Butonu (Aç/Kapa mantığı ile çalışır)
+    sotmButton.toggleOnTrue(new ShootOnTheMoveCommand(shooter, feeder));
    
     triggerButton.whileTrue(
     Commands.run(() -> { flywheel.setVelocity(() -> shooter.getFlywheelSetpoint()).schedule(); feeder.feed().schedule(); spindexer.spinReverse().schedule();})).onFalse(
@@ -173,11 +164,8 @@ public class RobotContainer {
     turretButtonRight.whileTrue(turret.rotateDutyCycle(-0.05)).onFalse(turret.stop());
     turretZero.onTrue(turret.setAngle(Degrees.of(0))).onFalse(turret.stop());
 
-   // flywheelSysID.whileTrue(flywheel.sysId());
     intakeAl.whileTrue(intake.rollerIn()).whileFalse(intake.rollerStop());
     
-   // intakeKapa.onTrue(intake.close());
-
     feederAl.whileTrue(feeder.feed()).onFalse(feeder.stop());
     feederTers.whileTrue(feeder.reverse()).onFalse(feeder.stop());
 
@@ -186,8 +174,6 @@ public class RobotContainer {
 
     zeroGyro.onTrue(new InstantCommand(() -> s_Swerve.zeroGyro()));
     xLock.whileTrue(Commands.runOnce(() -> s_Swerve.lock(), s_Swerve).repeatedly());
-    
-  
   }
 
   public Command getAutonomousCommand() {
