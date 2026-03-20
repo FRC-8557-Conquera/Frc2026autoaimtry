@@ -90,15 +90,15 @@ public class ShooterSubsystem extends SubsystemBase {
         hoodMap.put(1.5, 40.0); // En yakın mesafe, en dik açı
         hoodMap.put(2.5, 40.0); 
         hoodMap.put(3.5, 38.0);
-        hoodMap.put(4.5, 36.0);
+        hoodMap.put(4.5, 35.0);
         hoodMap.put(5.5, 33.0);
 
         // FLYWHEEL: Hızları biraz daha kısarak menzilin potayı aşmasını engelliyoruz.
-        flywheelMap.put(1.5, 35.0); 
-        flywheelMap.put(2.5, 33.0);
-        flywheelMap.put(3.5, 31.0);
-        flywheelMap.put(4.5, 27.0);
-        flywheelMap.put(5.5, 30.0);
+        flywheelMap.put(1.5, 20.0); 
+        flywheelMap.put(2.5, 25.0);
+        flywheelMap.put(3.5, 29.0);
+        flywheelMap.put(4.5, 30.0);
+        flywheelMap.put(5.5, 33.0);
     }
 
 
