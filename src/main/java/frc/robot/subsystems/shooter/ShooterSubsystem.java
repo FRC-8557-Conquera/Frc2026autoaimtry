@@ -41,6 +41,24 @@ public class ShooterSubsystem extends SubsystemBase {
     public FlywheelSubsystem flywheel = new FlywheelSubsystem();
     public HoodSubsystem hood = new HoodSubsystem();
     public GenericEntry entry;
+    // Havada uçan topların anlık fiziğini tutacak mini bir sınıf
+    private static class SimulatedFuel {
+        double x, y, z;
+        double vx, vy, vz;
+        double timeAlive = 0;
+
+        public SimulatedFuel(double x, double y, double z, double vx, double vy, double vz) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.vx = vx;
+            this.vy = vy;
+            this.vz = vz;
+        }
+    }
+
+    // Aktif olarak havada uçan tüm topların listesi
+    private java.util.ArrayList<SimulatedFuel> flyingFuels = new java.util.ArrayList<>();
     private final InterpolatingDoubleTreeMap hoodMap = new InterpolatingDoubleTreeMap();
     private final InterpolatingDoubleTreeMap flywheelMap = new InterpolatingDoubleTreeMap();
     private Pose2d getHubPose() {
@@ -280,5 +298,80 @@ public class ShooterSubsystem extends SubsystemBase {
         double virtualY = actualHub.getY() - (fieldVy * timeOfFlight);
 
         return new Translation2d(virtualX, virtualY);
+    }
+    // Feeder her çalıştığında (ateş edildiğinde) sanal bir top oluşturur
+    public void spawnSimulatedFuel() {
+        Pose2d robotPose = swerve.getPose();
+        
+        // Yörünge çizgisindeki birebir aynı çıkış hesaplamaları
+        double turretYaw = getTurretSetpoint().in(edu.wpi.first.units.Units.Radians);        
+        double hoodPitch = getHoodSetpoint().in(edu.wpi.first.units.Units.Radians) + Math.toRadians(20.0);        
+        double flywheelRPS = getFlywheelSetpoint().in(edu.wpi.first.units.Units.RotationsPerSecond);
+        
+        double radius = 0.0508; 
+        double v0 = (flywheelRPS * 2 * Math.PI * radius) * 0.8; 
+
+        // Topun çıkış noktası
+        double startX = robotPose.getX();
+        double startY = robotPose.getY();
+        double startZ = 0.45; // Shooter yüksekliği
+
+        double globalYaw = robotPose.getRotation().getRadians() + turretYaw;
+        double v_xy = v0 * Math.cos(hoodPitch); 
+
+        // Robotun gidiş hızını topa ekliyoruz (SOTM fiziği)
+        var robotSpeeds = swerve.getChassisSpeeds();
+        Translation2d fieldVelocity = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond)
+                                          .rotateBy(robotPose.getRotation());
+        
+        double vx = (v_xy * Math.cos(globalYaw)) + fieldVelocity.getX(); 
+        double vy = (v_xy * Math.sin(globalYaw)) + fieldVelocity.getY(); 
+        double vz = v0 * Math.sin(hoodPitch);   
+
+        // Yeni topu havaya fırlat!
+        flyingFuels.add(new SimulatedFuel(startX, startY, startZ, vx, vy, vz));
+    }
+
+    // WPILib'in simülasyon döngüsü (Saniyede 50 kere çalışır)
+    @Override
+    public void simulationPeriodic() {
+        double dt = 0.02; // 20ms simülasyon adımı
+        java.util.ArrayList<Double> poseArray = new java.util.ArrayList<>();
+
+        var iterator = flyingFuels.iterator();
+        while (iterator.hasNext()) {
+            SimulatedFuel fuel = iterator.next();
+            
+            // Fiziği işlet: Konumu hıza göre değiştir
+            fuel.x += fuel.vx * dt;
+            fuel.y += fuel.vy * dt;
+            fuel.z += fuel.vz * dt;
+            
+            // Yerçekimi: Saniyede 9.81 m/s^2 aşağı çeker
+            fuel.vz -= 9.81 * dt; 
+            fuel.timeAlive += dt;
+
+            // Eğer top yere düşerse (z < 0.1) veya havada 3 saniyeden fazla kalırsa onu sil
+            if (fuel.z < 0.1 || fuel.timeAlive > 3.0) {
+                iterator.remove();
+            } else {
+                // AdvantageScope için Pose3d formatı: [X, Y, Z, Q_W, Q_X, Q_Y, Q_Z]
+                poseArray.add(fuel.x);
+                poseArray.add(fuel.y);
+                poseArray.add(fuel.z);
+                // Topun dönüşü (rotasyonu) önemli olmadığı için sabit bir Quaternion (W=1) veriyoruz
+                poseArray.add(1.0); 
+                poseArray.add(0.0); 
+                poseArray.add(0.0); 
+                poseArray.add(0.0); 
+            }
+        }
+
+        // Aktif topları NetworkTables'a yolla
+        double[] arr = new double[poseArray.size()];
+        for (int i = 0; i < poseArray.size(); i++) {
+            arr[i] = poseArray.get(i);
+        }
+        SmartDashboard.putNumberArray("AdvantageScope/FlyingFuels", arr);
     }
 }
