@@ -104,22 +104,23 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     private void buildLookupTables() {
-        //tooning kesin yapılcak************************************
-        // HOOD: Açıyı 40 dereceye (maksa) yakın tutarak topun dik inmesini sağlıyoruz.
-        hoodMap.put(1.5, 40.0); // En yakın mesafe, en dik açı
-        hoodMap.put(2.5, 40.0); 
-        hoodMap.put(3.5, 38.0);
-        hoodMap.put(4.5, 35.0);
-        hoodMap.put(5.5, 33.0);
+        // HOOD: Topun ufuk çizgisiyle yaptığı gerçek çıkış açısı (70 - 50 arası)
+        // 70 derece = Yakın mesafeden çok güvenli ve isabetli aşırtma (Lob Shot)
+        // 50 derece = Uzak mesafeden stabil, orta kavisli atış
+        hoodMap.put(1.5, 70.0); 
+        hoodMap.put(2.5, 65.0); 
+        hoodMap.put(3.5, 60.0); 
+        hoodMap.put(4.5, 55.0); 
+        hoodMap.put(5.5, 50.0);
 
-        // FLYWHEEL: Hızları biraz daha kısarak menzilin potayı aşmasını engelliyoruz.
-        flywheelMap.put(1.5, 20.0); 
+        // FLYWHEEL: 80 dereceye göre daha yatay attığımız için ileri doğru gidiş artacak.
+        // Bu yüzden hızları 80 haritasına göre biraz azalttık, mükemmel dengeyi bulduk.
+        flywheelMap.put(1.5, 23.0); 
         flywheelMap.put(2.5, 25.5);
-        flywheelMap.put(3.5, 29.0);
-        flywheelMap.put(4.5, 30.0);
-        flywheelMap.put(5.5, 33.0);
+        flywheelMap.put(3.5, 28.0);
+        flywheelMap.put(4.5, 30.5);
+        flywheelMap.put(5.5, 32.5);
     }
-
 
     public Angle getTurretSetpoint() {
         Pose2d robotPose = swerve.getPose();
@@ -169,13 +170,12 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public Angle getHoodSetpoint() {
-        // ÇÖZÜM: Hem HUB hem de SOTM durumunda bu haritalar okunmalı!
         if (intent == ShotIntent.HUB || intent == ShotIntent.SOTM) {
             double distance = getHubDistance().in(Meters);
             
-            // Aynı zamanda daha önce konuştuğumuz 20-40 derece mekanik güvenlik sınırını (Clamp) da ekliyoruz
             double rawAngle = hoodMap.get(distance);
-            double safeAngle = MathUtil.clamp(rawAngle, 20.0, 40.0);
+            // KRİTİK DEĞİŞİKLİK: Sınırları 50 ve 70 olarak güncelledik!
+            double safeAngle = MathUtil.clamp(rawAngle, 50.0, 70.0);
             
             return Degrees.of(safeAngle);
         }
@@ -208,10 +208,8 @@ public class ShooterSubsystem extends SubsystemBase {
     }
     public void updateTrajectoryVisualization() {
         Pose2d robotPose = swerve.getPose(); 
-        
-        double turretYaw = getTurretSetpoint().in(edu.wpi.first.units.Units.Radians);        
-        double mechanicalOffset = Math.toRadians(20.0); 
-        double hoodPitch = getHoodSetpoint().in(edu.wpi.first.units.Units.Radians) + mechanicalOffset;        
+// Offset tamamen silindi, haritadaki saf açıyı alıyoruz
+        double hoodPitch = getHoodSetpoint().in(edu.wpi.first.units.Units.Radians);        double turretYaw = getTurretSetpoint().in(edu.wpi.first.units.Units.Radians);        
         double flywheelRPS = getFlywheelSetpoint().in(edu.wpi.first.units.Units.RotationsPerSecond);
         
         double radius = 0.0508; 
@@ -282,8 +280,7 @@ public class ShooterSubsystem extends SubsystemBase {
         // DÜZELTME: Sonsuz döngüye girmemek için "getHoodSetpoint()" yerine haritadan (Map) direkt okuyoruz!
         double currentRPS = flywheelMap.get(distanceToActual);
         double currentHoodRaw = hoodMap.get(distanceToActual);
-        double hoodPitch = Math.toRadians(currentHoodRaw) + Math.toRadians(20.0); 
-        
+        double hoodPitch = Math.toRadians(currentHoodRaw); // + 20.0 silindi!
         double radius = 0.0508;
         double v0 = (currentRPS * 2 * Math.PI * radius) * 0.8;
         double v_xy = v0 * Math.cos(hoodPitch);
@@ -305,9 +302,8 @@ public class ShooterSubsystem extends SubsystemBase {
         
         // Yörünge çizgisindeki birebir aynı çıkış hesaplamaları
         double turretYaw = getTurretSetpoint().in(edu.wpi.first.units.Units.Radians);        
-        double hoodPitch = getHoodSetpoint().in(edu.wpi.first.units.Units.Radians) + Math.toRadians(20.0);        
         double flywheelRPS = getFlywheelSetpoint().in(edu.wpi.first.units.Units.RotationsPerSecond);
-        
+        double hoodPitch = getHoodSetpoint().in(edu.wpi.first.units.Units.Radians); // + 20.0 silindi!
         double radius = 0.0508; 
         double v0 = (flywheelRPS * 2 * Math.PI * radius) * 0.8; 
 
