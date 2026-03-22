@@ -26,6 +26,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.Hood;
 import frc.robot.Constants.Spindexer;
 import frc.robot.commands.DumpCommand;
@@ -159,8 +160,8 @@ public class RobotContainer {
     sotmButton.toggleOnTrue(new ShootOnTheMoveCommand(shooter, feeder));
    
     triggerButton.whileTrue(
-    Commands.run(() -> { flywheel.setVelocity(() -> shooter.getFlywheelSetpoint()).schedule(); feeder.feed().schedule(); spindexer.spinReverse().schedule();})).onFalse(
-    Commands.runOnce(() -> {flywheel.setVelocity(RotationsPerSecond.of(0)).schedule(); feeder.stop().schedule(); spindexer.stop().schedule();}));
+    Commands.run(() -> { flywheel.setVelocity(() -> shooter.getFlywheelSetpoint()); feeder.feed(); spindexer.spinReverse();})).onFalse(
+    Commands.runOnce(() -> {flywheel.setVelocity(RotationsPerSecond.of(0)); feeder.stop(); spindexer.stop();}));
 
     turretButtonLeft.whileTrue(turret.rotateDutyCycle(0.05)).onFalse(turret.stop());
     turretButtonRight.whileTrue(turret.rotateDutyCycle(-0.05)).onFalse(turret.stop());
@@ -176,6 +177,29 @@ public class RobotContainer {
 
     zeroGyro.onTrue(new InstantCommand(() -> s_Swerve.zeroGyro()));
     xLock.whileTrue(Commands.runOnce(() -> s_Swerve.lock(), s_Swerve).repeatedly());
+
+    // configureButtonBindings() metodunun içine ekliyoruz:
+
+    Trigger pastMidlineTrigger = new Trigger(() -> {
+        Pose2d pose = s_Swerve.getPose();
+        var alliance = DriverStation.getAlliance();
+        boolean isRed = alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red;
+        
+
+        if (isRed) {
+
+            return pose.getX() < 11.9; 
+        } else {
+            
+            return pose.getX() > 11.9; 
+        }
+    });
+
+    // Robot orta çizgiyi geçtiğinde VE sürücü Hub/SOTM butonlarına basmıyorsa:
+    // Tareti otomatik olarak DUMP (geri atış) pozisyonuna çevir.
+    pastMidlineTrigger.and(() -> !sotmButton.getAsBoolean() && !hubButton.getAsBoolean())
+        .whileTrue(Commands.runOnce(() -> shooter.setIntent(ShotIntent.DUMP)))
+        .onFalse(Commands.runOnce(() -> shooter.setIntent(ShotIntent.SOTM)));
   }
 
   public Command getAutonomousCommand() {

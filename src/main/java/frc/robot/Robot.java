@@ -26,6 +26,7 @@ import swervelib.simulation.ironmaple.simulation.drivesims.configs.SwerveModuleS
 import swervelib.simulation.ironmaple.simulation.gamepieces.GamePieceOnFieldSimulation;
 import swervelib.simulation.ironmaple.simulation.seasonspecific.rebuilt2026.Arena2026Rebuilt;
 import swervelib.simulation.ironmaple.simulation.seasonspecific.rebuilt2026.RebuiltFuelOnField;
+import frc.robot.subsystems.swerve.SwerveSubsystem;
 
 
 
@@ -64,6 +65,7 @@ public class Robot extends TimedRobot
     @Override
     public void autonomousInit()
     {
+        robotContainer.s_Swerve.seedOdometryWithMegaTag1();
         autonomousCommand = robotContainer.getAutonomousCommand();
         
         if (autonomousCommand != null)

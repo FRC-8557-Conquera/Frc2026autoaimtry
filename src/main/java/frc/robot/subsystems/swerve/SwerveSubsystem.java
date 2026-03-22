@@ -33,7 +33,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-
+import frc.robot.LimelightHelpers;
 
 import static edu.wpi.first.units.Units.DegreesPerSecond;
 
@@ -370,7 +370,6 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     if (seesTag) {
-      System.out.println("aaaa");
       double noise = (minDistance * minDistance) * 0.005; 
       
       Pose2d noisyPose = new Pose2d(
@@ -395,8 +394,35 @@ public class SwerveSubsystem extends SubsystemBase {
       resultsPresent[index] = false;
       validReading[index] = false;
     }
+    
   }
   // Eğer kod simülasyonda çalışıyorsa robotu doğrudan sahanın içine (Örn: X=7.0, Y=4.0) yerleştir
+  /**
+   * Maçın başında veya otonom başlarken robotun konumunu ve GYRO açısını
+   * MegaTag 1 kullanarak mutlak doğru şekilde sıfırlar.
+   */
+ /**
+   * Maçın başında veya otonom başlarken robotun konumunu ve GYRO açısını
+   * MegaTag 1 kullanarak mutlak doğru şekilde sıfırlar.
+   */
+  public boolean seedOdometryWithMegaTag1() {
+      // ÇÖZÜM 2: limelight.networktables yerine doğrudan LimelightHelpers.PoseEstimate kullanıyoruz
+      LimelightHelpers.PoseEstimate mt1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight-back");
+      
+      // Eğer arka kamera tag görmüyorsa öne bakalım
+      if (mt1Pose == null || mt1Pose.tagCount == 0) {
+          mt1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight-front");
+      }
 
-
+      // Eğer herhangi bir kamera güvenilir bir MT1 verisi yakaladıysa
+      if (mt1Pose != null && mt1Pose.tagCount > 0 && mt1Pose.avgTagDist < 4.0) {
+          // ÇÖZÜM 1: Metot artık static olmadığı için swerveDrive'ı sorunsuz görebilir
+          swerveDrive.resetOdometry(mt1Pose.pose);
+          System.out.println("BAŞARILI: Odometri ve Gyro MegaTag1 ile sıfırlandı!");
+          return true;
+      }
+      
+      System.out.println("HATA: Kameralar Tag Görmüyor, Odometri Sıfırlanamadı!");
+      return false;
+  }
 }

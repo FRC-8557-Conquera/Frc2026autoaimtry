@@ -138,10 +138,22 @@ public class ShooterSubsystem extends SubsystemBase {
             double wrapped = MathUtil.inputModulus(setpointDeg, -180, 180);
             return Degrees.of(wrapped);
         }
+       // getTurretSetpoint() içindeki DUMP kısmı:
         if (intent == ShotIntent.DUMP) {
-            return Degrees.of(Rotation2d.k180deg.minus(robotPose.getRotation()).getDegrees());
-    }
+            Translation2d turretOffset = new Translation2d(Turret.turretDist, 0); 
+            Translation2d turretFieldPosition = robotPose.getTranslation().plus(turretOffset.rotateBy(robotPose.getRotation()));
+
+            // Fizik kurallarıyla hesaplanan o kusursuz sanal hedefi çağırıyoruz
+            Translation2d virtualDropZone = getDumpVirtualTarget();
+
+            // Tareti sanal noktaya kilitliyoruz
+            Translation2d toTarget = virtualDropZone.minus(turretFieldPosition);
+            Rotation2d turretRelative = toTarget.getAngle().minus(robotPose.getRotation()); 
+            
+            return Degrees.of(MathUtil.inputModulus(turretRelative.getDegrees(), -180, 180));
+        }
         return Degrees.of(0);
+    
     }
     
     public double getMagnitude(Transform2d pose) {
@@ -181,7 +193,7 @@ public class ShooterSubsystem extends SubsystemBase {
         }
 
         if (intent == ShotIntent.DUMP) {
-            return Degrees.of(15);
+            return Degrees.of(50);
         }
 
         return Degrees.of(0);
@@ -370,5 +382,55 @@ public class ShooterSubsystem extends SubsystemBase {
             arr[i] = poseArray.get(i);
         }
         SmartDashboard.putNumberArray("AdvantageScope/FlyingFuels", arr);
+    }
+    // 1. Sahanın Y Eksenine (Bump'a) Göre En Güvenli Fiziksel Hedefi Bulur
+    public Translation2d getDumpTargetPosition() {
+        Pose2d robotPose = swerve.getPose();
+        var alliance = DriverStation.getAlliance();
+        boolean isRed = alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red;
+
+        // Sahanın Y ekseninde tam ortası ~4.1 metredir. 
+        // Üstteysek üst köşeyi, alttaysak alt köşeyi hedef alıyoruz (Bump etrafından dolanmak için)
+        double targetY = (robotPose.getY() > 4.1) ? 7.0 : 1.2; 
+        
+        // Kırmızıların atacağı X konumu ~14.5, Mavilerin atacağı X konumu ~2.0
+        double targetX = isRed ? 14.5 : 2.0;
+
+        return new Translation2d(targetX, targetY);
+    }
+
+    // 2. KUSURSUZ FİZİK (DUMP İÇİN): Robot hareket ederken topun uçuş süresini hesaplayıp Sanal Hedef oluşturur
+    public Translation2d getDumpVirtualTarget() {
+        Translation2d dropZone = getDumpTargetPosition();
+        Pose2d robotPose = swerve.getPose();
+        
+        // Taretin sahadaki gerçek konumu
+        Translation2d turretOffset = new Translation2d(Turret.turretDist, 0).rotateBy(robotPose.getRotation());
+        Translation2d turretPos = robotPose.getTranslation().plus(turretOffset);
+        
+        // Fiziksel Çıkış Hızı Hesaplaması (DUMP için 35 RPS ve 50 Derece şapka kullanıyoruz)
+        double dumpRPS = 35.0;
+        double dumpHoodDegrees = 50.0;
+        double wheelRadiusMeters = 0.0508; // 2 inç fırlatıcı tekerlek yarıçapı
+        
+        // v0 = Çevresel Hız * Fırlatma Verimi (%80)
+        double v0 = (dumpRPS * 2 * Math.PI * wheelRadiusMeters) * 0.8; 
+        // v_xy = Topun Yere Paralel (Yatay) İlerleme Hızı
+        double v_xy = v0 * Math.cos(Math.toRadians(dumpHoodDegrees));
+        if (v_xy < 0.1) v_xy = 0.1; // Güvenlik (Sıfıra bölünme hatasını önler)
+        
+        // Uçuş Süresi (Time of Flight) = Mesafe / Yatay Hız
+        double distance = dropZone.getDistance(turretPos);
+        double timeOfFlight = distance / v_xy;
+        
+        // Şasi Hızını alıp Sanal Hedefe Ekleme (Momentum Telafisi)
+        var robotSpeeds = swerve.getChassisSpeeds();
+        Translation2d fieldVelocity = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond)
+                                          .rotateBy(robotPose.getRotation());
+                                          
+        return new Translation2d(
+            dropZone.getX() - (fieldVelocity.getX() * timeOfFlight),
+            dropZone.getY() - (fieldVelocity.getY() * timeOfFlight)
+        );
     }
 }
