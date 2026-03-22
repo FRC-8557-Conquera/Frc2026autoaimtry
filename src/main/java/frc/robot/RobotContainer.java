@@ -121,13 +121,15 @@ public class RobotContainer {
 
   public RobotContainer() {
 
-    // 1. Register NamedCommands BEFORE AutoBuilder.configure()
+// 1. Register NamedCommands BEFORE AutoBuilder.configure()
+    NamedCommands.registerCommand("AutoSOTM", new ShootOnTheMoveCommand(shooter, feeder));
     NamedCommands.registerCommand("taretbah", turret.setAngle(shooter.getTurretSetpoint()));
-    NamedCommands.registerCommand("tüküğr", flywheel.setVelocity(shooter.getFlywheelSetpoint()));
-    NamedCommands.registerCommand("dump", new DumpCommand(spindexer, feeder, shooter,3));
+    NamedCommands.registerCommand("tukugr", flywheel.setVelocity(shooter.getFlywheelSetpoint()));
+    NamedCommands.registerCommand("dump", new DumpCommand(spindexer, feeder, shooter, 3));
     NamedCommands.registerCommand("intake", new IntakeAlCommand(intake, 4));
-    NamedCommands.registerCommand("tumsel", new ShootCommand(spindexer,feeder,shooter,6));
-
+    NamedCommands.registerCommand("tumsel", new ShootCommand(spindexer, feeder, shooter, 6));
+    
+    // YENİ EKLENEN SATIR: PathPlanner için SOTM Komutu
     // 2. Now configure PathPlanner (AutoBuilder.configure runs here)
     s_Swerve.setupPathPlanner();
 

@@ -117,9 +117,9 @@ public class ShooterSubsystem extends SubsystemBase {
         // Bu yüzden hızları 80 haritasına göre biraz azalttık, mükemmel dengeyi bulduk.
         flywheelMap.put(1.5, 23.0); 
         flywheelMap.put(2.5, 25.5);
-        flywheelMap.put(3.5, 28.0);
-        flywheelMap.put(4.5, 30.5);
-        flywheelMap.put(5.5, 32.5);
+        flywheelMap.put(3.5, 27.5);
+        flywheelMap.put(4.5, 30.0);
+        flywheelMap.put(5.5, 32.0);
     }
 
     public Angle getTurretSetpoint() {
