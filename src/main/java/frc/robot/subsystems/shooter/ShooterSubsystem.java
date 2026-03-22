@@ -305,6 +305,7 @@ public class ShooterSubsystem extends SubsystemBase {
         double flywheelRPS = getFlywheelSetpoint().in(edu.wpi.first.units.Units.RotationsPerSecond);
         double hoodPitch = getHoodSetpoint().in(edu.wpi.first.units.Units.Radians); // + 20.0 silindi!
         double radius = 0.0508; 
+        
         double v0 = (flywheelRPS * 2 * Math.PI * radius) * 0.8; 
 
         // Topun çıkış noktası

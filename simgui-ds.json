@@ -46,17 +46,25 @@
           "incKey": 76
         },
         {
-          "decKey": 73,
           "incKey": 75
         }
       ],
       "axisCount": 2,
-      "buttonCount": 4,
+      "buttonCount": 13,
       "buttonKeys": [
         77,
         44,
         46,
-        47
+        47,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        85,
+        79,
+        80
       ],
       "povCount": 0
     },
@@ -94,7 +102,7 @@
       "guid": "Keyboard0"
     },
     {
-      "guid": "030000004c050000cc09000000000000"
+      "guid": "Keyboard1"
     }
   ]
 }

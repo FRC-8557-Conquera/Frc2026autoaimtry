@@ -77,7 +77,7 @@ public class SwerveSubsystem extends SubsystemBase {
       System.err.println("AprilTag Field Layout yüklenemedi! Simülasyon görüşü düzgün çalışmayabilir.");
       throw new RuntimeException(e);
     }
-    SwerveDriveTelemetry.verbosity = SwerveDriveTelemetry.TelemetryVerbosity.HIGH;
+    SwerveDriveTelemetry.verbosity = SwerveDriveTelemetry.TelemetryVerbosity.LOW;
     field = new Field2d();
     SmartDashboard.putData("Field", field);
     swerveDrive.setModuleEncoderAutoSynchronize(false, 1);
@@ -252,6 +252,7 @@ public class SwerveSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     swerveDrive.updateOdometry();
+    field.setRobotPose(swerveDrive.getPose());
     
     if (RobotBase.isReal()) {
         double yawVelocity = swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond);
@@ -369,6 +370,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     if (seesTag) {
+      System.out.println("aaaa");
       double noise = (minDistance * minDistance) * 0.005; 
       
       Pose2d noisyPose = new Pose2d(
