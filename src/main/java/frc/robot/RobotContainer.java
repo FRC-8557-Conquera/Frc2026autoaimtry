@@ -46,7 +46,14 @@ import frc.robot.util.FuelSim;
 import swervelib.SwerveInputStream;
 
 public class RobotContainer {
-
+  // Robot SOTM veya DUMP modundaysa hızı %40'a (0.4) düşürür, aksi halde tam gaz (1.0) verir.
+  private double getSpeedMultiplier() {
+      if (shooter.getIntent() == ShotIntent.SOTM || shooter.getIntent() == ShotIntent.DUMP) {
+          return 0.4;
+      }
+      return 1.0;
+  }
+  
   private final Joystick driver = new Joystick(0);
   private final Joystick driver2 = new Joystick(1);
 
@@ -84,11 +91,12 @@ public class RobotContainer {
   private final IntakeSubsystem intake = new IntakeSubsystem();
 
   // YAGSL Sürüş Komutu: Eğer SOTM aktifse joystick girdilerini %40'a düşürür (0.4 ile çarpar)
+  // YAGSL Sürüş Komutu: SOTM ve DUMP aktifse hızı otomatik düşürür
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(
       s_Swerve.getSwerveDrive(),
-      () -> -driver.getY() * (shooter.getIntent() == ShotIntent.SOTM ? 0.4 : 1.0),
-      () -> -driver.getX() * (shooter.getIntent() == ShotIntent.SOTM ? 0.4 : 1.0))
-      .withControllerRotationAxis(() -> -Math.pow(driver.getRawAxis(4), 3) * (shooter.getIntent() == ShotIntent.SOTM ? 0.4 : 1.0))
+      () -> -driver.getY() * getSpeedMultiplier(),
+      () -> -driver.getX() * getSpeedMultiplier())
+      .withControllerRotationAxis(() -> -Math.pow(driver.getRawAxis(4), 3) * getSpeedMultiplier())
       .deadband(Constants.Swerve.stickDeadband)
       .scaleTranslation(0.8) // Genel YAVASLATMA
       .allianceRelativeControl(true);
@@ -97,12 +105,12 @@ public class RobotContainer {
       .withControllerHeadingAxis(() -> driver.getRawAxis(2), () -> driver.getRawAxis(3))
       .headingWhile(false);
   
-  // Klavye / Simülasyon Sürüş Komutu: Aynı hız düşürme mantığı burada da var
+  // Klavye / Simülasyon Sürüş Komutu: SOTM ve DUMP aktifse hızı otomatik düşürür
   SwerveInputStream driveAngularVelocityKeyboard = SwerveInputStream.of(
       s_Swerve.getSwerveDrive(),
-      () -> -driver.getY() * (shooter.getIntent() == ShotIntent.SOTM ? 0.4 : 1.0),
-      () -> -driver.getX() * (shooter.getIntent() == ShotIntent.SOTM ? 0.4 : 1.0))
-      .withControllerRotationAxis(() -> driver.getRawAxis(4) * (shooter.getIntent() == ShotIntent.SOTM ? 0.4 : 1.0))
+      () -> -driver.getY() * getSpeedMultiplier(),
+      () -> -driver.getX() * getSpeedMultiplier())
+      .withControllerRotationAxis(() -> driver.getRawAxis(4) * getSpeedMultiplier())
       .deadband(0.1)
       .scaleTranslation(0.8)
       .allianceRelativeControl(true);
@@ -119,6 +127,8 @@ public class RobotContainer {
   Command FOdriveDirectAngle = s_Swerve.driveFieldOriented(driveDirectAngle);
 
   SendableChooser<Command> m_chooser;
+
+  
 
   public RobotContainer() {
 
@@ -159,10 +169,10 @@ public class RobotContainer {
     // YENİ: Shoot On The Move Butonu (Aç/Kapa mantığı ile çalışır)
     sotmButton.toggleOnTrue(new ShootOnTheMoveCommand(shooter, feeder));
    
-    triggerButton.whileTrue(
-    Commands.run(() -> { flywheel.setVelocity(() -> shooter.getFlywheelSetpoint()); feeder.feed(); spindexer.spinReverse();})).onFalse(
-    Commands.runOnce(() -> {flywheel.setVelocity(RotationsPerSecond.of(0)); feeder.stop(); spindexer.stop();}));
-
+   // 1. DÜZELTME: Atışa Hazır Koruması (WaitUntil)
+    triggerButton.whileTrue(flywheel.setVelocity(() -> shooter.getFlywheelSetpoint()).alongWith(
+  // Feeder ve Spindexer çalışmadan ÖNCE hazır olmayı bekle!
+    Commands.waitUntil(() -> shooter.isReadyToShoot()).andThen(feeder.feed(), spindexer.spinReverse()))).onFalse(flywheel.setVelocity(() -> edu.wpi.first.units.Units.RotationsPerSecond.of(0)).alongWith(feeder.stop(), spindexer.stop()));
     turretButtonLeft.whileTrue(turret.rotateDutyCycle(0.05)).onFalse(turret.stop());
     turretButtonRight.whileTrue(turret.rotateDutyCycle(-0.05)).onFalse(turret.stop());
     turretZero.onTrue(turret.setAngle(Degrees.of(0))).onFalse(turret.stop());
@@ -200,6 +210,9 @@ public class RobotContainer {
     pastMidlineTrigger.and(() -> !sotmButton.getAsBoolean() && !hubButton.getAsBoolean())
         .whileTrue(Commands.runOnce(() -> shooter.setIntent(ShotIntent.DUMP)))
         .onFalse(Commands.runOnce(() -> shooter.setIntent(ShotIntent.SOTM)));
+
+
+        
   }
 
   public Command getAutonomousCommand() {

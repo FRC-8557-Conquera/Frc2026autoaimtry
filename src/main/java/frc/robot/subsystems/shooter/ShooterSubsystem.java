@@ -433,4 +433,21 @@ public class ShooterSubsystem extends SubsystemBase {
             dropZone.getY() - (fieldVelocity.getY() * timeOfFlight)
         );
     }
+    // Motorlar hedefe ulaştı mı kontrolü (Hata payı toleransları)
+    public boolean isReadyToShoot() {
+        if (intent == ShotIntent.OFF) return false;
+
+        // Flywheel hız kontrolü (Hedef hıza ±1.5 RPS yaklaştı mı?)
+        double currentRPS = flywheel.getVelocity().in(edu.wpi.first.units.Units.RotationsPerSecond); 
+        double targetRPS = getFlywheelSetpoint().in(edu.wpi.first.units.Units.RotationsPerSecond);
+        boolean isFlywheelReady = Math.abs(currentRPS - targetRPS) < 1.5;
+
+        // Taret açı kontrolü (Hedef açıya ±2.0 Derece yaklaştı mı?)
+        double currentTurretDeg = turret.getAngle().in(edu.wpi.first.units.Units.Degrees);
+        double targetTurretDeg = getTurretSetpoint().in(edu.wpi.first.units.Units.Degrees);
+        boolean isTurretReady = Math.abs(currentTurretDeg - targetTurretDeg) < 2.0;
+
+        // Eğer DUMP veya SOTM/HUB yapıyorsak ve her şey yerine oturduysa TRUE döndür
+        return isFlywheelReady && isTurretReady;
+    }
 }

@@ -254,21 +254,16 @@ public class SwerveSubsystem extends SubsystemBase {
     swerveDrive.updateOdometry();
     field.setRobotPose(swerveDrive.getPose());
     
-    if (RobotBase.isReal()) {
-        double yawVelocity = swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond);
+ if (RobotBase.isReal()) {
+      double yawVelocity = swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond);
+      double currentHeading = getHeading().getDegrees();
 
-        limelightBack.getSettings()
-              .withRobotOrientation(new Orientation3d(swerveDrive.getGyro().getRotation3d(),
-                                                      new AngularVelocity3d(DegreesPerSecond.of(0),
-                                                                            DegreesPerSecond.of(0),
-                                                                            DegreesPerSecond.of(yawVelocity))));
-        limelightFront.getSettings()
-              .withRobotOrientation(new Orientation3d(swerveDrive.getGyro().getRotation3d(),
-                                                      new AngularVelocity3d(DegreesPerSecond.of(0),
-                                                                            DegreesPerSecond.of(0),
-                                                                            DegreesPerSecond.of(yawVelocity))));
-        addVisionFromEstimator(limelightBackPoseEstimator, 0);
-        addVisionFromEstimator(limelightFrontPoseEstimator, 1);
+      // SIFIR OBJE ÜRETİMİ - SAF HIZ!
+      LimelightHelpers.SetRobotOrientation("limelight-back", currentHeading, 0, 0, 0, 0, yawVelocity);
+      LimelightHelpers.SetRobotOrientation("limelight-front", currentHeading, 0, 0, 0, 0, yawVelocity);
+
+      addVisionFromEstimator(limelightBackPoseEstimator, 0);
+      addVisionFromEstimator(limelightFrontPoseEstimator, 1);
     } else {
         simulateVision();
     }
@@ -345,16 +340,26 @@ public class SwerveSubsystem extends SubsystemBase {
    * @param cameraYawOffset Kameranın robota göre montaj açısı (Ön: 0, Arka: 180)
    * @param fovHalfAngle Kameranın görüş açısının yarısı (Limelight 3 için yatayda ~40 derece)
    */
-  private void simulateSingleCamera(Pose2d robotPose, double timestamp, int index, double cameraYawOffset, double fovHalfAngle, String name) {
+private void simulateSingleCamera(Pose2d robotPose, double timestamp, int index, double cameraYawOffset, double fovHalfAngle, String name) {
     boolean seesTag = false;
     double minDistance = Double.MAX_VALUE;
     int visibleTags = 0;
 
+    // Obje yaratmadan robotun anlık X ve Y'sini alıyoruz
+    double rx = robotPose.getX();
+    double ry = robotPose.getY();
+
     for (var tag : fieldLayout.getTags()) {
-      Translation2d tagTranslation = tag.pose.toPose2d().getTranslation();
-      double distance = robotPose.getTranslation().getDistance(tagTranslation);
+      // 1. DÜZELTME: Her tag için obje üretmek yerine sadece X ve Y koordinatlarını alıyoruz
+      double tx = tag.pose.getX();
+      double ty = tag.pose.getY();
+      
+      // 2. DÜZELTME: Objesiz, saf matematiksel mesafe ölçümü (Pisagor)
+      double distance = Math.hypot(tx - rx, ty - ry);
 
       if (distance < 6.5) { 
+        // SADECE robotun yakınında bir tag varsa ağır trigonometri objelerini (Translation/Rotation) üretiyoruz!
+        Translation2d tagTranslation = new Translation2d(tx, ty);
         Rotation2d angleToTag = tagTranslation.minus(robotPose.getTranslation()).getAngle();
         Rotation2d cameraAngle = robotPose.getRotation().plus(Rotation2d.fromDegrees(cameraYawOffset));
         
@@ -368,6 +373,8 @@ public class SwerveSubsystem extends SubsystemBase {
         }
       }
     }
+    
+    // ... Metodun geri kalanı aynı (if (seesTag) vs.) ...
 
     if (seesTag) {
       double noise = (minDistance * minDistance) * 0.005; 
