@@ -155,16 +155,18 @@ public class ShooterSubsystem extends SubsystemBase {
         return Degrees.of(0);
     
     }
-    // Taretin, seçilen güvenli Dump noktasına (Üst veya Alt) olan anlık uzaklığını ölçer
+   // DÜZELTME: İleri-Geri momentumunu kusursuz dengelemek için 
+    // Sabit hedefi değil, Sanal Hedefin (Virtual Target) mesafesini ölçüyoruz!
     public edu.wpi.first.units.measure.Distance getDumpDistance() {
         Pose2d robotPose = swerve.getPose();
         Translation2d turretOffset = new Translation2d(Turret.turretDist, 0).rotateBy(robotPose.getRotation());
         Translation2d turretPos = robotPose.getTranslation().plus(turretOffset);
         
-        // Üst veya Alt köşeyi hedeflendiğini zaten bu metot biliyor
-        Translation2d dumpTarget = getDumpTargetPosition(); 
+        // Hızımıza göre hesaplanmış Sanal Hedefi çağırıyoruz
+        Translation2d dumpVirtualTarget = getDumpVirtualTarget(); 
 
-        double distMeters = turretPos.getDistance(dumpTarget);
+        // Sanal hedefe olan uzaklığı ölçüyoruz
+        double distMeters = turretPos.getDistance(dumpVirtualTarget);
         return edu.wpi.first.units.Units.Meters.of(distMeters);
     }
     public double getMagnitude(Transform2d pose) {
@@ -393,61 +395,63 @@ public class ShooterSubsystem extends SubsystemBase {
         }
         SmartDashboard.putNumberArray("AdvantageScope/FlyingFuels", arr);
     }
-    // Sahanın Y Eksenine (Bump'a) Göre ÇOK DAHA GÜVENLİ Fiziksel Hedefi Bulur
+  // 1. Sahanın Güvenli Fiziksel Hedefi (Kelepçe SADECE burada olur)
     public Translation2d getDumpTargetPosition() {
         Pose2d robotPose = swerve.getPose();
         var alliance = DriverStation.getAlliance();
         boolean isRed = alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red;
 
-        // DÜZELTME 1: Duvarlardan ÇOK DAHA UZAK (Maksimum Güvenli) Hedefler
-        // Y ekseninde saha ~8.2 metredir. Duvarlara sıfır atmak yerine,
-        // Y=6.0 (Üst koridor ortası) ve Y=2.2 (Alt koridor ortası) seçiyoruz.
-        // Bu bize duvardan 2.2 metrelik devasa bir sapma payı (hata payı) verir!
-        double targetY = (robotPose.getY() > 4.1) ? 6.0 : 2.2; 
-        
-        // DÜZELTME 2: X Ekseninde de duvar dibine değil, saha içine atıyoruz.
-        // Kırmızıların atacağı X konumu ~13.5 (Duvar 16.5'te)
-        // Mavilerin atacağı X konumu ~3.0 (Duvar 0'da)
+        // Duvarlardan (8.2 ve 0) çok uzak, güvenli orta koridorlar: Y=6.5 ve Y=1.7
+        double targetY = (robotPose.getY() > 4.1) ? 6.5 : 1.7; 
         double targetX = isRed ? 13.5 : 3.0;
 
         return new Translation2d(targetX, targetY);
     }
-    // 2. GECİKME TELAFİLİ KUSURSUZ SOTM DUMP MATEMATİĞİ (Sapmayı %0'a indirir!)
-    // KUSURSUZ FİZİK: Momentum hesaplar ve SAHA DIŞINA ÇIKMAYI YASAKLAR (Clamping)
+
+    // 2. KUSURSUZ 2D SOTM (Hem İleri-Geri Hem Sağa-Sola Momentum Sıfırlama)
     public Translation2d getDumpVirtualTarget() {
-        Translation2d dropZone = getDumpTargetPosition();
+        Translation2d physicalTarget = getDumpTargetPosition();
         Pose2d robotPose = swerve.getPose();
         
         Translation2d turretOffset = new Translation2d(Turret.turretDist, 0).rotateBy(robotPose.getRotation());
         Translation2d turretPos = robotPose.getTranslation().plus(turretOffset);
         
-        // Dump esnasında ortalama tekerlek hızı ve açısı (Momentum telafisi için)
-        double dumpRPS = 30.0; 
-        double dumpHoodDegrees = 55.0; 
-        double wheelRadiusMeters = 0.0508; 
-        
-        double v0 = (dumpRPS * 2 * Math.PI * wheelRadiusMeters) * 0.8; 
-        double v_xy = v0 * Math.cos(Math.toRadians(dumpHoodDegrees));
-        if (v_xy < 0.1) v_xy = 0.1; 
-        
-        double distance = dropZone.getDistance(turretPos);
-        double timeOfFlight = distance / v_xy;
-        
+        // Robotun X (İleri/Geri) ve Y (Sağ/Sol) Hızlarını Alıyoruz
         var robotSpeeds = swerve.getChassisSpeeds();
         Translation2d fieldVelocity = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond)
                                           .rotateBy(robotPose.getRotation());
-                                          
-        double virtualX = dropZone.getX() - (fieldVelocity.getX() * timeOfFlight);
-        double virtualY = dropZone.getY() - (fieldVelocity.getY() * timeOfFlight);
 
-        // ŞAMPİYONLUK DÜZELTMESİ (CLAMPING - KELEPÇE):
-        // Sahanın X ekseni 0-16.5m, Y ekseni 0-8.2m'dir.
-        // Sanal hedefin (Taretin nişan alacağı yerin) bu sınırları aşmasını MATEMATİKSEL OLARAK YASAKLIYORUZ!
-        // Duvarlardan 1.5 metre içeride "Görünmez Bir Kutu" (Safe Box) yaratıyoruz.
-        virtualX = MathUtil.clamp(virtualX, 1.5, 15.0); 
-        virtualY = MathUtil.clamp(virtualY, 1.5, 6.7);  
-
-        return new Translation2d(virtualX, virtualY);
+        // ITERATIVE SOTM - Geleceği 3 adımda öngörme algoritması
+        Translation2d virtualTarget = physicalTarget;
+        double wheelRadiusMeters = 0.0508; 
+        
+        // Döngü sayesinde hem hızı, hem açıyı, hem de mesafeyi 3 kez birbiriyle eşleştirip MÜKEMMEL noktayı bulur.
+        for(int i = 0; i < 3; i++) {
+            double distance = turretPos.getDistance(virtualTarget);
+            
+            // Haritadan o uzaklığa gereken hızı ve açıyı çek
+            // Eğer mesafe haritadan büyükse varsayılan uzağa atış değerlerini kullan (32 RPS, 50 Derece)
+            double rps = flywheelMap.get(distance) != null ? flywheelMap.get(distance) : 32.0;
+            double hoodDeg = hoodMap.get(distance) != null ? hoodMap.get(distance) : 50.0;
+            
+            // Çıkış hızını hesapla
+            double v0 = (rps * 2 * Math.PI * wheelRadiusMeters) * 0.8; 
+            double v_xy = v0 * Math.cos(Math.toRadians(hoodDeg));
+            if (v_xy < 0.1) v_xy = 0.1; 
+            
+            // Havada kalma süresi (ToF)
+            double timeOfFlight = distance / v_xy;
+            
+            // Sanal hedefi robotun 2 Boyutlu hız vektörünün tam TERSİNE kaydır (Hem X hem Y)
+            virtualTarget = new Translation2d(
+                physicalTarget.getX() - (fieldVelocity.getX() * timeOfFlight),
+                physicalTarget.getY() - (fieldVelocity.getY() * timeOfFlight)
+            );
+        }
+        
+        // ÖNEMLİ: Sanal hedefe ASLA kelepçe (clamp) takmıyoruz! 
+        // Bırak taret sana göre saha dışına baksın, mermi havadaki kavisle kusursuzca saha içine düşecek.
+        return virtualTarget;
     }
     // Motorlar hedefe ulaştı mı kontrolü (Hata payı toleransları)
     public boolean isReadyToShoot() {

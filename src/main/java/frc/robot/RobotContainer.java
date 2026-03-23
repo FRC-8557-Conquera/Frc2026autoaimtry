@@ -47,6 +47,13 @@ import swervelib.SwerveInputStream;
 
 public class RobotContainer {
 
+  // Robotun o anki niyetine göre şasi hızını sınırlar (SOTM: %40, DUMP: %70, Normal: %100)
+  private double getSpeedMultiplier() {
+      if (shooter.getIntent() == ShotIntent.SOTM) return 0.4;
+      if (shooter.getIntent() == ShotIntent.DUMP) return 0.7; // İstediğin 0.7 limiti!
+      return 1.0;
+  }
+
   private final Joystick driver = new Joystick(0);
   private final Joystick driver2 = new Joystick(1);
 
@@ -83,12 +90,12 @@ public class RobotContainer {
   private final SpindexerSubsystem spindexer = new SpindexerSubsystem();
   private final IntakeSubsystem intake = new IntakeSubsystem();
 
-  // YAGSL Sürüş Komutu: Eğer SOTM aktifse joystick girdilerini %40'a düşürür (0.4 ile çarpar)
+  // YAGSL Sürüş Komutu: Hız çarpanını (getSpeedMultiplier) kullanır
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(
       s_Swerve.getSwerveDrive(),
-      () -> -driver.getY() * (shooter.getIntent() == ShotIntent.SOTM ? 0.4 : 1.0),
-      () -> -driver.getX() * (shooter.getIntent() == ShotIntent.SOTM ? 0.4 : 1.0))
-      .withControllerRotationAxis(() -> -Math.pow(driver.getRawAxis(4), 3) * (shooter.getIntent() == ShotIntent.SOTM ? 0.4 : 1.0))
+      () -> -driver.getY() * getSpeedMultiplier(),
+      () -> -driver.getX() * getSpeedMultiplier())
+      .withControllerRotationAxis(() -> -Math.pow(driver.getRawAxis(4), 3) * getSpeedMultiplier())
       .deadband(Constants.Swerve.stickDeadband)
       .scaleTranslation(0.8) // Genel YAVASLATMA
       .allianceRelativeControl(true);
@@ -97,16 +104,16 @@ public class RobotContainer {
       .withControllerHeadingAxis(() -> driver.getRawAxis(2), () -> driver.getRawAxis(3))
       .headingWhile(false);
   
-  // Klavye / Simülasyon Sürüş Komutu: Aynı hız düşürme mantığı burada da var
+  // Klavye / Simülasyon Sürüş Komutu
   SwerveInputStream driveAngularVelocityKeyboard = SwerveInputStream.of(
       s_Swerve.getSwerveDrive(),
-      () -> -driver.getY() * (shooter.getIntent() == ShotIntent.SOTM ? 0.4 : 1.0),
-      () -> -driver.getX() * (shooter.getIntent() == ShotIntent.SOTM ? 0.4 : 1.0))
-      .withControllerRotationAxis(() -> driver.getRawAxis(4) * (shooter.getIntent() == ShotIntent.SOTM ? 0.4 : 1.0))
+      () -> -driver.getY() * getSpeedMultiplier(),
+      () -> -driver.getX() * getSpeedMultiplier())
+      .withControllerRotationAxis(() -> driver.getRawAxis(4) * getSpeedMultiplier())
       .deadband(0.1)
       .scaleTranslation(0.8)
       .allianceRelativeControl(true);
-
+      
   SwerveInputStream driveDirectAngleKeyboard = driveAngularVelocityKeyboard.copy()
       .withControllerHeadingAxis(() -> Math.sin(driver.getRawAxis(2) * Math.PI) * (Math.PI * 2),
                                  () -> Math.cos(driver.getRawAxis(2) * Math.PI) * (Math.PI * 2))
