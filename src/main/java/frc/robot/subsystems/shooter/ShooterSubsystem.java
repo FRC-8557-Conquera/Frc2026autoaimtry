@@ -393,58 +393,61 @@ public class ShooterSubsystem extends SubsystemBase {
         }
         SmartDashboard.putNumberArray("AdvantageScope/FlyingFuels", arr);
     }
-// Sahanın Y Eksenine Göre "SARI NOKTA" Hedefini Seçer
-    // 1. ÖLÇÜLEN YENİ KOORDİNATLARA GÖRE HEDEF SEÇİMİ
+    // Sahanın Y Eksenine (Bump'a) Göre ÇOK DAHA GÜVENLİ Fiziksel Hedefi Bulur
     public Translation2d getDumpTargetPosition() {
         Pose2d robotPose = swerve.getPose();
         var alliance = DriverStation.getAlliance();
         boolean isRed = alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red;
 
-        // Sahayı senin ölçtüğün 4.0 Y çizgisinden ikiye bölüyoruz
-        boolean isTopHalf = robotPose.getY() > 4.0;
+        // DÜZELTME 1: Duvarlardan ÇOK DAHA UZAK (Maksimum Güvenli) Hedefler
+        // Y ekseninde saha ~8.2 metredir. Duvarlara sıfır atmak yerine,
+        // Y=6.0 (Üst koridor ortası) ve Y=2.2 (Alt koridor ortası) seçiyoruz.
+        // Bu bize duvardan 2.2 metrelik devasa bir sapma payı (hata payı) verir!
+        double targetY = (robotPose.getY() > 4.1) ? 6.0 : 2.2; 
+        
+        // DÜZELTME 2: X Ekseninde de duvar dibine değil, saha içine atıyoruz.
+        // Kırmızıların atacağı X konumu ~13.5 (Duvar 16.5'te)
+        // Mavilerin atacağı X konumu ~3.0 (Duvar 0'da)
+        double targetX = isRed ? 13.5 : 3.0;
 
-        if (isRed) {
-            // KIRMIZI İttifak Koordinatları
-            return new Translation2d(14.5, isTopHalf ? 6.0 : 2.0);
-        } else {
-            // MAVİ İttifak Koordinatları
-            // Üst noktada X=2.3, Alt noktada X=2.5 olarak ölçmüştün
-            return new Translation2d(isTopHalf ? 2.3 : 2.5, isTopHalf ? 6.0 : 2.0);
-        }
+        return new Translation2d(targetX, targetY);
     }
-
     // 2. GECİKME TELAFİLİ KUSURSUZ SOTM DUMP MATEMATİĞİ (Sapmayı %0'a indirir!)
+    // KUSURSUZ FİZİK: Momentum hesaplar ve SAHA DIŞINA ÇIKMAYI YASAKLAR (Clamping)
     public Translation2d getDumpVirtualTarget() {
         Translation2d dropZone = getDumpTargetPosition();
         Pose2d robotPose = swerve.getPose();
         
-        // SİSTEM GECİKMESİ: Komut-Mekanik arası geçen tahmini süre (Saniye)
-        // Eğer top hala sapıyorsa bu sayıyı 0.18 veya 0.12 yaparak ince ayar çekebilirsin.
-        double latency = 0.15; 
-
+        Translation2d turretOffset = new Translation2d(Turret.turretDist, 0).rotateBy(robotPose.getRotation());
+        Translation2d turretPos = robotPose.getTranslation().plus(turretOffset);
+        
+        // Dump esnasında ortalama tekerlek hızı ve açısı (Momentum telafisi için)
+        double dumpRPS = 30.0; 
+        double dumpHoodDegrees = 55.0; 
+        double wheelRadiusMeters = 0.0508; 
+        
+        double v0 = (dumpRPS * 2 * Math.PI * wheelRadiusMeters) * 0.8; 
+        double v_xy = v0 * Math.cos(Math.toRadians(dumpHoodDegrees));
+        if (v_xy < 0.1) v_xy = 0.1; 
+        
+        double distance = dropZone.getDistance(turretPos);
+        double timeOfFlight = distance / v_xy;
+        
         var robotSpeeds = swerve.getChassisSpeeds();
         Translation2d fieldVelocity = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond)
                                           .rotateBy(robotPose.getRotation());
+                                          
+        double virtualX = dropZone.getX() - (fieldVelocity.getX() * timeOfFlight);
+        double virtualY = dropZone.getY() - (fieldVelocity.getY() * timeOfFlight);
 
-        // GELECEK TAHMİNİ: Top namludan çıkarken taret nerede olacak?
-        Translation2d turretOffset = new Translation2d(Turret.turretDist, 0).rotateBy(robotPose.getRotation());
-        Translation2d futureTurretPos = robotPose.getTranslation().plus(turretOffset).plus(fieldVelocity.times(latency));
-        
-        // Çıkış Hızı Hesaplaması (DUMP)
-        double dumpRPS = 35.0;
-        double v0 = (dumpRPS * 2 * Math.PI * 0.0508) * 0.8; 
-        double v_xy = v0 * Math.cos(Math.toRadians(50.0));
-        if (v_xy < 0.1) v_xy = 0.1; 
-        
-        // Uçuş Süresi (Gelecekteki taret konumundan hedefe olan mesafe)
-        double distance = dropZone.getDistance(futureTurretPos);
-        double timeOfFlight = distance / v_xy;
-        
-        // YENİ SANAL HEDEF: Momentum ve Gecikme birleştirildi!
-        return new Translation2d(
-            dropZone.getX() - (fieldVelocity.getX() * (timeOfFlight + latency)),
-            dropZone.getY() - (fieldVelocity.getY() * (timeOfFlight + latency))
-        );
+        // ŞAMPİYONLUK DÜZELTMESİ (CLAMPING - KELEPÇE):
+        // Sahanın X ekseni 0-16.5m, Y ekseni 0-8.2m'dir.
+        // Sanal hedefin (Taretin nişan alacağı yerin) bu sınırları aşmasını MATEMATİKSEL OLARAK YASAKLIYORUZ!
+        // Duvarlardan 1.5 metre içeride "Görünmez Bir Kutu" (Safe Box) yaratıyoruz.
+        virtualX = MathUtil.clamp(virtualX, 1.5, 15.0); 
+        virtualY = MathUtil.clamp(virtualY, 1.5, 6.7);  
+
+        return new Translation2d(virtualX, virtualY);
     }
     // Motorlar hedefe ulaştı mı kontrolü (Hata payı toleransları)
     public boolean isReadyToShoot() {
