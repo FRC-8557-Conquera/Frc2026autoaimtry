@@ -191,7 +191,7 @@ public class ShooterSubsystem extends SubsystemBase {
         
         return RotationsPerSecond.of(0);
     }
-
+ 
     public Angle getHoodSetpoint() {
         if (intent == ShotIntent.HUB || intent == ShotIntent.SOTM) {
             double distance = getHubDistance().in(edu.wpi.first.units.Units.Meters);
