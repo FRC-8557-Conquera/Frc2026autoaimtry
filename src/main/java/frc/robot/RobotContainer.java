@@ -180,28 +180,33 @@ public class RobotContainer {
 
     // configureButtonBindings() metodunun içine ekliyoruz:
 
-    Trigger pastMidlineTrigger = new Trigger(() -> {
+    // 1. Sadece "Rakip Sahada (Hub'ın Diğer Tarafında)" Olma Durumunu Kontrol Eden Tetikleyici
+    // ÖLÇÜLEN YENİ ÇİZGİLERE GÖRE RAKİP SAHA KONTROLÜ
+    Trigger opponentSideTrigger = new Trigger(() -> {
         Pose2d pose = s_Swerve.getPose();
         var alliance = DriverStation.getAlliance();
         boolean isRed = alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red;
-        
 
         if (isRed) {
-
-            return pose.getX() < 11.9; 
+            // Kırmızıysak X, 11.0'dan küçük olduğunda rakip sahaya (sola) geçmiş oluyoruz.
+            return pose.getX() < 11.0; 
         } else {
-            
-            return pose.getX() > 11.9; 
+            // Maviysek X, 5.2'den büyük olduğunda rakip sahaya (sağa) geçmiş oluyoruz.
+            return pose.getX() > 5.2; 
         }
     });
 
-    // Robot orta çizgiyi geçtiğinde VE sürücü Hub/SOTM butonlarına basmıyorsa:
-    // Tareti otomatik olarak DUMP (geri atış) pozisyonuna çevir.
-    pastMidlineTrigger.and(() -> !sotmButton.getAsBoolean() && !hubButton.getAsBoolean())
+    // Robot rakip sahadayken ve sürücü atış/sotm tuşlarına basmıyorsa
+    // Tareti otomatik olarak DUMP (Sarı Noktalar) pozisyonuna çevir.
+  // DÜZELTME: Kendi sahamıza (11.9 çizgisinin gerisine) döndüğümüz an
+    // robot uykudan uyanır ve namluyu anında tekrar potaya (SOTM) kilitler!
+    opponentSideTrigger.and(() -> !sotmButton.getAsBoolean() && !hubButton.getAsBoolean())
         .whileTrue(Commands.runOnce(() -> shooter.setIntent(ShotIntent.DUMP)))
         .onFalse(Commands.runOnce(() -> shooter.setIntent(ShotIntent.SOTM)));
-  }
-
+    // Robot ilk açıldığında varsayılan olarak SOTM modunda başlasın
+    shooter.setIntent(ShotIntent.SOTM);
+      }
+  
   public Command getAutonomousCommand() {
     return m_chooser.getSelected();
   }
