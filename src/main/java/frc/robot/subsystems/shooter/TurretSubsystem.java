@@ -56,7 +56,7 @@ public class TurretSubsystem extends SubsystemBase {
         private final SparkMax turretMotor = new SparkMax(Constants.Turret.turretMotor, MotorType.kBrushless);
         private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
                         .withClosedLoopController(1.5, 0, 0)// TODO: Change the PID values
-                        .withGearing(new MechanismGearing(16))
+                        .withGearing(new MechanismGearing(48))
                         .withIdleMode(MotorMode.BRAKE)
                         .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
                         .withStatorCurrentLimit(Amps.of(60))
@@ -64,8 +64,9 @@ public class TurretSubsystem extends SubsystemBase {
                         .withClosedLoopRampRate(Seconds.of(0.25))
                         .withOpenLoopRampRate(Seconds.of(0.25))
                         .withSoftLimit(Rotations.of(-0.5), Rotations.of(0.5))
+                        .withFeedforward(new SimpleMotorFeedforward(0.0, 0.35, 0.05))
                         .withControlMode(ControlMode.CLOSED_LOOP);
-
+                        
         private final SmartMotorController turretSMC = new SparkWrapper(turretMotor,
                         DCMotor.getNEO(1),
                         motorConfig);
