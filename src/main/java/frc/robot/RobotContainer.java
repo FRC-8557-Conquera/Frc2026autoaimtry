@@ -49,7 +49,7 @@ public class RobotContainer {
 
   // Robotun o anki niyetine göre şasi hızını sınırlar (SOTM: %40, DUMP: %70, Normal: %100)
   private double getSpeedMultiplier() {
-      if (shooter.getIntent() == ShotIntent.SOTM) return 0.4;
+      if (shooter.getIntent() == ShotIntent.SOTM) return 0.4; // SOTM modunda hız %40 ile sınırlanır
       if (shooter.getIntent() == ShotIntent.DUMP) return 0.7; // İstediğin 0.7 limiti!
       return 1.0;
   }
@@ -165,10 +165,13 @@ public class RobotContainer {
     
     // YENİ: Shoot On The Move Butonu (Aç/Kapa mantığı ile çalışır)
     sotmButton.toggleOnTrue(new ShootOnTheMoveCommand(shooter, feeder));
-   
-    triggerButton.whileTrue(
-    Commands.run(() -> { flywheel.setVelocity(() -> shooter.getFlywheelSetpoint()); feeder.feed(); spindexer.spinReverse();})).onFalse(
-    Commands.runOnce(() -> {flywheel.setVelocity(RotationsPerSecond.of(0)); feeder.stop(); spindexer.stop();}));
+
+   // DÜZELTME: Atışa Hazır (Ready to Shoot) Koruması
+    // Tetiğe basıldığında Flywheel anında dönmeye başlar.
+    // Ancak Feeder ve Spindexer, sistem "Atışa Hazır" (isReadyToShoot) olana kadar BEKLER!
+    triggerButton.whileTrue(flywheel.setVelocity(() -> shooter.getFlywheelSetpoint()).alongWith(Commands.waitUntil(() -> shooter.isReadyToShoot())
+    .andThen(feeder.feed().alongWith(spindexer.spinReverse()))))
+    .onFalse(flywheel.setVelocity(() -> edu.wpi.first.units.Units.RotationsPerSecond.of(0)).alongWith(feeder.stop(), spindexer.stop()));
 
     turretButtonLeft.whileTrue(turret.rotateDutyCycle(0.05)).onFalse(turret.stop());
     turretButtonRight.whileTrue(turret.rotateDutyCycle(-0.05)).onFalse(turret.stop());

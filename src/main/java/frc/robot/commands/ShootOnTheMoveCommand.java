@@ -29,8 +29,8 @@ public class ShootOnTheMoveCommand extends Command {
         // 12. buton aktif olduğu sürece sistem ateşlemeye hazır kabul edilir.
         feeder.setSpeed(1.0); 
         
-        // Eğer son atışın üzerinden 0.4 saniye geçtiyse
-        if (shotTimer.hasElapsed(0.4)) {
+        // Eğer son atışın üzerinden 0.2 saniye geçtiyse
+        if (shotTimer.hasElapsed(0.2)) {
             shooter.spawnSimulatedFuel(); // 3 BOYUTLU TOPU ÜRET VE FIRLAT!
             shotTimer.restart();
         }

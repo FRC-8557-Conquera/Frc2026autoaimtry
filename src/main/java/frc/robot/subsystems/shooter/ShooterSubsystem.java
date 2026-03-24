@@ -2,7 +2,6 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.*;
 import com.pathplanner.lib.util.GeometryUtil;
-import com.thethriftybot.wrappers.RobotStateWrapper;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -24,13 +23,12 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 import frc.robot.Constants.fieldConstants;
-import frc.robot.Constants;
 import frc.robot.Constants.Shooter;
 import frc.robot.Constants.Turret;
+import org.littletonrobotics.junction.Logger;
 
 public class ShooterSubsystem extends SubsystemBase {
 
@@ -41,33 +39,28 @@ public class ShooterSubsystem extends SubsystemBase {
     public FlywheelSubsystem flywheel = new FlywheelSubsystem();
     public HoodSubsystem hood = new HoodSubsystem();
     public GenericEntry entry;
-    // Havada uçan topların anlık fiziğini tutacak mini bir sınıf
+    
     private static class SimulatedFuel {
         double x, y, z;
         double vx, vy, vz;
         double timeAlive = 0;
 
         public SimulatedFuel(double x, double y, double z, double vx, double vy, double vz) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-            this.vx = vx;
-            this.vy = vy;
-            this.vz = vz;
+            this.x = x; this.y = y; this.z = z;
+            this.vx = vx; this.vy = vy; this.vz = vz;
         }
     }
 
-    // Aktif olarak havada uçan tüm topların listesi
     private java.util.ArrayList<SimulatedFuel> flyingFuels = new java.util.ArrayList<>();
     private final InterpolatingDoubleTreeMap hoodMap = new InterpolatingDoubleTreeMap();
     private final InterpolatingDoubleTreeMap flywheelMap = new InterpolatingDoubleTreeMap();
+    
     private Pose2d getHubPose() {
-    var alliance = DriverStation.getAlliance();
-
-    if (alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red) {
-        return fieldConstants.RED_HUB_POSE;
-    }
-    return fieldConstants.BLUE_HUB_POSE;
+        var alliance = DriverStation.getAlliance();
+        if (alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red) {
+            return fieldConstants.RED_HUB_POSE;
+        }
+        return fieldConstants.BLUE_HUB_POSE;
     }
 
     public ShooterSubsystem(SwerveSubsystem swerve) {
@@ -77,16 +70,12 @@ public class ShooterSubsystem extends SubsystemBase {
         entry = tab.addPersistent("Flywheel Speed (RPS)", 40)
             .withWidget(BuiltInWidgets.kNumberSlider)
             .getEntry();
-        // Örnek Kalibrasyon Verileri (Mesafe Metre -> Hedef Değer)
-        // TODO: Gerçek robotla veya simülasyondaki atış çizgisine bakarak bu değerleri ayarlayacağız
     }
 
     @Override
     public void periodic() {
         SmartDashboard.putNumber("Distance", getHubDistance().in(Meters));
         SmartDashboard.putNumber("Slider", entry.getDouble(10));
-        
-        // Atış yörüngesi simülasyonunu sürekli çalıştır
         updateTrajectoryVisualization();
     }
 
@@ -95,379 +84,264 @@ public class ShooterSubsystem extends SubsystemBase {
         return flywheel.setVelocity(() -> RotationsPerSecond.of(speedRPS));
     }
 
-    public void setIntent(ShotIntent intent) {
-        this.intent = intent;
-    }
-
-    public ShotIntent getIntent() {
-        return intent;
-    }
+    public void setIntent(ShotIntent intent) { this.intent = intent; }
+    public ShotIntent getIntent() { return intent; }
 
     private void buildLookupTables() {
-        // HOOD: Topun ufuk çizgisiyle yaptığı gerçek çıkış açısı (70 - 50 arası)
-        // 70 derece = Yakın mesafeden çok güvenli ve isabetli aşırtma (Lob Shot)
-        // 50 derece = Uzak mesafeden stabil, orta kavisli atış
-        hoodMap.put(1.5, 70.0); 
-        hoodMap.put(2.5, 65.0); 
-        hoodMap.put(3.5, 60.0); 
-        hoodMap.put(4.5, 55.0); 
-        hoodMap.put(5.5, 50.0);
+        hoodMap.put(1.5, 70.0); hoodMap.put(2.5, 65.0); hoodMap.put(3.5, 60.0); 
+        hoodMap.put(4.5, 55.0); hoodMap.put(5.5, 50.0);
 
-        // FLYWHEEL: 80 dereceye göre daha yatay attığımız için ileri doğru gidiş artacak.
-        // Bu yüzden hızları 80 haritasına göre biraz azalttık, mükemmel dengeyi bulduk.
-        flywheelMap.put(1.5, 23.0); 
-        flywheelMap.put(2.5, 25.5);
-        flywheelMap.put(3.5, 27.5);
-        flywheelMap.put(4.5, 30.0);
-        flywheelMap.put(5.5, 32.0);
+        flywheelMap.put(1.5, 23.0); flywheelMap.put(2.5, 25.5); flywheelMap.put(3.5, 27.5);
+        flywheelMap.put(4.5, 30.0); flywheelMap.put(5.5, 32.0);
+    }
+
+    // 1. DÜZELTME: KABLO KOPARMA KORUMASI (Soft Limits & Wrap Logic)
+    private double wrapTurretAngle(double setpointDeg) {
+        double currentPosition = turret.getAngle().in(Degrees);
+        double deltaTheta = ((setpointDeg - currentPosition + 180.0) % 360.0) - 180.0;
+        double targetPosition = currentPosition + deltaTheta;
+
+        // Taretin fiziksel dönüş sınırları (Örn: -180 ile 180 arası)
+        double L_min = -180.0; 
+        double L_max = 180.0;  
+
+        // Eğer en kısa yol sınırı aşıyorsa, taretin ters yönden (uzun yoldan) dönmesini sağla
+        if (targetPosition > L_max) {
+            targetPosition -= 360.0;
+        } else if (targetPosition < L_min) {
+            targetPosition += 360.0;
+        }
+
+        // Son güvenlik: Kesinlikle sınırların dışına çıkma
+        return MathUtil.clamp(targetPosition, L_min, L_max);
     }
 
     public Angle getTurretSetpoint() {
         Pose2d robotPose = swerve.getPose();
+        Translation2d turretOffset = new Translation2d(Turret.turretDist, 0); 
+        Translation2d turretFieldPosition = robotPose.getTranslation().plus(turretOffset.rotateBy(robotPose.getRotation()));
+
         if (intent == ShotIntent.HUB || intent == ShotIntent.SOTM) {
-            Translation2d turretOffset = new Translation2d(Turret.turretDist,0); 
-            Translation2d turretFieldPosition = robotPose.getTranslation().plus(turretOffset.rotateBy(robotPose.getRotation()));
-
-            // KRİTİK AYRIM: SOTM açıksa Sanal Hedefe, HUB açıksa Gerçek Pota'ya bak
             Translation2d targetTranslation = (intent == ShotIntent.SOTM) ? getVirtualTarget() : getHubPose().getTranslation();
-
-            Translation2d toHub = targetTranslation.minus(turretFieldPosition);
-            Rotation2d fieldAngle = toHub.getAngle();
-            Rotation2d turretRelative = fieldAngle.minus(robotPose.getRotation()); 
-            double setpointDeg = turretRelative.getDegrees();
-            double wrapped = MathUtil.inputModulus(setpointDeg, -180, 180);
-            return Degrees.of(wrapped);
-        }
-       // getTurretSetpoint() içindeki DUMP kısmı:
-        if (intent == ShotIntent.DUMP) {
-            Translation2d turretOffset = new Translation2d(Turret.turretDist, 0); 
-            Translation2d turretFieldPosition = robotPose.getTranslation().plus(turretOffset.rotateBy(robotPose.getRotation()));
-
-            // Fizik kurallarıyla hesaplanan o kusursuz sanal hedefi çağırıyoruz
-            Translation2d virtualDropZone = getDumpVirtualTarget();
-
-            // Tareti sanal noktaya kilitliyoruz
-            Translation2d toTarget = virtualDropZone.minus(turretFieldPosition);
-            Rotation2d turretRelative = toTarget.getAngle().minus(robotPose.getRotation()); 
+            Rotation2d fieldAngle = targetTranslation.minus(turretFieldPosition).getAngle();
+            double setpointDeg = fieldAngle.minus(robotPose.getRotation()).getDegrees();
             
-            return Degrees.of(MathUtil.inputModulus(turretRelative.getDegrees(), -180, 180));
+            return Degrees.of(wrapTurretAngle(setpointDeg)); // Akıllı korumayı kullan!
+        }
+
+        if (intent == ShotIntent.DUMP) {
+            Translation2d virtualDropZone = getDumpVirtualTarget();
+            Rotation2d turretRelative = virtualDropZone.minus(turretFieldPosition).getAngle().minus(robotPose.getRotation()); 
+            
+            return Degrees.of(wrapTurretAngle(turretRelative.getDegrees())); // Akıllı korumayı kullan!
         }
         return Degrees.of(0);
-    
     }
-   // DÜZELTME: İleri-Geri momentumunu kusursuz dengelemek için 
-    // Sabit hedefi değil, Sanal Hedefin (Virtual Target) mesafesini ölçüyoruz!
-    public edu.wpi.first.units.measure.Distance getDumpDistance() {
-        Pose2d robotPose = swerve.getPose();
-        Translation2d turretOffset = new Translation2d(Turret.turretDist, 0).rotateBy(robotPose.getRotation());
-        Translation2d turretPos = robotPose.getTranslation().plus(turretOffset);
-        
-        // Hızımıza göre hesaplanmış Sanal Hedefi çağırıyoruz
-        Translation2d dumpVirtualTarget = getDumpVirtualTarget(); 
 
-        // Sanal hedefe olan uzaklığı ölçüyoruz
-        double distMeters = turretPos.getDistance(dumpVirtualTarget);
-        return edu.wpi.first.units.Units.Meters.of(distMeters);
+    public Distance getDumpDistance() {
+        Pose2d robotPose = swerve.getPose();
+        Translation2d turretPos = robotPose.getTranslation().plus(new Translation2d(Turret.turretDist, 0).rotateBy(robotPose.getRotation()));
+        return Meters.of(turretPos.getDistance(getDumpVirtualTarget()));
     }
-    public double getMagnitude(Transform2d pose) {
-        return Math.sqrt(pose.getX() * pose.getX() + pose.getY() * pose.getY());
-    }
+
+    public double getMagnitude(Transform2d pose) { return Math.sqrt(pose.getX() * pose.getX() + pose.getY() * pose.getY()); }
+
     public Distance getHubDistance() {
         Pose2d robotPose = swerve.getPose();
-        // Mesafe (RPS ve Hood haritaları için) hesaplanırken de bu ayrıma dikkat ediyoruz:
         Translation2d targetTranslation = (intent == ShotIntent.SOTM) ? getVirtualTarget() : getHubPose().getTranslation();
         return Meters.of(robotPose.getTranslation().getDistance(targetTranslation));
     }
 
     public AngularVelocity getFlywheelSetpoint() {
-        if (intent == ShotIntent.HUB || intent == ShotIntent.SOTM) {
-            double distance = getHubDistance().in(edu.wpi.first.units.Units.Meters);
-            return RotationsPerSecond.of(flywheelMap.get(distance));
-        }
-
-        if (intent == ShotIntent.DUMP) {
-            // DÜZELTME: Uzaklığı ölçüp tıpkı HUB gibi mermi hızını haritadan ayarlıyor.
-            double distance = getDumpDistance().in(edu.wpi.first.units.Units.Meters);
-            return RotationsPerSecond.of(flywheelMap.get(distance));
-        }
-        
+        if (intent == ShotIntent.HUB || intent == ShotIntent.SOTM) return RotationsPerSecond.of(flywheelMap.get(getHubDistance().in(Meters)));
+        if (intent == ShotIntent.DUMP) return RotationsPerSecond.of(flywheelMap.get(getDumpDistance().in(Meters)));
         return RotationsPerSecond.of(0);
     }
  
     public Angle getHoodSetpoint() {
-        if (intent == ShotIntent.HUB || intent == ShotIntent.SOTM) {
-            double distance = getHubDistance().in(edu.wpi.first.units.Units.Meters);
-            double rawAngle = hoodMap.get(distance);
-            return Degrees.of(MathUtil.clamp(rawAngle, 50.0, 70.0));
-        }
-
-        if (intent == ShotIntent.DUMP) {
-            // DÜZELTME: Artık sabit 50 değil! Hedefe uzaklığı ölçüp haritadan açıyı çekiyor.
-            double distance = getDumpDistance().in(edu.wpi.first.units.Units.Meters);
-            double rawAngle = hoodMap.get(distance);
-            return Degrees.of(MathUtil.clamp(rawAngle, 50.0, 70.0));
-        }
-
+        if (intent == ShotIntent.HUB || intent == ShotIntent.SOTM) return Degrees.of(MathUtil.clamp(hoodMap.get(getHubDistance().in(Meters)), 50.0, 70.0));
+        if (intent == ShotIntent.DUMP) return Degrees.of(MathUtil.clamp(hoodMap.get(getDumpDistance().in(Meters)), 50.0, 70.0));
         return Degrees.of(0);
     }
 
-    // Mesafe parametresi alan eski hood metodun da varsa onu da düzeltelim:
     public Angle getHoodSetpoint(double distance) {
-        if(intent == ShotIntent.HUB || intent == ShotIntent.SOTM) {
-            double safeAngle = MathUtil.clamp(hoodMap.get(distance), 20.0, 40.0);
-            return Degrees.of(safeAngle);
-        } else return getHoodSetpoint();
+        if(intent == ShotIntent.HUB || intent == ShotIntent.SOTM) return Degrees.of(MathUtil.clamp(hoodMap.get(distance), 20.0, 40.0));
+        return getHoodSetpoint();
     }
 
-   public LinearVelocity getBaseExitVelocity(double distance) {
-    double rps = flywheelMap.get(distance) + Shooter.flywheelOffsetRPS;
-    return MetersPerSecond.of(rps);
-}
-    
-    public enum ShotIntent {
-        HUB,
-        SOTM, // HAREKETLİ ATIŞ İÇİN YENİ DURUM
-        DUMP,
-        OFF
+    public LinearVelocity getBaseExitVelocity(double distance) {
+        return MetersPerSecond.of(flywheelMap.get(distance) + Shooter.flywheelOffsetRPS);
     }
+    
+    public enum ShotIntent { HUB, SOTM, DUMP, OFF }
+
     public void updateTrajectoryVisualization() {
         Pose2d robotPose = swerve.getPose(); 
-// Offset tamamen silindi, haritadaki saf açıyı alıyoruz
-        double hoodPitch = getHoodSetpoint().in(edu.wpi.first.units.Units.Radians);        double turretYaw = getTurretSetpoint().in(edu.wpi.first.units.Units.Radians);        
-        double flywheelRPS = getFlywheelSetpoint().in(edu.wpi.first.units.Units.RotationsPerSecond);
+        double hoodPitch = getHoodSetpoint().in(Radians);        
+        double turretYaw = getTurretSetpoint().in(Radians);        
+        double flywheelRPS = getFlywheelSetpoint().in(RotationsPerSecond);
         
         double radius = 0.0508; 
         double v0 = (flywheelRPS * 2 * Math.PI * radius) * 0.8; 
-
-        double shooterHeightMeters = 0.45; 
-        Translation3d startPos = new Translation3d(robotPose.getX(), robotPose.getY(), shooterHeightMeters);
+        Translation3d startPos = new Translation3d(robotPose.getX(), robotPose.getY(), 0.45);
 
         double globalYaw = robotPose.getRotation().getRadians() + turretYaw;
         double v_xy = v0 * Math.cos(hoodPitch); 
 
-        // DÜZELTME BURADA: Robotun hızı sadece 12. buton (SOTM) aktifse mermiye eklenir!
         double vx, vy;
         if (intent == ShotIntent.SOTM) {
             var robotSpeeds = swerve.getChassisSpeeds();
-            Translation2d fieldVelocity = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond)
-                                              .rotateBy(robotPose.getRotation());
+            Translation2d fieldVelocity = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond).rotateBy(robotPose.getRotation());
             vx = (v_xy * Math.cos(globalYaw)) + fieldVelocity.getX(); 
             vy = (v_xy * Math.sin(globalYaw)) + fieldVelocity.getY(); 
         } else {
-            // 11. buton (HUB) veya diğer durumlarda robot hızı sarı çizgiye EKLENMEZ
             vx = v_xy * Math.cos(globalYaw); 
             vy = v_xy * Math.sin(globalYaw); 
         }
-        
         double vz = v0 * Math.sin(hoodPitch);   
 
         java.util.ArrayList<Pose3d> trajectory = new java.util.ArrayList<>();
-        double t = 0;
-        double dt = 0.05; 
-        double z = startPos.getZ();
+        double t = 0; double dt = 0.05; double z = startPos.getZ();
 
         while (z > 0 && t < 3.0) {
             double x = startPos.getX() + (vx * t);
             double y = startPos.getY() + (vy * t);
             z = startPos.getZ() + (vz * t) - (0.5 * 9.81 * Math.pow(t, 2));
 
-            if (z > 0) {
-                trajectory.add(new Pose3d(x, y, z, new edu.wpi.first.math.geometry.Rotation3d()));
-            }
+            if (z > 0) trajectory.add(new Pose3d(x, y, z, new Rotation3d()));
             t += dt;
-        }
-
-        double[] trajectoryData = new double[trajectory.size() * 3];
-        for (int i = 0; i < trajectory.size(); i++) {
-            Pose3d p = trajectory.get(i);
-            trajectoryData[i * 3]     = p.getX(); 
-            trajectoryData[i * 3 + 1] = p.getY(); 
-            trajectoryData[i * 3 + 2] = p.getZ(); 
-        }
-
-        SmartDashboard.putNumberArray("AdvantageScope/Shooter_Trajectory", trajectoryData);
+        }   
+        Logger.recordOutput("AdvantageScope/Shooter_Trajectory", trajectory.toArray(new Pose3d[0]));
     }
-    // Robotun hızını hesaba katarak hedeflenecek sanal noktayı bulur
+
     public Translation2d getVirtualTarget() {
         Pose2d robotPose = swerve.getPose();
         Translation2d actualHub = getHubPose().getTranslation();
         double distanceToActual = robotPose.getTranslation().getDistance(actualHub);
 
-        // 1. ROBOT HIZINI SAHA (FIELD) HIZINA ÇEVİRME
         var robotSpeeds = swerve.getChassisSpeeds();
-        Translation2d fieldVelocity = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond)
-                                          .rotateBy(robotPose.getRotation());
-        double fieldVx = fieldVelocity.getX();
-        double fieldVy = fieldVelocity.getY();
+        Translation2d fieldVelocity = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond).rotateBy(robotPose.getRotation());
+        
+        double currentRPS = flywheelMap.get(distanceToActual) != null ? flywheelMap.get(distanceToActual) : 32.0;
+        double currentHoodRaw = hoodMap.get(distanceToActual) != null ? hoodMap.get(distanceToActual) : 50.0;
+        double v0 = (currentRPS * 2 * Math.PI * 0.0508) * 0.8;
+        double v_xy = v0 * Math.cos(Math.toRadians(currentHoodRaw));
+        if (v_xy < 0.1) v_xy = 0.1; 
 
-        // 2. MERMİNİN GERÇEK YATAY HIZINI BULMA 
-        // DÜZELTME: Sonsuz döngüye girmemek için "getHoodSetpoint()" yerine haritadan (Map) direkt okuyoruz!
-        double currentRPS = flywheelMap.get(distanceToActual);
-        double currentHoodRaw = hoodMap.get(distanceToActual);
-        double hoodPitch = Math.toRadians(currentHoodRaw); // + 20.0 silindi!
-        double radius = 0.0508;
-        double v0 = (currentRPS * 2 * Math.PI * radius) * 0.8;
-        double v_xy = v0 * Math.cos(hoodPitch);
-
-        if (v_xy < 0.1) v_xy = 0.1; // Sıfıra bölünme koruması
-
-        // 3. GERÇEK UÇUŞ SÜRESİ + GECİKME TELAFİSİ
         double timeOfFlight = (distanceToActual / v_xy) + 0.04;
 
-        // 4. SANAL HEDEF HESAPLAMASI
-        double virtualX = actualHub.getX() - (fieldVx * timeOfFlight);
-        double virtualY = actualHub.getY() - (fieldVy * timeOfFlight);
-
-        return new Translation2d(virtualX, virtualY);
+        return new Translation2d(actualHub.getX() - (fieldVelocity.getX() * timeOfFlight), actualHub.getY() - (fieldVelocity.getY() * timeOfFlight));
     }
-    // Feeder her çalıştığında (ateş edildiğinde) sanal bir top oluşturur
+
     public void spawnSimulatedFuel() {
         Pose2d robotPose = swerve.getPose();
-        
-        // Yörünge çizgisindeki birebir aynı çıkış hesaplamaları
-        double turretYaw = getTurretSetpoint().in(edu.wpi.first.units.Units.Radians);        
-        double flywheelRPS = getFlywheelSetpoint().in(edu.wpi.first.units.Units.RotationsPerSecond);
-        double hoodPitch = getHoodSetpoint().in(edu.wpi.first.units.Units.Radians); // + 20.0 silindi!
-        double radius = 0.0508; 
-        
-        double v0 = (flywheelRPS * 2 * Math.PI * radius) * 0.8; 
-
-        // Topun çıkış noktası
-        double startX = robotPose.getX();
-        double startY = robotPose.getY();
-        double startZ = 0.45; // Shooter yüksekliği
-
-        double globalYaw = robotPose.getRotation().getRadians() + turretYaw;
+        double v0 = (getFlywheelSetpoint().in(RotationsPerSecond) * 2 * Math.PI * 0.0508) * 0.8; 
+        double globalYaw = robotPose.getRotation().getRadians() + getTurretSetpoint().in(Radians);
+        double hoodPitch = getHoodSetpoint().in(Radians);
         double v_xy = v0 * Math.cos(hoodPitch); 
 
-        // Robotun gidiş hızını topa ekliyoruz (SOTM fiziği)
         var robotSpeeds = swerve.getChassisSpeeds();
-        Translation2d fieldVelocity = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond)
-                                          .rotateBy(robotPose.getRotation());
+        Translation2d fieldVelocity = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond).rotateBy(robotPose.getRotation());
         
-        double vx = (v_xy * Math.cos(globalYaw)) + fieldVelocity.getX(); 
-        double vy = (v_xy * Math.sin(globalYaw)) + fieldVelocity.getY(); 
-        double vz = v0 * Math.sin(hoodPitch);   
-
-        // Yeni topu havaya fırlat!
-        flyingFuels.add(new SimulatedFuel(startX, startY, startZ, vx, vy, vz));
+        flyingFuels.add(new SimulatedFuel(robotPose.getX(), robotPose.getY(), 0.45, 
+            (v_xy * Math.cos(globalYaw)) + fieldVelocity.getX(), (v_xy * Math.sin(globalYaw)) + fieldVelocity.getY(), v0 * Math.sin(hoodPitch)));
     }
 
-    // WPILib'in simülasyon döngüsü (Saniyede 50 kere çalışır)
     @Override
     public void simulationPeriodic() {
-        double dt = 0.02; // 20ms simülasyon adımı
-        java.util.ArrayList<Double> poseArray = new java.util.ArrayList<>();
+        double dt = 0.02; 
+        java.util.ArrayList<Pose3d> poseArray = new java.util.ArrayList<>();
 
         var iterator = flyingFuels.iterator();
         while (iterator.hasNext()) {
             SimulatedFuel fuel = iterator.next();
-            
-            // Fiziği işlet: Konumu hıza göre değiştir
-            fuel.x += fuel.vx * dt;
-            fuel.y += fuel.vy * dt;
-            fuel.z += fuel.vz * dt;
-            
-            // Yerçekimi: Saniyede 9.81 m/s^2 aşağı çeker
+            fuel.x += fuel.vx * dt; fuel.y += fuel.vy * dt; fuel.z += fuel.vz * dt;
             fuel.vz -= 9.81 * dt; 
             fuel.timeAlive += dt;
 
-            // Eğer top yere düşerse (z < 0.1) veya havada 3 saniyeden fazla kalırsa onu sil
             if (fuel.z < 0.1 || fuel.timeAlive > 3.0) {
                 iterator.remove();
             } else {
-                // AdvantageScope için Pose3d formatı: [X, Y, Z, Q_W, Q_X, Q_Y, Q_Z]
-                poseArray.add(fuel.x);
-                poseArray.add(fuel.y);
-                poseArray.add(fuel.z);
-                // Topun dönüşü (rotasyonu) önemli olmadığı için sabit bir Quaternion (W=1) veriyoruz
-                poseArray.add(1.0); 
-                poseArray.add(0.0); 
-                poseArray.add(0.0); 
-                poseArray.add(0.0); 
+                poseArray.add(new Pose3d(fuel.x, fuel.y, fuel.z, new Rotation3d()));
             }
         }
-
-        // Aktif topları NetworkTables'a yolla
-        double[] arr = new double[poseArray.size()];
-        for (int i = 0; i < poseArray.size(); i++) {
-            arr[i] = poseArray.get(i);
-        }
-        SmartDashboard.putNumberArray("AdvantageScope/FlyingFuels", arr);
+        // 3. DÜZELTME: Simüle edilen uçan topları modern Struct ile yolla
+        Logger.recordOutput("AdvantageScope/FlyingFuels", poseArray.toArray(new Pose3d[0]));
     }
-  // 1. Sahanın Güvenli Fiziksel Hedefi (Kelepçe SADECE burada olur)
+
     public Translation2d getDumpTargetPosition() {
         Pose2d robotPose = swerve.getPose();
         var alliance = DriverStation.getAlliance();
         boolean isRed = alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red;
-
-        // Duvarlardan (8.2 ve 0) çok uzak, güvenli orta koridorlar: Y=6.5 ve Y=1.7
-        double targetY = (robotPose.getY() > 4.1) ? 6.5 : 1.7; 
-        double targetX = isRed ? 13.5 : 3.0;
-
-        return new Translation2d(targetX, targetY);
+        return new Translation2d(isRed ? 13.5 : 3.0, (robotPose.getY() > 4.1) ? 6.5 : 1.7);
     }
 
-    // 2. KUSURSUZ 2D SOTM (Hem İleri-Geri Hem Sağa-Sola Momentum Sıfırlama)
     public Translation2d getDumpVirtualTarget() {
         Translation2d physicalTarget = getDumpTargetPosition();
-        Pose2d robotPose = swerve.getPose();
-        
-        Translation2d turretOffset = new Translation2d(Turret.turretDist, 0).rotateBy(robotPose.getRotation());
-        Translation2d turretPos = robotPose.getTranslation().plus(turretOffset);
-        
-        // Robotun X (İleri/Geri) ve Y (Sağ/Sol) Hızlarını Alıyoruz
+        Translation2d turretPos = swerve.getPose().getTranslation().plus(new Translation2d(Turret.turretDist, 0).rotateBy(swerve.getPose().getRotation()));
         var robotSpeeds = swerve.getChassisSpeeds();
-        Translation2d fieldVelocity = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond)
-                                          .rotateBy(robotPose.getRotation());
+        Translation2d fieldVelocity = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond).rotateBy(swerve.getPose().getRotation());
 
-        // ITERATIVE SOTM - Geleceği 3 adımda öngörme algoritması
         Translation2d virtualTarget = physicalTarget;
-        double wheelRadiusMeters = 0.0508; 
-        
-        // Döngü sayesinde hem hızı, hem açıyı, hem de mesafeyi 3 kez birbiriyle eşleştirip MÜKEMMEL noktayı bulur.
         for(int i = 0; i < 3; i++) {
             double distance = turretPos.getDistance(virtualTarget);
-            
-            // Haritadan o uzaklığa gereken hızı ve açıyı çek
-            // Eğer mesafe haritadan büyükse varsayılan uzağa atış değerlerini kullan (32 RPS, 50 Derece)
             double rps = flywheelMap.get(distance) != null ? flywheelMap.get(distance) : 32.0;
             double hoodDeg = hoodMap.get(distance) != null ? hoodMap.get(distance) : 50.0;
             
-            // Çıkış hızını hesapla
-            double v0 = (rps * 2 * Math.PI * wheelRadiusMeters) * 0.8; 
-            double v_xy = v0 * Math.cos(Math.toRadians(hoodDeg));
+            double v_xy = ((rps * 2 * Math.PI * 0.0508) * 0.8) * Math.cos(Math.toRadians(hoodDeg));
             if (v_xy < 0.1) v_xy = 0.1; 
             
-            // Havada kalma süresi (ToF)
             double timeOfFlight = distance / v_xy;
-            
-            // Sanal hedefi robotun 2 Boyutlu hız vektörünün tam TERSİNE kaydır (Hem X hem Y)
-            virtualTarget = new Translation2d(
-                physicalTarget.getX() - (fieldVelocity.getX() * timeOfFlight),
-                physicalTarget.getY() - (fieldVelocity.getY() * timeOfFlight)
-            );
+            virtualTarget = new Translation2d(physicalTarget.getX() - (fieldVelocity.getX() * timeOfFlight), physicalTarget.getY() - (fieldVelocity.getY() * timeOfFlight));
         }
-        
-        // ÖNEMLİ: Sanal hedefe ASLA kelepçe (clamp) takmıyoruz! 
-        // Bırak taret sana göre saha dışına baksın, mermi havadaki kavisle kusursuzca saha içine düşecek.
         return virtualTarget;
     }
-    // Motorlar hedefe ulaştı mı kontrolü (Hata payı toleransları)
+
     public boolean isReadyToShoot() {
+
+
+        // 1. ANLIK DEĞERLERİ VE HEDEFLERİ OKU
+        double currentFlywheel = flywheel.getVelocity().in(RotationsPerSecond);
+        double targetFlywheel = getFlywheelSetpoint().in(RotationsPerSecond);
+
+        double currentTurret = turret.getAngle().in(Degrees);
+        double targetTurret = getTurretSetpoint().in(Degrees);
+
+        double currentHood = hood.getAngle().in(Degrees);
+        double targetHood = getHoodSetpoint().in(Degrees);
+
+        // 2. HATALARI HESAPLA
+        double flywheelError = currentFlywheel - targetFlywheel;
+        double turretError = MathUtil.inputModulus(currentTurret - targetTurret, -180.0, 180.0);
+        double hoodError = currentHood - targetHood;
+
+        boolean isFlywheelReady = Math.abs(flywheelError) < 1.5;
+        boolean isTurretReady = Math.abs(turretError) < 2.0;
+        boolean isHoodReady = Math.abs(hoodError) < 2.0;
+
+        // 3. ADVANTAGEKIT RÖNTGENİ: Doğrudan Logger'a yazdırıyoruz!
+        Logger.recordOutput("Ready_Debug/1_Intent", intent.name());
+        
+        Logger.recordOutput("Ready_Debug/Flywheel_Target", targetFlywheel);
+        Logger.recordOutput("Ready_Debug/Flywheel_Current", currentFlywheel);
+        
+        Logger.recordOutput("Ready_Debug/Turret_Target", targetTurret);
+        Logger.recordOutput("Ready_Debug/Turret_Current", currentTurret);
+        
+        Logger.recordOutput("Ready_Debug/Hood_Target", targetHood);
+        Logger.recordOutput("Ready_Debug/Hood_Current", currentHood);
+
+        Logger.recordOutput("Ready_Debug/Flywheel_Is_Green", isFlywheelReady);
+        Logger.recordOutput("Ready_Debug/Turret_Is_Green", isTurretReady);
+        Logger.recordOutput("Ready_Debug/Hood_Is_Green", isHoodReady);
+
+        boolean allReady = isFlywheelReady && isTurretReady && isHoodReady;
+        Logger.recordOutput("Ready_Debug/ALL_READY", allReady);
+
+        // Eğer sistem kapalıysa direkt False dön
         if (intent == ShotIntent.OFF) return false;
+        if (edu.wpi.first.wpilibj.RobotBase.isSimulation()) return true; // Simülasyonda sensörleri bekleme, direkt ateş et!
 
-        // Flywheel hız kontrolü (Hedef hıza ±1.5 RPS yaklaştı mı?)
-        double currentRPS = flywheel.getVelocity().in(edu.wpi.first.units.Units.RotationsPerSecond); 
-        double targetRPS = getFlywheelSetpoint().in(edu.wpi.first.units.Units.RotationsPerSecond);
-        boolean isFlywheelReady = Math.abs(currentRPS - targetRPS) < 1.5;
-
-        // Taret açı kontrolü (Hedef açıya ±2.0 Derece yaklaştı mı?)
-        double currentTurretDeg = turret.getAngle().in(edu.wpi.first.units.Units.Degrees);
-        double targetTurretDeg = getTurretSetpoint().in(edu.wpi.first.units.Units.Degrees);
-        boolean isTurretReady = Math.abs(currentTurretDeg - targetTurretDeg) < 2.0;
-
-        // Eğer DUMP veya SOTM/HUB yapıyorsak ve her şey yerine oturduysa TRUE döndür
-        return isFlywheelReady && isTurretReady;
+        return allReady;
     }
 }

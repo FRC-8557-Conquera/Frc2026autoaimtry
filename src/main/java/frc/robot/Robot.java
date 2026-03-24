@@ -87,8 +87,8 @@ public class Robot extends LoggedRobot
     @Override
     public void autonomousInit()
     {
-        robotContainer.s_Swerve.seedOdometryWithMegaTag1();
         autonomousCommand = robotContainer.getAutonomousCommand();
+        robotContainer.s_Swerve.seedOdometryWithMegaTag1();
         
         if (autonomousCommand != null)
         {

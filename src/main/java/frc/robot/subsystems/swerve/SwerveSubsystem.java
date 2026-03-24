@@ -53,6 +53,7 @@ import limelight.networktables.LimelightSettings.LEDMode;
 import limelight.networktables.Orientation3d;
 import limelight.networktables.PoseEstimate;
 import limelight.networktables.LimelightPoseEstimator.EstimationMode;
+import org.littletonrobotics.junction.Logger;
 
 
 public class SwerveSubsystem extends SubsystemBase {
@@ -273,27 +274,33 @@ public class SwerveSubsystem extends SubsystemBase {
     SmartDashboard.putBoolean("Limelight Front Present", resultsPresent[1]);
     SmartDashboard.putBoolean("Limelight Front Valid", validReading[1]);
   }
+  // 1. DÜZELTME: Dinamik Standart Sapma ve Çoklu Tag Koruması
   public Matrix<N3, N1> getVisionStdDevs(int tagCount, double avgDistance) {
     if (tagCount == 0) return VecBuilder.fill(99999, 99999, 99999);
-
-    // Temel sapma değerleri (Tag dibindeyken çok güvenilir)
-    double estStdDevsX = 0.05;
-    double estStdDevsY = 0.05;
-    double estHeadingStdDev = 0.01; // MegaTag2 için gyro zaten mükemmeldir, başlık sapmasını düşük tutarız
-
-    // Uzaklığın karesini tag sayısına bölüyoruz
-    double distanceMultiplier = Math.pow(avgDistance, 2) / tagCount;
     
-    estStdDevsX += distanceMultiplier * 0.1;
-    estStdDevsY += distanceMultiplier * 0.1;
-    estHeadingStdDev += distanceMultiplier * 0.05;
+    if (tagCount > 1) {
+        // Kamerada 2 veya daha fazla tag varsa ambigüite yoktur, veriye %100 güvenebiliriz!
+        return VecBuilder.fill(0.1, 0.1, 0.01);
+    }
 
-    return VecBuilder.fill(estStdDevsX, estStdDevsY, estHeadingStdDev);
+    // Tek tag ve çok uzaksa veriyi tamamen reddetmeye yakın yüksek bir sapma ver.
+    if (avgDistance > 5.0) {
+        return VecBuilder.fill(1.5, 1.5, 0.05); 
+    }
+
+    double distanceMultiplier = Math.pow(avgDistance, 2);
+    return VecBuilder.fill(0.05 + (distanceMultiplier * 0.1), 0.05 + (distanceMultiplier * 0.1), 0.01 + (distanceMultiplier * 0.05));
   }
-  
-  private void addVisionFromEstimator(LimelightPoseEstimator estimator, int index) {
-    Optional<PoseEstimate> est = estimator.getPoseEstimate();
+private void addVisionFromEstimator(LimelightPoseEstimator estimator, int index) {
+    // 2. DÜZELTME: Hız Reddi (Motion Blur Koruması)
+    // Robot 720 derece/saniye (saniyede 2 tur) hızından fazla dönüyorsa, Limelight görüntüsü bulanıklaşır (Motion Blur).
+    // Bu durumda gelen yanlış odometri sıçramalarını tamamen reddediyoruz!
+    if (Math.abs(swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond)) > 720.0) {
+        validReading[index] = false;
+        return;
+    }
 
+    Optional<PoseEstimate> est = estimator.getPoseEstimate();
     if (est.isPresent()) {
       PoseEstimate poseEstimate = est.get();
       resultsPresent[index] = true;
@@ -302,22 +309,13 @@ public class SwerveSubsystem extends SubsystemBase {
         validReading[index] = true;
         Pose2d visionPose = poseEstimate.pose.toPose2d();
         
-        // Dinamik std-dev ile gerçekçilik ve stabilite (PoseEstimate içinde avgTagDist mevcuttur)
         double avgDist = poseEstimate.avgTagDist > 0 ? poseEstimate.avgTagDist : 3.0;
         Matrix<N3, N1> stdDevs = getVisionStdDevs(poseEstimate.tagCount, avgDist);
         
         swerveDrive.addVisionMeasurement(visionPose, poseEstimate.timestampSeconds, stdDevs);
-
-        // AdvantageScope için görselleştirme datası
-        SmartDashboard.putNumberArray("AdvantageScope/Vision_" + (index == 0 ? "Back" : "Front"), 
-            new double[] {visionPose.getX(), visionPose.getY(), visionPose.getRotation().getRadians()});
-            
-      } else {
-        validReading[index] = false;
-      }
+      } else { validReading[index] = false; }
     } else {
-      resultsPresent[index] = false;
-      validReading[index] = false;
+      resultsPresent[index] = false; validReading[index] = false;
     }
   }
   public void simulateVision() {
@@ -329,7 +327,6 @@ public class SwerveSubsystem extends SubsystemBase {
 
     // 1. Kamera: ÖN LIMELIGHT (Robotun baktığı yön: 0 derece sapma)
     simulateSingleCamera(robotPose, timestamp, 1, 0.0, 40.0, "Front");
-
     // 2. Kamera: ARKA LIMELIGHT (Robotun tam tersi yön: 180 derece sapma)
     simulateSingleCamera(robotPose, timestamp, 0, 180.0, 40.0, "Back");
   }
@@ -376,27 +373,28 @@ private void simulateSingleCamera(Pose2d robotPose, double timestamp, int index,
     
     // ... Metodun geri kalanı aynı (if (seesTag) vs.) ...
 
-    if (seesTag) {
+if (seesTag) {
       double noise = (minDistance * minDistance) * 0.005; 
       
       Pose2d noisyPose = new Pose2d(
           robotPose.getX() + (Math.random() - 0.5) * noise,
           robotPose.getY() + (Math.random() - 0.5) * noise,
-          robotPose.getRotation() // Açı her zaman robotPose ile BİREBİR aynıdır (MegaTag2)
+          robotPose.getRotation() 
       );
 
       var stdDevs = getVisionStdDevs(visibleTags, minDistance);
       swerveDrive.addVisionMeasurement(noisyPose, timestamp, stdDevs);
       
-      // KAMERA GÖRÜYOR: Veriyi yolla
-      SmartDashboard.putNumberArray("AdvantageScope/Vision_" + name + "_Sim", 
-          new double[] {noisyPose.getX(), noisyPose.getY(), noisyPose.getRotation().getRadians()});
+      // 1. DÜZELTME: Kameranın gördüğü pozisyonu doğrudan Pose2d objesi olarak logluyoruz!
+      // (Manuel double dizisi oluşturma derdi bitti)
+      Logger.recordOutput("AdvantageScope/Vision_" + name + "_Sim", noisyPose);
           
       resultsPresent[index] = true;
       validReading[index] = true;
     } else {
-      // ÇÖZÜM: KAMERA KÖR OLDU: Sahneden dondurulmuş hayaleti SİL!
-      SmartDashboard.putNumberArray("AdvantageScope/Vision_" + name + "_Sim", new double[] {});
+      // 2. DÜZELTME: Kamera tag göremiyorsa, ekrandaki hayaleti silmek için 
+      // boş bir Pose2d dizisi (Array) yolluyoruz.
+      Logger.recordOutput("AdvantageScope/Vision_" + name + "_Sim", new Pose2d[] {});
       
       resultsPresent[index] = false;
       validReading[index] = false;
@@ -413,23 +411,59 @@ private void simulateSingleCamera(Pose2d robotPose, double timestamp, int index,
    * MegaTag 1 kullanarak mutlak doğru şekilde sıfırlar.
    */
   public boolean seedOdometryWithMegaTag1() {
-      // ÇÖZÜM 2: limelight.networktables yerine doğrudan LimelightHelpers.PoseEstimate kullanıyoruz
+      // 1. SİMÜLASYON İÇİN "HARBİ KAMERA GÖRÜŞÜ" MANTIĞI
+      if (edu.wpi.first.wpilibj.RobotBase.isSimulation()) {
+          Pose2d currentPose = swerveDrive.getPose();
+          boolean seesTag = false;
+          double minDistance = Double.MAX_VALUE;
+
+          if (fieldLayout != null) {
+              for (var tag : fieldLayout.getTags()) {
+                  // Robot ile Tag arasındaki gerçek mesafeyi ölç
+                  double distance = Math.hypot(tag.pose.getX() - currentPose.getX(), tag.pose.getY() - currentPose.getY());
+                  
+                  // Senin kuralın: Mesafe 4.0 metreden kısaysa
+                  if (distance < 4.0) {
+                      Rotation2d angleToTag = new Translation2d(tag.pose.getX(), tag.pose.getY()).minus(currentPose.getTranslation()).getAngle();
+                      
+                      // Ön ve Arka kameranın 40 derecelik görüş alanında (FOV) mı diye bakıyoruz
+                      double relativeFront = Math.abs(edu.wpi.first.math.MathUtil.inputModulus(angleToTag.minus(currentPose.getRotation()).getDegrees(), -180, 180));
+                      double relativeBack = Math.abs(edu.wpi.first.math.MathUtil.inputModulus(angleToTag.minus(currentPose.getRotation().plus(Rotation2d.fromDegrees(180))).getDegrees(), -180, 180));
+                      
+                      if (relativeFront < 40.0 || relativeBack < 40.0) {
+                          seesTag = true;
+                          if (distance < minDistance) minDistance = distance;
+                      }
+                  }
+              }
+          }
+
+          if (seesTag) {
+              // Simülasyondaki kamera tag'i cidden gördü, sıfırlamayı yapıyoruz!
+              swerveDrive.resetOdometry(currentPose);
+              System.out.println("BAŞARILI (SİM): Odometri ve Gyro MegaTag1 ile sifirlandi! (Mesafe: " + String.format("%.2f", minDistance) + "m)");
+              return true;
+          } else {
+              // Simülasyondaki kamera kör, senin istediğin orijinal hata mesajı!
+              System.out.println("HATA: Kameralar Tag Görmüyor, Odometri sifirlanmadi!");
+              return false;
+          }
+      }
+
+      // 2. GERÇEK ROBOT İÇİN LİMELİGHT OKUMASI (Senin orijinal kodun, sıfır müdahale, sıfır fallback)
       LimelightHelpers.PoseEstimate mt1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight-back");
       
-      // Eğer arka kamera tag görmüyorsa öne bakalım
       if (mt1Pose == null || mt1Pose.tagCount == 0) {
           mt1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight-front");
       }
 
-      // Eğer herhangi bir kamera güvenilir bir MT1 verisi yakaladıysa
       if (mt1Pose != null && mt1Pose.tagCount > 0 && mt1Pose.avgTagDist < 4.0) {
-          // ÇÖZÜM 1: Metot artık static olmadığı için swerveDrive'ı sorunsuz görebilir
           swerveDrive.resetOdometry(mt1Pose.pose);
-          System.out.println("BAŞARILI: Odometri ve Gyro MegaTag1 ile sıfırlandı!");
+          System.out.println("BAŞARILI: Odometri ve Gyro MegaTag1 ile sifirlandi!");
           return true;
       }
       
-      System.out.println("HATA: Kameralar Tag Görmüyor, Odometri Sıfırlanamadı!");
+      System.out.println("HATA: Kameralar Tag Görmüyor, Odometri sifirlanmadi!");
       return false;
   }
 }
