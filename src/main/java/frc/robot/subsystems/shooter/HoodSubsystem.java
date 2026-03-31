@@ -33,7 +33,7 @@ public class HoodSubsystem extends SubsystemBase {
     private final SmartMotorControllerConfig hoodMotorConfig = new SmartMotorControllerConfig(this)
 
             .withClosedLoopController(0, 0, 0, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))  // TODO: Change the PID values
-            .withGearing(new MechanismGearing(GearBox.fromReductionStages(3, 4)))           //TODO: Set the correct gear ratio
+            .withGearing(new MechanismGearing(GearBox.fromReductionStages(12,15)))           //TODO: Set the correct gear ratio
             .withIdleMode(MotorMode.BRAKE)
             .withTelemetry("HoodMotor", TelemetryVerbosity.HIGH)
             .withStatorCurrentLimit(Amps.of(40))
