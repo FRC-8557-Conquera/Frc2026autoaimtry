@@ -33,6 +33,8 @@ import frc.robot.commands.DumpCommand;
 import frc.robot.commands.IntakeAlCommand;
 import frc.robot.commands.ShootCommand;
 import frc.robot.commands.ShootOnTheMoveCommand; // EKLENDİ
+import frc.robot.commands.ToplaVeAtesleCommand;
+import frc.robot.commands.YerToplamaCommand;
 import frc.robot.subsystems.feeder.FeederSubsystem;
 import frc.robot.subsystems.intake.IntakeSubsystem;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
@@ -73,10 +75,13 @@ public class RobotContainer {
   private final JoystickButton spindexerR = new JoystickButton(driver2, 6);
   private final JoystickButton offButton = new JoystickButton(driver2, 10);
   private final JoystickButton intakeAl = new JoystickButton(driver2, 9);
-  
+  private final JoystickButton yerToplamaButonu = new JoystickButton(driver2, 14); // Sağ omuz tuşu vb.
+  private final JoystickButton toplaVeAtesleButonu = new JoystickButton(driver2, 15); // Sol omuz tuşu vb.
+
   JoystickButton hubButton = new JoystickButton(driver2, 11);
   JoystickButton sotmButton = new JoystickButton(driver2, 12); // EKLENDİ (Hareketli Atış Butonu)
   JoystickButton dumpButton = new JoystickButton(driver2, 13); // Çakışmaması için 13'e alındı
+
 
   public FuelSim fuelSim = new FuelSim();  
 
@@ -159,6 +164,8 @@ public class RobotContainer {
   }
 
   private void configureButtonBindings() {
+    yerToplamaButonu.whileTrue(new YerToplamaCommand(intake, spindexer));
+    toplaVeAtesleButonu.whileTrue(new ToplaVeAtesleCommand(intake, spindexer, shooter, feeder));
     hubButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.HUB)));
     dumpButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.DUMP)));
     offButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
@@ -177,7 +184,7 @@ public class RobotContainer {
     turretButtonRight.whileTrue(turret.rotateDutyCycle(-0.05)).onFalse(turret.stop());
     turretZero.onTrue(turret.setAngle(Degrees.of(0))).onFalse(turret.stop());
 
-    intakeAl.whileTrue(intake.rollerIn()).whileFalse(intake.rollerStop());
+    intakeAl.whileTrue(intake.intakeFuel()).whileFalse(intake.stopRollers());
     
     feederAl.whileTrue(feeder.feed()).onFalse(feeder.stop());
     feederTers.whileTrue(feeder.reverse()).onFalse(feeder.stop());

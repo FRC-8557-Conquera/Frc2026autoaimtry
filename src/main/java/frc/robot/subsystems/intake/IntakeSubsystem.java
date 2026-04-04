@@ -1,98 +1,162 @@
 package frc.robot.subsystems.intake;
 
-import static edu.wpi.first.units.Units.*;
-
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.controls.DutyCycleOut;
+import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.wpilibj.DutyCycleEncoder;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-
-import frc.robot.Constants.Intake;
+import frc.robot.Constants;
 
 public class IntakeSubsystem extends SubsystemBase {
 
-  private final TalonFX leftMotor = new TalonFX(Intake.intakeLeft);
-  private final TalonFX rightMotor = new TalonFX(Intake.intakeRight);
-  private final TalonFX roller = new TalonFX(Intake.intakeRoller);
+    // Doğrusal hareketi sağlayan Kraken motoru
+    private final TalonFX deployMotor = new TalonFX(Constants.Intake.deployMotorID);
+    
+    // Ucundaki rolları çeviren Kraken motoru
+    private final TalonFX rollerMotor = new TalonFX(Constants.Intake.rollerMotorID);
+    
+    // Intake tamamen İÇERİDE olduğunda basılacak olan Limit Switch
+    private final DigitalInput stowLimitSwitch = new DigitalInput(Constants.Intake.limitSwitchPort);
 
-  private IntakePosition position = IntakePosition.UP;
+    // TalonFX Kontrol İstekleri (Control Requests)
+    // Pozisyon kontrolü için (Profiled PID etkisini Motion Magic ile sağlayabiliriz)
+    private final PositionVoltage positionRequest = new PositionVoltage(0).withEnableFOC(false); 
+    // Yüzdelik güç vermek için (Manuel Homing ve Roller için)
+    private final DutyCycleOut dutyCycleRequest = new DutyCycleOut(0).withEnableFOC(false);
 
+    // Durum Değişkenleri
+    private boolean isHomed = false;
+    private double targetPositionMeters = 0.0;
+    private boolean isDeploying = false;
 
-  private final DutyCycleEncoder encoder = new DutyCycleEncoder(Intake.intakeEncoderPort);
+    public IntakeSubsystem() {
+        configureMotors();
+    }
 
-  public IntakeSubsystem() {
-    TalonFXConfiguration armConfig = new TalonFXConfiguration();
-    armConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-    armConfig.CurrentLimits.StatorCurrentLimit = 40;
-    armConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+    private void configureMotors() {
+        // --- Deploy Motor Konfigürasyonu ---
+        TalonFXConfiguration deployConfig = new TalonFXConfiguration();
+        
+        // PID Ayarları
+        deployConfig.Slot0.kP = Constants.Intake.kP;
+        deployConfig.Slot0.kI = Constants.Intake.kI;
+        deployConfig.Slot0.kD = Constants.Intake.kD;
+        
+        // Akım Sınırlandırma (Mekaniği korumak için)
+        deployConfig.CurrentLimits.SupplyCurrentLimit = 40;
+        deployConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
 
-    leftMotor.getConfigurator().apply(armConfig);
-    rightMotor.getConfigurator().apply(armConfig);
-    rightMotor.setControl(new Follower(leftMotor.getDeviceID(), MotorAlignmentValue.Opposed));
-  }
-  public Angle getAngle() {
-    double deg  = encoder.get()  * 360.0 - Intake.intakeEncoderOffsetDeg;
-    deg  = MathUtil.inputModulus(deg,  -180, 180);
-    return Degrees.of(deg);
-  }
+        deployMotor.getConfigurator().apply(deployConfig);
+        deployMotor.setNeutralMode(NeutralModeValue.Brake);
 
-  public Command open() {
-    return runOnce(() -> position = IntakePosition.UP);
-  }
+        // --- Roller Motor Konfigürasyonu ---
+        TalonFXConfiguration rollerConfig = new TalonFXConfiguration();
+        rollerConfig.CurrentLimits.SupplyCurrentLimit = 30;
+        rollerConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+        
+        rollerMotor.getConfigurator().apply(rollerConfig);
+        rollerMotor.setNeutralMode(NeutralModeValue.Coast); // Roller serbest durabilir
+    }
 
-  public Command close() {
-    return runOnce(() -> position = IntakePosition.DOWN);
-  }
+    @Override
+    public void periodic() {
+        // Kraken'in dönüş (rotation) sayısını alıp metreye çeviriyoruz
+        double currentRotations = deployMotor.getPosition().getValueAsDouble();
+        double currentPositionMeters = currentRotations * Constants.Intake.METERS_PER_ROTATION;
+        
+        // Limit Switch Mantığı
+        boolean isStowed = !stowLimitSwitch.get(); 
 
-  public Command halfopen() {
-    return runOnce(() -> position = IntakePosition.HALF);
-  }
+        if (isStowed) {
+            if (!isHomed) {
+                // Limit switch'e değdik, burası SIFIR noktamız.
+                deployMotor.setPosition(0.0);
+                isHomed = true;
+                System.out.println("Intake SIFIRLANDI!");
+            }
+            
+            // Eğer sıfırdaysak ve hedefimiz de sıfırsa motoru durdur
+            if(targetPositionMeters <= 0.01) {
+                deployMotor.setControl(dutyCycleRequest.withOutput(0.0));
+                isDeploying = false;
+            }
+        }
 
-  public Command rollerIn() {
-    return run(() -> roller.set(Intake.rollerInSpeed));
-  }
+        // Pozisyon Kontrolü
+        if (isDeploying && isHomed) {
+            double clampedTargetMeters = MathUtil.clamp(targetPositionMeters, 0.0, Constants.Intake.MAX_EXTENSION_METERS);
+            
+            // Hedef metreyi, motorun atması gereken dönüş sayısına (rotations) geri çeviriyoruz
+            double targetRotations = clampedTargetMeters / Constants.Intake.METERS_PER_ROTATION;
+            
+            // Motoru hedef pozisyona gönder
+            deployMotor.setControl(positionRequest.withPosition(targetRotations));
+        }
 
-  public Command rollerOut() {
-    return run(() -> roller.set(Intake.rollerOutSpeed));
-  }
+        SmartDashboard.putNumber("Intake/Mevcut_Metre", currentPositionMeters);
+        SmartDashboard.putNumber("Intake/Hedef_Metre", targetPositionMeters);
+        SmartDashboard.putBoolean("Intake/LimitSwitch", isStowed);
+        SmartDashboard.putBoolean("Intake/Homed", isHomed);
+    }
 
-  public Command rollerStop() {
-    return run(() -> roller.set(0));
-  }
+    // --- AÇMA/KAPAMA KOMUTLARI (OTONOMA UYGUN) ---
 
- 
-  @Override
-  public void periodic() {
-    double current = getAngle().in(Degrees);
-    SmartDashboard.putNumber("Intake Encoder Left", encoder.get());
-    SmartDashboard.putNumber("Intake Encoder ", current);
-    SmartDashboard.putNumber("Intake Relative Encoder", leftMotor.getPosition().getValueAsDouble());
-    SmartDashboard.putBoolean("Intake Encoder Connected", encoder.isConnected());
-    // TODO: Yerin, yukarisinin ve 45in encoderdan degerlerini al
-    double target = (position == IntakePosition.UP ? 90 : (position == IntakePosition.HALF ? 45 : 0));
+    public Command setPosition(double positionMeters) {
+        return runOnce(() -> { // run() yerine runOnce() KULLANILMALI!
+            targetPositionMeters = positionMeters;
+            isDeploying = true;
+        }).withName("SetIntakePosition");
+    }
 
-    double error = MathUtil.inputModulus(target - current, -180, 180);
+    public Command stow() {
+        return setPosition(0.0);
+    }
 
-    double output = MathUtil.clamp(error * Intake.kP, -0.5, 0.5);
+    public Command deployFull() {
+        return setPosition(Constants.Intake.MAX_EXTENSION_METERS);
+    }
 
-    // stop at limits
-    if (current <= Intake.MIN_ANGLE.in(Degrees) && output < 0) output = 0;
-    if (current >= Intake.MAX_ANGLE.in(Degrees) && output > 0) output = 0;
+    // --- ROLLER KOMUTLARI ---
+    // Bunlar sürekli çalışacağı için run() kalabilir
+    public Command intakeFuel() {
+        return run(() -> rollerMotor.setControl(dutyCycleRequest.withOutput(Constants.Intake.rollerInSpeed)))
+               .withName("IntakeFuel");
+    }
 
-    leftMotor.set(output);
-  }
-    public enum IntakePosition {
-    UP,
-    DOWN,
-    HALF
-} 
+    public Command stopRollers() {
+        return runOnce(() -> rollerMotor.setControl(dutyCycleRequest.withOutput(0.0)))
+               .withName("StopRollers");
+    }
+
+    // --- SIFIRLAMA KOMUTU ---
+    public Command homeIntake() {
+        return run(() -> {
+            isDeploying = false;
+            isHomed = false;
+            // Yavaşça içeri (negatif güç) çek
+            deployMotor.setControl(dutyCycleRequest.withOutput(-0.15)); 
+        })
+        .until(() -> !stowLimitSwitch.get())
+        .andThen(runOnce(() -> deployMotor.setControl(dutyCycleRequest.withOutput(0.0))))
+        .withName("HomeIntake");
+    }
+    // --- KOMUT SINIFLARI İÇİN DOĞRUDAN KONTROL METOTLARI ---
+    
+    // Intake'in hedef metresini ayarlar
+    public void setDeployTargetMeters(double meters) {
+        this.targetPositionMeters = meters;
+        this.isDeploying = true;
+    }
+
+    // Roller motoruna doğrudan yüzdelik güç (-1.0 ile 1.0 arası) verir
+    public void setRollerPower(double power) {
+        rollerMotor.setControl(dutyCycleRequest.withOutput(power));
+    }
 }
-

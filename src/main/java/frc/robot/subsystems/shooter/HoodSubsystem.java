@@ -32,8 +32,9 @@ public class HoodSubsystem extends SubsystemBase {
     private final TalonFX hoodMotor = new TalonFX(Hood.hoodMotor);
     private final SmartMotorControllerConfig hoodMotorConfig = new SmartMotorControllerConfig(this)
 
-            .withClosedLoopController(0, 0, 0, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))  // TODO: Change the PID values
-            .withGearing(new MechanismGearing(GearBox.fromReductionStages(12,15)))           //TODO: Set the correct gear ratio
+            //.withClosedLoopController(0, 0, 0, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))  // TODO: Change the PID values
+            .withClosedLoopController(1.5, 0, 0)
+            .withGearing(new MechanismGearing(12.15)) // 243 / 20 = 12.15
             .withIdleMode(MotorMode.BRAKE)
             .withTelemetry("HoodMotor", TelemetryVerbosity.HIGH)
             .withStatorCurrentLimit(Amps.of(40))
@@ -42,11 +43,11 @@ public class HoodSubsystem extends SubsystemBase {
             .withOpenLoopRampRate(Seconds.of(0.25))
             .withFeedforward(new ArmFeedforward(0, 0, 0))
             .withSimFeedforward(new ArmFeedforward(0, 0, 0))
-            .withControlMode(ControlMode.CLOSED_LOOP);
-
+            .withControlMode(ControlMode.CLOSED_LOOP)
+            .withClosedLoopController(1.5, 0, 0);
             
 
-  private final SmartMotorController hoodSMC = new TalonFXWrapper(hoodMotor, DCMotor.getKrakenX60(1), hoodMotorConfig);
+    private final SmartMotorController hoodSMC = new TalonFXWrapper(hoodMotor, DCMotor.getKrakenX60(1), hoodMotorConfig);
 
     private final ArmConfig hoodConfig = new ArmConfig(hoodSMC)
             .withStartingPosition(Degrees.of(Hood.hoodOffsetDeg))

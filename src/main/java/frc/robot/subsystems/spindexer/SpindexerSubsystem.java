@@ -39,5 +39,12 @@ public class SpindexerSubsystem extends SubsystemBase {
   public void stopMotor(){
     spindexerMotor.set(0);
   }
+  // Komut sınıflarından motoru doğrudan yüzdelik güç ile çalıştırmak için
+  public void setMotor(double speed) {
+      // Eğer motorun adı feederMotor ise (SparkMax veya TalonSRX varsayımıyla):
+    spindexerMotor.set(speed); 
+      // NOT: Eğer Feeder motorun Kraken (TalonFX) ise yukarıdaki yerine şunu kullanmalısın:
+      // feederMotor.setControl(new com.ctre.phoenix6.controls.DutyCycleOut(speed));
+  }
 }
 

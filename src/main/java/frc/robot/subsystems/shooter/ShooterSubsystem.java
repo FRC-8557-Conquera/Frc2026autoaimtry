@@ -298,50 +298,26 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public boolean isReadyToShoot() {
-
-
-        // 1. ANLIK DEĞERLERİ VE HEDEFLERİ OKU
-        double currentFlywheel = flywheel.getVelocity().in(RotationsPerSecond);
-        double targetFlywheel = getFlywheelSetpoint().in(RotationsPerSecond);
-
-        double currentTurret = turret.getAngle().in(Degrees);
-        double targetTurret = getTurretSetpoint().in(Degrees);
-
-        double currentHood = hood.getAngle().in(Degrees);
-        double targetHood = getHoodSetpoint().in(Degrees);
-
-        // 2. HATALARI HESAPLA
-        double flywheelError = currentFlywheel - targetFlywheel;
-        double turretError = MathUtil.inputModulus(currentTurret - targetTurret, -180.0, 180.0);
-        double hoodError = currentHood - targetHood;
-
-        boolean isFlywheelReady = Math.abs(flywheelError) < 1.5;
-        boolean isTurretReady = Math.abs(turretError) < 2.0;
-        boolean isHoodReady = Math.abs(hoodError) < 2.0;
-
-        // 3. ADVANTAGEKIT RÖNTGENİ: Doğrudan Logger'a yazdırıyoruz!
-        Logger.recordOutput("Ready_Debug/1_Intent", intent.name());
-        
-        Logger.recordOutput("Ready_Debug/Flywheel_Target", targetFlywheel);
-        Logger.recordOutput("Ready_Debug/Flywheel_Current", currentFlywheel);
-        
-        Logger.recordOutput("Ready_Debug/Turret_Target", targetTurret);
-        Logger.recordOutput("Ready_Debug/Turret_Current", currentTurret);
-        
-        Logger.recordOutput("Ready_Debug/Hood_Target", targetHood);
-        Logger.recordOutput("Ready_Debug/Hood_Current", currentHood);
-
-        Logger.recordOutput("Ready_Debug/Flywheel_Is_Green", isFlywheelReady);
-        Logger.recordOutput("Ready_Debug/Turret_Is_Green", isTurretReady);
-        Logger.recordOutput("Ready_Debug/Hood_Is_Green", isHoodReady);
-
-        boolean allReady = isFlywheelReady && isTurretReady && isHoodReady;
-        Logger.recordOutput("Ready_Debug/ALL_READY", allReady);
-
-        // Eğer sistem kapalıysa direkt False dön
         if (intent == ShotIntent.OFF) return false;
-        if (edu.wpi.first.wpilibj.RobotBase.isSimulation()) return true; // Simülasyonda sensörleri bekleme, direkt ateş et!
+        
+        // Flywheel Kontrolü
+        double flywheelRPS = flywheel.getVelocity().in(RotationsPerSecond);
+        double targetRPS = getFlywheelSetpoint().in(RotationsPerSecond);
+        boolean flywheelReady = Math.abs(flywheelRPS - targetRPS) < 1.5;
 
-        return allReady;
+        // Taret Açı Kontrolü (Hata payı 2 derece, wrap korumalı!)
+        double turretDeg = turret.getAngle().in(Degrees);
+        double targetDeg = getTurretSetpoint().in(Degrees);
+        double turretError = MathUtil.inputModulus(turretDeg - targetDeg, -180.0, 180.0);
+        boolean turretReady = Math.abs(turretError) < 2.0;
+
+        // AdvantageScope'ta neden ateş etmediğini görmek için:
+        Logger.recordOutput("Ready_Debug/FlywheelReady", flywheelReady);
+        Logger.recordOutput("Ready_Debug/TurretReady", turretReady);
+        Logger.recordOutput("Ready_Debug/Intent", intent.name());
+        
+        if (edu.wpi.first.wpilibj.RobotBase.isSimulation()) return true; 
+
+        return flywheelReady && turretReady;
     }
 }

@@ -30,7 +30,7 @@ public class IntakeAlCommand extends Command {
 
     @Override
     public void execute() {
-        intake.rollerIn();
+        intake.intakeFuel();
     }
 
     @Override
@@ -40,7 +40,7 @@ public class IntakeAlCommand extends Command {
 
     @Override
     public void end(boolean interrupted) {
-        intake.rollerStop();
+        intake.stopRollers();
         timer.stop();
     }
 }

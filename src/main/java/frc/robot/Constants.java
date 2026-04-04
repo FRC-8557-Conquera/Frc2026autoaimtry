@@ -91,22 +91,32 @@ public final class Constants {
 
   /* ===================== INTAKE ===================== */
   public static final class Intake {
-
-    public static final Angle MIN_ANGLE = Angle.ofBaseUnits(-20, Degrees);                        //TODO: Change this value
-    public static final Angle MAX_ANGLE = Angle.ofBaseUnits(100, Degrees);      //TODO: Change this value
     
-    public static final double intakeEncoderOffsetDeg = 0.6339 * 360 ; 
+    // Doğrusal hareket için Kraken motor ID'si (Açma/Kapama)
+    public static final int deployMotorID = 31; 
+    
+    // Roller için Kraken motor ID'si (Top alma/verme)
+    public static final int rollerMotorID = 32; 
 
-    public static final int intakeRoller = 30;
-    public static final int intakeLeft = 31;
-    public static final int intakeRight = 32;
+    public static final int limitSwitchPort = 7; // Stow Limit Switch DIO portu
 
-    public static final int intakeEncoderPort = 7;
+    // Roller Hızları (-1.0 ile 1.0 arası)
+    public static final double rollerInSpeed = 0.7; // İçeri alma hızı
+    public static final double rollerOutSpeed = -0.7; // Dışarı atma hızı
+    public static final double rollerStopSpeed = 0.0;
 
-    public static final double rollerInSpeed = 0.5;
-    public static final double rollerOutSpeed = -0.5;
+    // --- DOĞRUSAL KİNEMATİK (LINEAR KINEMATICS) ---
+    // ÖNEMLİ: BU DEĞERİ HESAPLAMALISINIZ!
+    // Pinyon 1 tam tur döndüğünde intake kaç metre ileri gidiyor?
+    public static final double METERS_PER_ROTATION = 0.05; // Örnek değer, GÜNCELLEYİN!
 
-    public static final double kP = 0.03;  // tune later
+    // Intake'in DIŞARIYA çıkabileceği MAKSİMUM mesafe (Metre cinsinden)
+    public static final double MAX_EXTENSION_METERS = 0.40; // Örnek: 40cm dışarı çıksın
+
+    // Profiled PID için kP, kI, kD değerleri (Kraken/TalonFX için)
+    public static final double kP = 1.0;  // Tune edilecek
+    public static final double kI = 0.0;
+    public static final double kD = 0.0;
   }
 
   /* ===================== SPINDEXER ===================== */
