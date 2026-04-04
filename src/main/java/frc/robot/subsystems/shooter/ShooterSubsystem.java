@@ -300,24 +300,30 @@ public class ShooterSubsystem extends SubsystemBase {
     public boolean isReadyToShoot() {
         if (intent == ShotIntent.OFF) return false;
         
-        // Flywheel Kontrolü
+        // 1. Flywheel Kontrolü
         double flywheelRPS = flywheel.getVelocity().in(RotationsPerSecond);
         double targetRPS = getFlywheelSetpoint().in(RotationsPerSecond);
         boolean flywheelReady = Math.abs(flywheelRPS - targetRPS) < 1.5;
 
-        // Taret Açı Kontrolü (Hata payı 2 derece, wrap korumalı!)
+        // 2. Taret Açı Kontrolü 
         double turretDeg = turret.getAngle().in(Degrees);
         double targetDeg = getTurretSetpoint().in(Degrees);
         double turretError = MathUtil.inputModulus(turretDeg - targetDeg, -180.0, 180.0);
         boolean turretReady = Math.abs(turretError) < 2.0;
 
-        // AdvantageScope'ta neden ateş etmediğini görmek için:
+        // 3. EKSİK OLAN HOOD (ŞAPKA) KONTROLÜ EKLENDİ!
+        double hoodDeg = hood.getAngle().in(Degrees);
+        double targetHoodDeg = getHoodSetpoint().in(Degrees);
+        boolean hoodReady = Math.abs(hoodDeg - targetHoodDeg) < 1.5; // 1.5 derece hata payı
+
         Logger.recordOutput("Ready_Debug/FlywheelReady", flywheelReady);
         Logger.recordOutput("Ready_Debug/TurretReady", turretReady);
+        Logger.recordOutput("Ready_Debug/HoodReady", hoodReady); // Ekranda gör
         Logger.recordOutput("Ready_Debug/Intent", intent.name());
         
         if (edu.wpi.first.wpilibj.RobotBase.isSimulation()) return true; 
 
-        return flywheelReady && turretReady;
+        // Üçü de yeşil yanmadan asla ateş etme!
+        return flywheelReady && turretReady && hoodReady;
     }
 }

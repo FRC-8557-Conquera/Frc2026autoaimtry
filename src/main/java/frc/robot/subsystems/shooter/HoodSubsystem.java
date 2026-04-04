@@ -50,14 +50,13 @@ public class HoodSubsystem extends SubsystemBase {
     private final SmartMotorController hoodSMC = new TalonFXWrapper(hoodMotor, DCMotor.getKrakenX60(1), hoodMotorConfig);
 
     private final ArmConfig hoodConfig = new ArmConfig(hoodSMC)
-            .withStartingPosition(Degrees.of(Hood.hoodOffsetDeg))
-            .withLength(Inches.of(6)).withMass(Pounds.of(1))     // Approximate values for the Hood
+            // DÜZELTME: Başlangıç noktası Offset (73.2) değil, mekaniğin dinlenme noktası (20) olmalıdır!
+            .withStartingPosition(Degrees.of(Hood.minAngleDegrees)) 
+            .withLength(Inches.of(6)).withMass(Pounds.of(1))     
             .withTelemetry("HoodMech", TelemetryVerbosity.HIGH)
-            .withSoftLimits(Degrees.of(5), Degrees.of(100))
-            .withHardLimit(Degrees.of(0), Degrees.of(120)); 
-            // The Hood can be modeled as an arm since it has a
-            // gravitational force acted upon based on the angle its in
-
+            .withSoftLimits(Degrees.of(Hood.minAngleDegrees), Degrees.of(Hood.maxAngleDegrees))
+            .withHardLimit(Degrees.of(Hood.minAngleDegrees - 2), Degrees.of(Hood.maxAngleDegrees + 2));
+            
     private final Arm hood = new Arm(hoodConfig);
 
     public HoodSubsystem() {

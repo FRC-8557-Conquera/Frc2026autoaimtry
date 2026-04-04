@@ -6,7 +6,8 @@ import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-
+// Eski kaba kuvvet kontrolü yerine Motion Magic kullanıyoruz:
+import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -19,6 +20,7 @@ public class IntakeSubsystem extends SubsystemBase {
     // Doğrusal hareketi sağlayan Kraken motoru
     private final TalonFX deployMotor = new TalonFX(Constants.Intake.deployMotorID);
     
+
     // Ucundaki rolları çeviren Kraken motoru
     private final TalonFX rollerMotor = new TalonFX(Constants.Intake.rollerMotorID);
     
@@ -27,7 +29,8 @@ public class IntakeSubsystem extends SubsystemBase {
 
     // TalonFX Kontrol İstekleri (Control Requests)
     // Pozisyon kontrolü için (Profiled PID etkisini Motion Magic ile sağlayabiliriz)
-    private final PositionVoltage positionRequest = new PositionVoltage(0).withEnableFOC(false); 
+    private final MotionMagicVoltage positionRequest = new MotionMagicVoltage(0).withEnableFOC(false);
+
     // Yüzdelik güç vermek için (Manuel Homing ve Roller için)
     private final DutyCycleOut dutyCycleRequest = new DutyCycleOut(0).withEnableFOC(false);
 
@@ -36,9 +39,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private double targetPositionMeters = 0.0;
     private boolean isDeploying = false;
 
-    public IntakeSubsystem() {
-        configureMotors();
-    }
+    
 
     private void configureMotors() {
         // --- Deploy Motor Konfigürasyonu ---
@@ -48,7 +49,12 @@ public class IntakeSubsystem extends SubsystemBase {
         deployConfig.Slot0.kP = Constants.Intake.kP;
         deployConfig.Slot0.kI = Constants.Intake.kI;
         deployConfig.Slot0.kD = Constants.Intake.kD;
+        // Opsiyonel ama önerilir: kS (Statik sürtünmeyi aşma) ve kV (Hız katsayısı) eklenebilir.
         
+        // MÜKEMMEL HAREKET: Motion Magic (Yumuşak Hızlanma ve Yavaşlama)
+        // Değerler motor devri (Rotations) cinsindendir. Gerçekte test ederek artırıp azaltın.
+        deployConfig.MotionMagic.MotionMagicCruiseVelocity = 20.0; // Maksimum hızı (rps)
+        deployConfig.MotionMagic.MotionMagicAcceleration = 40.0;   // Hızlanma ivmesi (rps/s)
         // Akım Sınırlandırma (Mekaniği korumak için)
         deployConfig.CurrentLimits.SupplyCurrentLimit = 40;
         deployConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
@@ -64,7 +70,9 @@ public class IntakeSubsystem extends SubsystemBase {
         rollerMotor.getConfigurator().apply(rollerConfig);
         rollerMotor.setNeutralMode(NeutralModeValue.Coast); // Roller serbest durabilir
     }
-
+    public IntakeSubsystem() {
+        configureMotors();
+    }
     @Override
     public void periodic() {
         // Kraken'in dönüş (rotation) sayısını alıp metreye çeviriyoruz
