@@ -259,10 +259,8 @@ public class SwerveSubsystem extends SubsystemBase {
       double yawVelocity = swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond);
       double currentHeading = getHeading().getDegrees();
 
-      // SIFIR OBJE ÜRETİMİ - SAF HIZ!
-      LimelightHelpers.SetRobotOrientation("limelight-back", currentHeading, 0, 0, 0, 0, yawVelocity);
-      LimelightHelpers.SetRobotOrientation("limelight-front", currentHeading, 0, 0, 0, 0, yawVelocity);
-
+      LimelightHelpers.SetRobotOrientation("limelight-back", currentHeading, yawVelocity, 0, 0, 0, 0);
+      LimelightHelpers.SetRobotOrientation("limelight-front", currentHeading, yawVelocity, 0, 0, 0, 0);
       addVisionFromEstimator(limelightBackPoseEstimator, 0);
       addVisionFromEstimator(limelightFrontPoseEstimator, 1);
     } else {

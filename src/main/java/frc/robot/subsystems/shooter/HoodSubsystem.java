@@ -30,6 +30,7 @@ import static edu.wpi.first.units.Units.*;
 
 public class HoodSubsystem extends SubsystemBase {
     private final TalonFX hoodMotor = new TalonFX(Hood.hoodMotor);
+    private final DutyCycleEncoder hoodAbsoluteEncoder = new DutyCycleEncoder(Hood.encoderPort);
     private final SmartMotorControllerConfig hoodMotorConfig = new SmartMotorControllerConfig(this)
 
             //.withClosedLoopController(0, 0, 0, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))  // TODO: Change the PID values
@@ -60,7 +61,13 @@ public class HoodSubsystem extends SubsystemBase {
     private final Arm hood = new Arm(hoodConfig);
 
     public HoodSubsystem() {
-
+        double currentAbsoluteAngleDeg = (hoodAbsoluteEncoder.get() * 360.0) - Hood.hoodOffsetDeg;
+            
+        // Bu dereceyi YAMS'ın anladığı Gearing oranına (12.15) bölüp motor turu (rotations) olarak Kraken'e set ediyoruz.
+        double motorRotations = (currentAbsoluteAngleDeg / 360.0) * 12.15;
+        hoodMotor.setPosition(motorRotations);
+        
+        System.out.println("Hood Basariyla Sifirlandi! Anlik Aci: " + currentAbsoluteAngleDeg);
     }
 
     public Command setAngle(Angle angle) {
