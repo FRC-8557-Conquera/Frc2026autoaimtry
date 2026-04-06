@@ -13,6 +13,8 @@ import com.fasterxml.jackson.databind.JsonSerializable.Base;
 
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -37,6 +39,7 @@ public class Robot extends LoggedRobot
 {
     private Command autonomousCommand;
     public RobotContainer robotContainer;
+    private final Timer matchTimer = new Timer();
     
     @Override
     public void robotInit() {
@@ -69,6 +72,80 @@ public class Robot extends LoggedRobot
     public void robotPeriodic()
     {
         CommandScheduler.getInstance().run();
+        publishMatchTime();
+    }
+
+    private void publishMatchTime() {
+        boolean fmsConnected = DriverStation.isFMSAttached();
+        double matchTime = DriverStation.getMatchTime();
+
+        // FMS not connected -> use local timer as fallback
+        if (!fmsConnected && matchTime < 0) {
+            if (DriverStation.isAutonomousEnabled()) {
+                matchTime = Math.max(0, 15.0 - matchTimer.get());
+            } else if (DriverStation.isTeleopEnabled()) {
+                matchTime = Math.max(0, 140.0 - matchTimer.get());
+            } else {
+                matchTime = 0;
+            }
+        }
+
+        // Determine current shift based on FRC 2026 REBUILT match structure
+        // Teleop is 2:20 (140s) with shifts:
+        //   Transition: 140-130  (both Hubs active)
+        //   Shift 1:    130-105  (auto loser's Hub active)
+        //   Shift 2:    105-80   (auto winner's Hub active)
+        //   Shift 3:    80-55    (auto loser's Hub active)
+        //   Shift 4:    55-30    (auto winner's Hub active)
+        //   Endgame:    30-0     (both Hubs active)
+        String shift;
+        boolean ourHubActive = true;
+
+        if (DriverStation.isDisabled()) {
+            shift = "Disabled";
+        } else if (DriverStation.isAutonomousEnabled()) {
+            shift = "Auto";
+        } else if (DriverStation.isTeleopEnabled()) {
+            // Game data: 'R' or 'B' = which alliance's Hub goes inactive FIRST (Shift 1)
+            String gameData = DriverStation.getGameSpecificMessage();
+            var alliance = DriverStation.getAlliance();
+            boolean weAreRed = alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red;
+
+            // weGoInactiveFirst = true means OUR hub is inactive in Shift 1 & 3
+            boolean weGoInactiveFirst = false;
+            if (gameData != null && !gameData.isEmpty()) {
+                weGoInactiveFirst = (gameData.charAt(0) == 'R' && weAreRed)
+                                 || (gameData.charAt(0) == 'B' && !weAreRed);
+            }
+
+            if (matchTime > 130) {
+                shift = "Transition";
+                ourHubActive = true;
+            } else if (matchTime > 105) {
+                shift = "Shift 1";
+                ourHubActive = !weGoInactiveFirst;
+            } else if (matchTime > 80) {
+                shift = "Shift 2";
+                ourHubActive = weGoInactiveFirst;
+            } else if (matchTime > 55) {
+                shift = "Shift 3";
+                ourHubActive = !weGoInactiveFirst;
+            } else if (matchTime > 30) {
+                shift = "Shift 4";
+                ourHubActive = weGoInactiveFirst;
+            } else {
+                shift = "Endgame";
+                ourHubActive = true;
+            }
+        } else {
+            shift = "Test";
+        }
+
+        SmartDashboard.putNumber("Match Time", matchTime);
+        SmartDashboard.putString("Match Shift", shift);
+        SmartDashboard.putBoolean("Our Hub Active", ourHubActive);
+        SmartDashboard.putBoolean("FMS Connected", fmsConnected);
+        SmartDashboard.putBoolean("Endgame", shift.equals("Endgame"));
     }
     
     
@@ -87,6 +164,7 @@ public class Robot extends LoggedRobot
     @Override
     public void autonomousInit()
     {
+        matchTimer.restart();
         autonomousCommand = robotContainer.getAutonomousCommand();
         robotContainer.s_Swerve.seedOdometryWithMegaTag1();
         
@@ -107,6 +185,7 @@ public class Robot extends LoggedRobot
     @Override
     public void teleopInit()
     {
+        matchTimer.restart();
         if (autonomousCommand != null)
         {
             autonomousCommand.cancel();
