@@ -21,7 +21,7 @@
   "encoder": {
     "type": "cancoder",
     "id": 52,
-    "canbus": null
+    "canbus": "*"
   },
   "absoluteEncoderInverted": false
 }

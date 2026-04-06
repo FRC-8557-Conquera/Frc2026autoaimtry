@@ -19,9 +19,9 @@ public class IntakeSubsystem extends SubsystemBase {
 
     // --- KRAKEN MOTORLAR ---
     // Lider Motor (Tüm zeka ve komutlar bu motora gidecek)
-    private final TalonFX deployMotorLeft = new TalonFX(Constants.Intake.intakesol);
+    private final TalonFX deployMotorLeft = new TalonFX(Constants.Intake.intakesol, "*");
     // Takipçi Motor (Sadece Lideri kopyalayacak)
-    private final TalonFX deployMotorRight = new TalonFX(Constants.Intake.intakesag);
+    private final TalonFX deployMotorRight = new TalonFX(Constants.Intake.intakesag, "*");
 
     // Ucundaki rolları çeviren Kraken motoru
     private final TalonFX rollerMotor = new TalonFX(Constants.Intake.rollerMotorID);
