@@ -92,13 +92,14 @@ public final class Constants {
   /* ===================== INTAKE ===================== */
   public static final class Intake {
     
-    // Doğrusal hareket için Kraken motor ID'si (Açma/Kapama)
-    public static final int deployMotorID = 31; 
-    
-    // Roller için Kraken motor ID'si (Top alma/verme)
-    public static final int rollerMotorID = 32; 
+    // Doğrusal hareket için Kraken motor ID'leri (Açma/Kapama)
+    public static final int intakesol = 36; // LİDER MOTOR
+    public static final int intakesag = 37; // TAKİPÇİ MOTOR
 
-    public static final int limitSwitchPort = 7; // Stow Limit Switch DIO portu
+    // Roller için Kraken motor ID'si (Top alma/verme)
+    public static final int rollerMotorID = 38; 
+
+    public static final int limitSwitchPort = 7; // Tam kapalıyken basılan switch
 
     // Roller Hızları (-1.0 ile 1.0 arası)
     public static final double rollerInSpeed = 0.7; // İçeri alma hızı
@@ -106,29 +107,27 @@ public final class Constants {
     public static final double rollerStopSpeed = 0.0;
 
     // --- DOĞRUSAL KİNEMATİK (LINEAR KINEMATICS) ---
-    // ÖNEMLİ: BU DEĞERİ HESAPLAMALISINIZ!
-    // Pinyon 1 tam tur döndüğünde intake kaç metre ileri gidiyor?
-    public static final double METERS_PER_ROTATION = 0.05; // Örnek değer, GÜNCELLEYİN!
+    public static final double METERS_PER_ROTATION = 0.05; // 1 turda kaç metre gidiyor?
 
-    // Intake'in DIŞARIYA çıkabileceği MAKSİMUM mesafe (Metre cinsinden)
-    public static final double MAX_EXTENSION_METERS = 0.40; // Örnek: 40cm dışarı çıksın
+    // Tam Açık Pozisyon (Metre Cinsinden - Rastgele 0.40 metre yani 40cm verdik)
+    public static final double MAX_EXTENSION_METERS = 0.40; 
 
-    // Profiled PID için kP, kI, kD değerleri (Kraken/TalonFX için)
-    public static final double kP = 1.0;  // Tune edilecek
+    // Profiled PID / Motion Magic Değerleri
+    public static final double kP = 1.0;  // Gerekirse artırılacak
     public static final double kI = 0.0;
     public static final double kD = 0.0;
   }
 
   /* ===================== SPINDEXER ===================== */
   public static final class Spindexer {
-    public static final int spindexerMotor = 33; 
+    public static final int spindexerMotor = 32; 
     public static final double feedSpeed = 1;
     public static final double reverseSpeed = -1;
   }
 
   /* ===================== FEEDER ===================== */
   public static final class Feeder {
-    public static final int feederMotor = 34;
+    public static final int feederMotor = 31;
     public static final IdleMode idleMode = IdleMode.kBrake;
     public static final boolean inverted = false;
 
@@ -139,7 +138,7 @@ public final class Constants {
 
   /* ===================== TURRET ===================== */
   public static final class Turret {
-    public static final int turretMotor = 41;
+    public static final int turretMotor = 33;
     public static final int encoderPort = 5; 
     public static final double encoderOffset = 0.756984; 
     public static final double turretDist = -0.141;
@@ -147,7 +146,7 @@ public final class Constants {
 
     public static final class Hood {
 
-    public static final int hoodMotor = 52;
+    public static final int hoodMotor = 34;
     public static final int encoderPort = 1; // EXAMPLE CHANGE THIS VALUE
     public static final IdleMode idleMode = IdleMode.kBrake;
     public static final boolean inverted = false;
@@ -160,7 +159,7 @@ public final class Constants {
   /* ===================== FLYWHEEL ===================== */
 
   public static final class Flywheel{
-    public static final int flywheelMotor = 40;
+    public static final int flywheelMotor = 35;
     public static final double MAX_RPS = 90;
     public static final double MIN_RPS = 10;
     public static final Distance flywheelDiameter = Inches.of(4);
@@ -170,14 +169,6 @@ public final class Constants {
     public static final double flywheelOffsetRPS = 0.0;                   // TODO: tune this
     public static final Angle FIXED_HOOD = Degrees.of(38);      //TODO: CHANGE THIS VALUE
     public static final double METERS_PER_ROTATION = 0.08;                //TODO: measure this
-  }
-
-  /* ===================== CLIMB ===================== */
-  public static final class Climb {
-    public static final int climbLeft = 50;
-    public static final int climbRight = 51;
-    public static final double climbUpSpeed = 1.0;
-    public static final double climbDownSpeed = -0.8;
   }
 
     /* ===================== FIELD ===================== */
