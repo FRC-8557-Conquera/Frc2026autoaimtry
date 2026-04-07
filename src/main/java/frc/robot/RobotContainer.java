@@ -33,7 +33,7 @@ import frc.robot.commands.DumpCommand;
 import frc.robot.commands.IntakeAlCommand;
 import frc.robot.commands.ShootCommand;
 import frc.robot.commands.ShootOnTheMoveCommand; // EKLENDİ
-import frc.robot.commands.ToplaVeAtesleCommand;
+import frc.robot.commands.intakeicerigeri;
 import frc.robot.commands.YerToplamaCommand;
 import frc.robot.subsystems.feeder.FeederSubsystem;
 import frc.robot.subsystems.intake.IntakeSubsystem;
@@ -50,9 +50,9 @@ import swervelib.SwerveInputStream;
 public class RobotContainer {
 
   // Robotun o anki niyetine göre şasi hızını sınırlar (SOTM: %40, DUMP: %70, Normal: %100)
-  private double getSpeedMultiplier() {
-      if (shooter.getIntent() == ShotIntent.SOTM) return 0.4; // SOTM modunda hız %40 ile sınırlanır
-      if (shooter.getIntent() == ShotIntent.DUMP) return 0.7; // İstediğin 0.7 limiti!
+   private double getSpeedMultiplier() {
+      // if (shooter.getIntent() == ShotIntent.SOTM) return 0.4; // SOTM modunda hız %40 ile sınırlanır
+      // if (shooter.getIntent() == ShotIntent.DUMP) return 0.7; // İstediğin 0.7 limiti!
       return 1.0;
   }
 
@@ -75,8 +75,8 @@ public class RobotContainer {
   private final JoystickButton spindexerR = new JoystickButton(driver2, 6);
   private final JoystickButton offButton = new JoystickButton(driver2, 10);
   private final JoystickButton intakeAl = new JoystickButton(driver2, 9);
-  private final JoystickButton yerToplamaButonu = new JoystickButton(driver2, 14); // Sağ omuz tuşu vb.
-  private final JoystickButton toplaVeAtesleButonu = new JoystickButton(driver2, 15); // Sol omuz tuşu vb.
+  private final JoystickButton yerToplamaButonu = new JoystickButton(driver, 1); // Sağ omuz tuşu vb.
+  private final JoystickButton intakeicerigeri = new JoystickButton(driver, 4); // Sol omuz tuşu vb.
 
   JoystickButton hubButton = new JoystickButton(driver2, 11);
   JoystickButton sotmButton = new JoystickButton(driver2, 12); // EKLENDİ (Hareketli Atış Butonu)
@@ -88,10 +88,10 @@ public class RobotContainer {
   public final SwerveSubsystem s_Swerve = new SwerveSubsystem();
   private final FeederSubsystem feeder = new FeederSubsystem();
 
-  private final ShooterSubsystem shooter = new ShooterSubsystem(s_Swerve);
-  private final TurretSubsystem turret = shooter.turret;
-  private final HoodSubsystem hood = shooter.hood;
-  private final FlywheelSubsystem flywheel = shooter.flywheel;
+  //private final ShooterSubsystem shooter = new ShooterSubsystem(s_Swerve);
+  //private final TurretSubsystem turret = shooter.turret;
+  //private final HoodSubsystem hood = shooter.hood;
+  //private final FlywheelSubsystem flywheel = shooter.flywheel;
   private final SpindexerSubsystem spindexer = new SpindexerSubsystem();
   private final IntakeSubsystem intake = new IntakeSubsystem();
 
@@ -135,12 +135,12 @@ public class RobotContainer {
   public RobotContainer() {
 
 // 1. Register NamedCommands BEFORE AutoBuilder.configure()
-    NamedCommands.registerCommand("AutoSOTM", new ShootOnTheMoveCommand(shooter, feeder));
+    /*NamedCommands.registerCommand("AutoSOTM", new ShootOnTheMoveCommand(shooter, feeder));
     NamedCommands.registerCommand("taretbah", turret.setAngle(shooter.getTurretSetpoint()));
     NamedCommands.registerCommand("tukugr", flywheel.setVelocity(shooter.getFlywheelSetpoint()));
     NamedCommands.registerCommand("dump", new DumpCommand(spindexer, feeder, shooter, 3));
     NamedCommands.registerCommand("intake", new IntakeAlCommand(intake, 4));
-    NamedCommands.registerCommand("tumsel", new ShootCommand(spindexer, feeder, shooter, 6));
+    NamedCommands.registerCommand("tumsel", new ShootCommand(spindexer, feeder, shooter, 6));*/
     
     // YENİ EKLENEN SATIR: PathPlanner için SOTM Komutu
     // 2. Now configure PathPlanner (AutoBuilder.configure runs here)
@@ -157,35 +157,38 @@ public class RobotContainer {
     
     configureButtonBindings();
 
-    turret.setDefaultCommand(turret.setAngle(() -> shooter.getTurretSetpoint()));
-    hood.setDefaultCommand(hood.setAngle(() -> shooter.getHoodSetpoint()));
+    //turret.setDefaultCommand(turret.setAngle(() -> shooter.getTurretSetpoint()));
+    //hood.setDefaultCommand(hood.setAngle(() -> shooter.getHoodSetpoint()));
 
     s_Swerve.zeroGyroWithAlliance();
   }
 
   private void configureButtonBindings() {
-    yerToplamaButonu.whileTrue(new YerToplamaCommand(intake, spindexer));
-    toplaVeAtesleButonu.whileTrue(new ToplaVeAtesleCommand(intake, spindexer, shooter, feeder));
+    yerToplamaButonu.whileTrue(new YerToplamaCommand(intake, spindexer, feeder));
+    intakeicerigeri.whileTrue(new intakeicerigeri(intake));
+    /*toplaVeAtesleButonu.whileTrue(new ToplaVeAtesleCommand(intake, spindexer, shooter, feeder));
     hubButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.HUB)));
     dumpButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.DUMP)));
-    offButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));
+    offButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.OFF)));*/
     
     // YENİ: Shoot On The Move Butonu (Aç/Kapa mantığı ile çalışır)
-    sotmButton.toggleOnTrue(new ShootOnTheMoveCommand(shooter, feeder));
+    //sotmButton.toggleOnTrue(new ShootOnTheMoveCommand(shooter, feeder));
 
    // DÜZELTME: Atışa Hazır (Ready to Shoot) Koruması
     // Tetiğe basıldığında Flywheel anında dönmeye başlar.
     // Ancak Feeder ve Spindexer, sistem "Atışa Hazır" (isReadyToShoot) olana kadar BEKLER!
-    triggerButton.whileTrue(flywheel.setVelocity(() -> shooter.getFlywheelSetpoint()).alongWith(Commands.waitUntil(() -> shooter.isReadyToShoot())
+    /*triggerButton.whileTrue(flywheel.setVelocity(() -> shooter.getFlywheelSetpoint()).alongWith(Commands.waitUntil(() -> shooter.isReadyToShoot())
     .andThen(feeder.feed().alongWith(spindexer.spinReverse()))))
     .onFalse(flywheel.setVelocity(() -> edu.wpi.first.units.Units.RotationsPerSecond.of(0)).alongWith(feeder.stop(), spindexer.stop()));
 
     turretButtonLeft.whileTrue(turret.rotateDutyCycle(0.05)).onFalse(turret.stop());
     turretButtonRight.whileTrue(turret.rotateDutyCycle(-0.05)).onFalse(turret.stop());
-    turretZero.onTrue(turret.setAngle(Degrees.of(0))).onFalse(turret.stop());
+    turretZero.onTrue(turret.setAngle(Degrees.of(0))).onFalse(turret.stop());*/
 
-    intakeAl.whileTrue(intake.intakeFuel()).whileFalse(intake.stopRollers());
-    
+   // Sadece rolleri içeri döndürmek için (Mekanizmayı açmaz, sadece top çeker)
+    intakeAl.whileTrue(Commands.run(() -> intake.setRollerPower(Constants.Intake.rollerInSpeed), intake))
+    .onFalse(Commands.runOnce(() -> intake.setRollerPower(0.0), intake));
+
     feederAl.whileTrue(feeder.feed()).onFalse(feeder.stop());
     feederTers.whileTrue(feeder.reverse()).onFalse(feeder.stop());
 
@@ -217,11 +220,11 @@ public class RobotContainer {
     // Tareti otomatik olarak DUMP (Sarı Noktalar) pozisyonuna çevir.
   // DÜZELTME: Kendi sahamıza (11.9 çizgisinin gerisine) döndüğümüz an
     // robot uykudan uyanır ve namluyu anında tekrar potaya (SOTM) kilitler!
-    opponentSideTrigger.and(() -> !sotmButton.getAsBoolean() && !hubButton.getAsBoolean())
+    /*opponentSideTrigger.and(() -> !sotmButton.getAsBoolean() && !hubButton.getAsBoolean())
         .whileTrue(Commands.runOnce(() -> shooter.setIntent(ShotIntent.DUMP)))
         .onFalse(Commands.runOnce(() -> shooter.setIntent(ShotIntent.SOTM)));
     // Robot ilk açıldığında varsayılan olarak SOTM modunda başlasın
-    shooter.setIntent(ShotIntent.SOTM);
+    shooter.setIntent(ShotIntent.SOTM);*/
       }
   
   public Command getAutonomousCommand() {

@@ -23,7 +23,7 @@ public class SpindexerSubsystem extends SubsystemBase {
   
 
   public Command spinForward() {
-    return run(() -> spindexerMotor.set(Spindexer.feedSpeed));
+    return run(() -> spindexerMotor.set(Spindexer.spindexerspeed));
   }
 
   public Command spinReverse() {
@@ -34,7 +34,7 @@ public class SpindexerSubsystem extends SubsystemBase {
     return runOnce(() -> spindexerMotor.set(0));
   }
   public void setMotor(){
-    spindexerMotor.set(Spindexer.feedSpeed);
+    spindexerMotor.set(Spindexer.spindexerspeed);
   }
   public void stopMotor(){
     spindexerMotor.set(0);

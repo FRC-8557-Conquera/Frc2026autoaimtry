@@ -92,28 +92,21 @@ public final class Constants {
   /* ===================== INTAKE ===================== */
   public static final class Intake {
     
-    // Doğrusal hareket için Kraken motor ID'leri (Açma/Kapama)
     public static final int intakesol = 36; // LİDER MOTOR
     public static final int intakesag = 37; // TAKİPÇİ MOTOR
-
-    // Roller için Kraken motor ID'si (Top alma/verme)
     public static final int rollerMotorID = 38; 
 
-    public static final int limitSwitchPort = 7; // Tam kapalıyken basılan switch
-
-    // Roller Hızları (-1.0 ile 1.0 arası)
-    public static final double rollerInSpeed = 0.7; // İçeri alma hızı
-    public static final double rollerOutSpeed = -0.7; // Dışarı atma hızı
+    public static final double rollerInSpeed = 0.6; 
+    public static final double rollerOutSpeed = -0.6; 
     public static final double rollerStopSpeed = 0.0;
 
-    // --- DOĞRUSAL KİNEMATİK (LINEAR KINEMATICS) ---
-    public static final double METERS_PER_ROTATION = 0.05; // 1 turda kaç metre gidiyor?
-
-    // Tam Açık Pozisyon (Metre Cinsinden - Rastgele 0.40 metre yani 40cm verdik)
-    public static final double MAX_EXTENSION_METERS = 0.40; 
+    // --- SAF KRAKEN ENCODER DEĞERLERİ ---
+    // ÖNEMLİ: Bu değeri Phoenix Tuner X'ten bakarak veya elle açıp test ederek bulmalısın!
+    // Örneğin intake tam açıldığında Kraken 12.5 tur atıyorsa buraya 12.5 yazacaksın.
+    public static final double MAX_EXTENSION_ROTATIONS = -2.653320; 
 
     // Profiled PID / Motion Magic Değerleri
-    public static final double kP = 1.0;  // Gerekirse artırılacak
+    public static final double kP = 1.0;  // Titrerse düşür, yavaş kalırsa artır
     public static final double kI = 0.0;
     public static final double kD = 0.0;
   }
@@ -121,8 +114,8 @@ public final class Constants {
   /* ===================== SPINDEXER ===================== */
   public static final class Spindexer {
     public static final int spindexerMotor = 32; 
-    public static final double feedSpeed = 1;
-    public static final double reverseSpeed = -1;
+    public static final double spindexerspeed = 0.5;
+    public static final double reverseSpeed = -0.5;
   }
 
   /* ===================== FEEDER ===================== */
@@ -131,8 +124,8 @@ public final class Constants {
     public static final IdleMode idleMode = IdleMode.kBrake;
     public static final boolean inverted = false;
 
-    public static final double feedSpeed = -1;
-    public static final double reverseSpeed = 1;
+    public static final double feedSpeed = -0.6;
+    public static final double reverseSpeed = 0.6;
 
   }
 

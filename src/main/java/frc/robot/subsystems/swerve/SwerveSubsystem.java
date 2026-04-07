@@ -78,7 +78,7 @@ public class SwerveSubsystem extends SubsystemBase {
       System.err.println("AprilTag Field Layout yüklenemedi! Simülasyon görüşü düzgün çalışmayabilir.");
       throw new RuntimeException(e);
     }
-    SwerveDriveTelemetry.verbosity = SwerveDriveTelemetry.TelemetryVerbosity.LOW;
+    SwerveDriveTelemetry.verbosity = SwerveDriveTelemetry.TelemetryVerbosity.HIGH;
     field = new Field2d();
     SmartDashboard.putData("Field", field);
     swerveDrive.setModuleEncoderAutoSynchronize(false, 1);

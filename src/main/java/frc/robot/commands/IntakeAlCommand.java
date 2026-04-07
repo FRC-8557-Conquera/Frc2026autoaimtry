@@ -6,6 +6,7 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.spindexer.*;
+import frc.robot.Constants;
 import frc.robot.subsystems.feeder.*;
 import frc.robot.subsystems.intake.IntakeSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem.ShotIntent;
@@ -30,7 +31,7 @@ public class IntakeAlCommand extends Command {
 
     @Override
     public void execute() {
-        intake.intakeFuel();
+        intake.setRollerPower(Constants.Intake.rollerInSpeed);
     }
 
     @Override
@@ -40,7 +41,7 @@ public class IntakeAlCommand extends Command {
 
     @Override
     public void end(boolean interrupted) {
-        intake.stopRollers();
+        intake.setRollerPower(0);
         timer.stop();
     }
 }
