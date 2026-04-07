@@ -33,9 +33,9 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import frc.robot.LimelightHelpers;
 
 import static edu.wpi.first.units.Units.DegreesPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import java.io.File;
 import java.util.Optional;
@@ -63,8 +63,11 @@ public class SwerveSubsystem extends SubsystemBase {
   SwerveDrive swerveDrive; 
   LimelightPoseEstimator limelightBackPoseEstimator;
   LimelightPoseEstimator limelightFrontPoseEstimator;
+  LimelightPoseEstimator limelightBackMT1Estimator;
+  LimelightPoseEstimator limelightFrontMT1Estimator;
   Limelight limelightBack = new Limelight("limelight-back");
   Limelight limelightFront = new Limelight("limelight-front");
+  private static final boolean USE_MT1_FOR_SEED = false;
   boolean[] resultsPresent = {false, false};
   boolean[] validReading = {false, false};
   private File swerveJsonDirectory = new File(Filesystem.getDeployDirectory(), "swerve");
@@ -246,6 +249,8 @@ public class SwerveSubsystem extends SubsystemBase {
 
   limelightBackPoseEstimator = limelightBack.createPoseEstimator(EstimationMode.MEGATAG2);
   limelightFrontPoseEstimator = limelightFront.createPoseEstimator(EstimationMode.MEGATAG2);
+  limelightBackMT1Estimator = limelightBack.createPoseEstimator(EstimationMode.MEGATAG1);
+  limelightFrontMT1Estimator = limelightFront.createPoseEstimator(EstimationMode.MEGATAG1);
   
   swerveDrive.setVisionMeasurementStdDevs(VecBuilder.fill(0.05, 0.05, 0.022));
 }
@@ -256,11 +261,17 @@ public class SwerveSubsystem extends SubsystemBase {
     field.setRobotPose(swerveDrive.getPose());
     
  if (RobotBase.isReal()) {
-      double yawVelocity = swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond);
-      double currentHeading = getHeading().getDegrees();
+      Rotation3d gyroRotation = new Rotation3d(0, 0, getHeading().getRadians());
+      edu.wpi.first.units.measure.AngularVelocity yawRate = swerveDrive.getGyro().getYawAngularVelocity();
+      Orientation3d orientation = new Orientation3d(
+          gyroRotation,
+          yawRate,
+          RadiansPerSecond.of(0),
+          RadiansPerSecond.of(0));
 
-      LimelightHelpers.SetRobotOrientation("limelight-back", currentHeading, yawVelocity, 0, 0, 0, 0);
-      LimelightHelpers.SetRobotOrientation("limelight-front", currentHeading, yawVelocity, 0, 0, 0, 0);
+      limelightBack.getSettings().withRobotOrientation(orientation).save();
+      limelightFront.getSettings().withRobotOrientation(orientation).save();
+
       addVisionFromEstimator(limelightBackPoseEstimator, 0);
       addVisionFromEstimator(limelightFrontPoseEstimator, 1);
     } else {
@@ -455,19 +466,27 @@ if (seesTag) {
           }
       }
 
-      // 2. GERÇEK ROBOT İÇİN LİMELİGHT OKUMASI (Senin orijinal kodun, sıfır müdahale, sıfır fallback)
-      LimelightHelpers.PoseEstimate mt1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight-back");
-      
-      if (mt1Pose == null || mt1Pose.tagCount == 0) {
-          mt1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight-front");
+      // 2. GERÇEK ROBOT — USE_MT1_FOR_SEED ile seçim yap
+      Optional<PoseEstimate> seedBack, seedFront;
+      if (USE_MT1_FOR_SEED) {
+          seedBack = limelightBackMT1Estimator.getPoseEstimate();
+          seedFront = limelightFrontMT1Estimator.getPoseEstimate();
+      } else {
+          seedBack = limelightBackPoseEstimator.getPoseEstimate();
+          seedFront = limelightFrontPoseEstimator.getPoseEstimate();
       }
 
-      if (mt1Pose != null && mt1Pose.tagCount > 0 && mt1Pose.avgTagDist < 4.0) {
-          swerveDrive.resetOdometry(mt1Pose.pose);
-          System.out.println("BAŞARILI: Odometri ve Gyro MegaTag1 ile sifirlandi!");
+      Optional<PoseEstimate> seedPose = seedBack.filter(e -> e.tagCount > 0);
+      if (seedPose.isEmpty()) {
+          seedPose = seedFront.filter(e -> e.tagCount > 0);
+      }
+
+      if (seedPose.isPresent() && seedPose.get().avgTagDist < 4.0) {
+          swerveDrive.resetOdometry(seedPose.get().pose.toPose2d());
+          System.out.println("BAŞARILI: Odometri " + (USE_MT1_FOR_SEED ? "MT1" : "MT2") + " ile sifirlandi!");
           return true;
       }
-      
+
       System.out.println("HATA: Kameralar Tag Görmüyor, Odometri sifirlanmadi!");
       return false;
   }
