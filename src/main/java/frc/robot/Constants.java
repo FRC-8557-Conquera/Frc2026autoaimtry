@@ -88,25 +88,20 @@ public final class Constants {
     public static final double kTranslationVarianceThreshold = 0.1; // Örneğin, 0.1 metre
     public static final double kAngleVarianceThreshold = 5.0;
   }
-
-  /* ===================== INTAKE ===================== */
+/* ===================== INTAKE ===================== */
   public static final class Intake {
-    
-    public static final int intakesol = 36; // LİDER MOTOR
-    public static final int intakesag = 37; // TAKİPÇİ MOTOR
+    public static final int intakesol = 36; 
+    public static final int intakesag = 37; 
     public static final int rollerMotorID = 38; 
 
     public static final double rollerInSpeed = 0.6; 
-    public static final double rollerOutSpeed = -0.6; 
-    public static final double rollerStopSpeed = 0.0;
 
-    // --- SAF KRAKEN ENCODER DEĞERLERİ ---
-    // ÖNEMLİ: Bu değeri Phoenix Tuner X'ten bakarak veya elle açıp test ederek bulmalısın!
-    // Örneğin intake tam açıldığında Kraken 12.5 tur atıyorsa buraya 12.5 yazacaksın.
-    public static final double MAX_EXTENSION_ROTATIONS = -2.653320; 
+    // --- SENİN VERDİĞİN ÖZEL DEĞERLER ---
+    public static final double KAPALI_POZISYON = -0.796; // Geri çekilince duracağı yer
+    public static final double ACIK_POZISYON = -2.628;   // Basınca gideceği uç nokta
 
-    // Profiled PID / Motion Magic Değerleri
-    public static final double kP = 1.0;  // Titrerse düşür, yavaş kalırsa artır
+    // Motion Magic Ayarları
+    public static final double kP = 1.0;  
     public static final double kI = 0.0;
     public static final double kD = 0.0;
   }

@@ -33,7 +33,6 @@ import frc.robot.commands.DumpCommand;
 import frc.robot.commands.IntakeAlCommand;
 import frc.robot.commands.ShootCommand;
 import frc.robot.commands.ShootOnTheMoveCommand; // EKLENDİ
-import frc.robot.commands.intakeicerigeri;
 import frc.robot.commands.YerToplamaCommand;
 import frc.robot.subsystems.feeder.FeederSubsystem;
 import frc.robot.subsystems.intake.IntakeSubsystem;
@@ -76,7 +75,8 @@ public class RobotContainer {
   private final JoystickButton offButton = new JoystickButton(driver2, 10);
   private final JoystickButton intakeAl = new JoystickButton(driver2, 9);
   private final JoystickButton yerToplamaButonu = new JoystickButton(driver, 1); // Sağ omuz tuşu vb.
-  private final JoystickButton intakeicerigeri = new JoystickButton(driver, 4); // Sol omuz tuşu vb.
+  private final JoystickButton intakeToggleButonu = new JoystickButton(driver, 4);
+  private final JoystickButton rollerButonu = new JoystickButton(driver, 5); // Ayrı buton
 
   JoystickButton hubButton = new JoystickButton(driver2, 11);
   JoystickButton sotmButton = new JoystickButton(driver2, 12); // EKLENDİ (Hareketli Atış Butonu)
@@ -165,7 +165,16 @@ public class RobotContainer {
 
   private void configureButtonBindings() {
     yerToplamaButonu.whileTrue(new YerToplamaCommand(intake, spindexer, feeder));
-    intakeicerigeri.whileTrue(new intakeicerigeri(intake));
+   // 1. İntake AÇ-KAPA (Toggle) Mantığı
+    // Her bastığında hedefi bir sonrakine çevirir ve orada bırakır.
+    intakeToggleButonu.onTrue(new InstantCommand(() -> intake.toggleIntake(), intake));
+
+    // 2. AKILLI ROLLER (Sadece en alttayken çalışır)
+    // Bu buton 5'e bastığında eğer intake tam aşağıda değilse roller dönmez!
+    rollerButonu.whileTrue(Commands.run(() -> intake.setRollerPower(Constants.Intake.rollerInSpeed), intake))
+                .onFalse(Commands.runOnce(() -> intake.setRollerPower(0.0), intake));
+
+
     /*toplaVeAtesleButonu.whileTrue(new ToplaVeAtesleCommand(intake, spindexer, shooter, feeder));
     hubButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.HUB)));
     dumpButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.DUMP)));
@@ -184,10 +193,6 @@ public class RobotContainer {
     turretButtonLeft.whileTrue(turret.rotateDutyCycle(0.05)).onFalse(turret.stop());
     turretButtonRight.whileTrue(turret.rotateDutyCycle(-0.05)).onFalse(turret.stop());
     turretZero.onTrue(turret.setAngle(Degrees.of(0))).onFalse(turret.stop());*/
-
-   // Sadece rolleri içeri döndürmek için (Mekanizmayı açmaz, sadece top çeker)
-    intakeAl.whileTrue(Commands.run(() -> intake.setRollerPower(Constants.Intake.rollerInSpeed), intake))
-    .onFalse(Commands.runOnce(() -> intake.setRollerPower(0.0), intake));
 
     feederAl.whileTrue(feeder.feed()).onFalse(feeder.stop());
     feederTers.whileTrue(feeder.reverse()).onFalse(feeder.stop());
