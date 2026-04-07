@@ -290,10 +290,10 @@ public class SwerveSubsystem extends SubsystemBase {
     return VecBuilder.fill(0.05 + (distanceMultiplier * 0.1), 0.05 + (distanceMultiplier * 0.1), 0.01 + (distanceMultiplier * 0.05));
   }
 private void addVisionFromEstimator(LimelightPoseEstimator estimator, int index) {
-    // 2. DÜZELTME: Hız Reddi (Motion Blur Koruması)
-    // Robot 720 derece/saniye (saniyede 2 tur) hızından fazla dönüyorsa, Limelight görüntüsü bulanıklaşır (Motion Blur).
-    // Bu durumda gelen yanlış odometri sıçramalarını tamamen reddediyoruz!
-    if (Math.abs(swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond)) > 720.0) {
+    double omegaDegPerSec = Math.abs(swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond));
+
+    // 150 deg/s üzerinde vision tamamen güvenilmez — hard reject
+    if (omegaDegPerSec > 150.0) {
         validReading[index] = false;
         return;
     }
@@ -302,14 +302,21 @@ private void addVisionFromEstimator(LimelightPoseEstimator estimator, int index)
     if (est.isPresent()) {
       PoseEstimate poseEstimate = est.get();
       resultsPresent[index] = true;
-      
+
       if (poseEstimate.tagCount > 0 && poseEstimate.getAvgTagAmbiguity() < 0.3) {
         validReading[index] = true;
         Pose2d visionPose = poseEstimate.pose.toPose2d();
-        
+
         double avgDist = poseEstimate.avgTagDist > 0 ? poseEstimate.avgTagDist : 3.0;
         Matrix<N3, N1> stdDevs = getVisionStdDevs(poseEstimate.tagCount, avgDist);
-        
+
+        // 50 deg/s üzerinde angular velocity arttıkça std devs'i kademeli artır
+        // Bu sayede yavaş dönüşlerde vision hâlâ katkı sağlar ama güveni azalır
+        if (omegaDegPerSec > 50.0) {
+            double omegaScale = 1.0 + Math.pow((omegaDegPerSec - 50.0) / 100.0, 2) * 5.0;
+            stdDevs = stdDevs.times(omegaScale);
+        }
+
         swerveDrive.addVisionMeasurement(visionPose, poseEstimate.timestampSeconds, stdDevs);
       } else { validReading[index] = false; }
     } else {
