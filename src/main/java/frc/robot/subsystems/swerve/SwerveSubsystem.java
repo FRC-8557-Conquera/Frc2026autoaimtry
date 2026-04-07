@@ -33,6 +33,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
+import frc.robot.LimelightHelpers;
 
 import static edu.wpi.first.units.Units.DegreesPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
@@ -255,33 +256,87 @@ public class SwerveSubsystem extends SubsystemBase {
   swerveDrive.setVisionMeasurementStdDevs(VecBuilder.fill(0.05, 0.05, 0.022));
 }
 
+  // PERİODİC METODUNU AYNEN KORUYORUZ (Gyro hızını ve açısını Limelight'a yollamaya devam)
   @Override
   public void periodic() {
     swerveDrive.updateOdometry();
     field.setRobotPose(swerveDrive.getPose());
     
- if (RobotBase.isReal()) {
-      Rotation3d gyroRotation = new Rotation3d(0, 0, getHeading().getRadians());
-      edu.wpi.first.units.measure.AngularVelocity yawRate = swerveDrive.getGyro().getYawAngularVelocity();
-      Orientation3d orientation = new Orientation3d(
-          gyroRotation,
-          yawRate,
-          RadiansPerSecond.of(0),
-          RadiansPerSecond.of(0));
+    if (RobotBase.isReal()) {
+      double yawVelocity = Math.toDegrees(getChassisSpeeds().omegaRadiansPerSecond);
+      double currentHeading = getHeading().getDegrees(); // Bu açı artık MT1 ile sürekli temizleniyor!
 
-      limelightBack.getSettings().withRobotOrientation(orientation).save();
-      limelightFront.getSettings().withRobotOrientation(orientation).save();
-
-      addVisionFromEstimator(limelightBackPoseEstimator, 0);
-      addVisionFromEstimator(limelightFrontPoseEstimator, 1);
+      LimelightHelpers.SetRobotOrientation("limelight-front", currentHeading, yawVelocity, 0, 0, 0, 0);
+      LimelightHelpers.SetRobotOrientation("limelight-back", currentHeading, yawVelocity, 0, 0, 0, 0);
+      
+      // HİBRİT VİZYON FONKSİYONUNU ÇAĞIRIYORUZ
+      addHybridVision("limelight-back", 0);
+      addHybridVision("limelight-front", 1);
     } else {
         simulateVision();
     }
     
-    SmartDashboard.putBoolean("Limelight Back Present", resultsPresent[0]);
-    SmartDashboard.putBoolean("Limelight Back Valid", validReading[0]);
-    SmartDashboard.putBoolean("Limelight Front Present", resultsPresent[1]);
-    SmartDashboard.putBoolean("Limelight Front Valid", validReading[1]);
+    SmartDashboard.putBoolean("LL Back Present", resultsPresent[0]);
+    SmartDashboard.putBoolean("LL Back Valid", validReading[0]);
+    SmartDashboard.putBoolean("LL Front Present", resultsPresent[1]);
+    SmartDashboard.putBoolean("LL Front Valid", validReading[1]);
+  }
+
+  /**
+   * DÜNYA ŞAMPİYONASI SEVİYESİ HİBRİT VİZYON ALGORİTMASI (MT1 + MT2 FUSION)
+   */
+  private void addHybridVision(String llName, int index) {
+    // 1. Motion Blur Koruması: Fırıldak gibi dönerken kameraya güvenme!
+    if (Math.abs(Math.toDegrees(getChassisSpeeds().omegaRadiansPerSecond)) > 360.0) {
+        validReading[index] = false;
+        return; 
+    }
+
+    // AYNI ANDA HEM MEGATAG 1 HEM MEGATAG 2'Yİ ÇEKİYORUZ
+    LimelightHelpers.PoseEstimate mt1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue(llName);
+    LimelightHelpers.PoseEstimate mt2Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(llName);
+    
+    // --- SENARYO 1: ÇOKLU TAG GÖRÜYORUZ (GYRO DÜZELTME MODU) ---
+    if (mt1Pose != null && mt1Pose.tagCount >= 2) {
+      resultsPresent[index] = true;
+      validReading[index] = true;
+      
+      double avgDist = mt1Pose.avgTagDist > 0 ? mt1Pose.avgTagDist : 3.0;
+      Matrix<N3, N1> stdDevs = getVisionStdDevs(mt1Pose.tagCount, avgDist);
+      
+      // MT1'i YAGSL'a yediriyoruz. 
+      // NOT: Biz stdDevs'te 3. değere 0.022 (Açısal güven) verdiğimiz için, 
+      // YAGSL bu MT1 verisini alınca kaymış NavX açısını SESSİZCE düzeltir!
+      swerveDrive.addVisionMeasurement(mt1Pose.pose, mt1Pose.timestampSeconds, stdDevs);
+      field.getObject("Cam_" + llName).setPose(mt1Pose.pose);
+    } 
+    // --- SENARYO 2: SADECE 1 TAG GÖRÜYORUZ (MEGATAG 2 HAYATTA KALMA MODU) ---
+    else if (mt2Pose != null && mt2Pose.tagCount == 1) {
+      resultsPresent[index] = true;
+      
+      double avgDist = mt2Pose.avgTagDist > 0 ? mt2Pose.avgTagDist : 3.0;
+      
+      // Tek tag'de 4.5 metreden uzaksak hatalıdır, veriyi çöpe at.
+      if (avgDist > 4.5) {
+          validReading[index] = false;
+          field.getObject("Cam_" + llName).setPoses(new Pose2d[] {});
+          return;
+      }
+      
+      validReading[index] = true;
+      Matrix<N3, N1> stdDevs = getVisionStdDevs(mt2Pose.tagCount, avgDist);
+      
+      // Sadece 1 tag gördüğü için MT2'nin X/Y'sini alıyoruz, açıyı ise 
+      // (Az önce MT1 ile temizlenmiş olan) gyro'dan kullanıyoruz.
+      swerveDrive.addVisionMeasurement(mt2Pose.pose, mt2Pose.timestampSeconds, stdDevs);
+      field.getObject("Cam_" + llName).setPose(mt2Pose.pose);
+    } 
+    // --- SENARYO 3: HİÇBİR ŞEY GÖRMÜYOR ---
+    else {
+      resultsPresent[index] = false; 
+      validReading[index] = false;
+      field.getObject("Cam_" + llName).setPoses(new Pose2d[] {});
+    }
   }
   // 1. DÜZELTME: Dinamik Standart Sapma ve Çoklu Tag Koruması
   public Matrix<N3, N1> getVisionStdDevs(int tagCount, double avgDistance) {

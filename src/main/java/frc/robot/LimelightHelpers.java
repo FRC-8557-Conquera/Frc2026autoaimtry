@@ -9,6 +9,8 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.TimestampedDoubleArray;
 import frc.robot.LimelightHelpers.LimelightResults;
 import frc.robot.LimelightHelpers.PoseEstimate;
+import swervelib.SwerveDrive;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -30,7 +32,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.concurrent.ConcurrentHashMap;
 import edu.wpi.first.net.PortForwarder;
-
+import frc.robot.subsystems.swerve.*;
 /**
  * LimelightHelpers provides static methods and classes for interfacing with Limelight vision cameras in FRC.
  * This library supports all Limelight features including AprilTag tracking, Neural Networks, and standard color/retroreflective tracking.
@@ -1944,4 +1946,10 @@ public class LimelightHelpers {
             PortForwarder.add(basePort + i, ip, 5800 + i);
         }
     }
+    public void setupLimelight(SwerveDrive swerveDrive) {
+    // Ağ üzerindeki front kamerasını MegaTag2 moduna alıyoruz
+    LimelightHelpers.setPipelineIndex("limelight-front", 0);
+    LimelightHelpers.setLEDMode_PipelineControl("limelight-front");
+    swerveDrive.setVisionMeasurementStdDevs(VecBuilder.fill(0.05, 0.05, 0.022));
+  }
 }

@@ -109,8 +109,8 @@ public final class Constants {
   /* ===================== SPINDEXER ===================== */
   public static final class Spindexer {
     public static final int spindexerMotor = 32; 
-    public static final double spindexerspeed = 0.5;
-    public static final double reverseSpeed = -0.5;
+    public static final double spindexerspeed = 0.8;
+    public static final double reverseSpeed = -0.8;
   }
 
   /* ===================== FEEDER ===================== */
