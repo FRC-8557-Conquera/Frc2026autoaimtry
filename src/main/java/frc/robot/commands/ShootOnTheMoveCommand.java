@@ -27,7 +27,7 @@ public class ShootOnTheMoveCommand extends Command {
     public void execute() {
         // Taretin hata payını beklemeyi TAMAMEN sildik! 
         // 12. buton aktif olduğu sürece sistem ateşlemeye hazır kabul edilir.
-        feeder.setSpeed(1.0); 
+        feeder.setSpeed(0.6); 
         
         // Eğer son atışın üzerinden 0.2 saniye geçtiyse
         if (shotTimer.hasElapsed(0.2)) {

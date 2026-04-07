@@ -19,7 +19,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final TalonFX rollerMotor = new TalonFX(Constants.Intake.rollerMotorID);
     
     private final MotionMagicVoltage positionRequest = new MotionMagicVoltage(0);
-    private final DutyCycleOut rollerDutyCycle = new DutyCycleOut(0);
+    //private final DutyCycleOut rollerDutyCycle = new DutyCycleOut(0);
 
     // Başlangıçta mekanik en güvenli yerinde dursun
     private double targetPositionRotations = Constants.Intake.KAPALI_POZISYON;
