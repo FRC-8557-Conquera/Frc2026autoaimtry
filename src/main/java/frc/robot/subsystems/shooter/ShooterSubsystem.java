@@ -76,6 +76,7 @@ public class ShooterSubsystem extends SubsystemBase {
     public void periodic() {
         SmartDashboard.putNumber("Distance", getHubDistance().in(Meters));
         SmartDashboard.putNumber("Slider", entry.getDouble(10));
+        SmartDashboard.putBoolean("hubButtonPressed", intent != ShotIntent.OFF);
         updateTrajectoryVisualization();
     }
 
@@ -135,7 +136,7 @@ public class ShooterSubsystem extends SubsystemBase {
             
             return Degrees.of(wrapTurretAngle(turretRelative.getDegrees())); // Akıllı korumayı kullan!
         }
-        return Degrees.of(0);
+        return Rotations.of(0.25);
     }
 
     public Distance getDumpDistance() {

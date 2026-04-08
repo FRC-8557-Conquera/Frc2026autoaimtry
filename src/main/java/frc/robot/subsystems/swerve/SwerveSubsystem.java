@@ -52,8 +52,8 @@ public class SwerveSubsystem extends SubsystemBase {
   SwerveDrive swerveDrive; 
   LimelightPoseEstimator limelightBackPoseEstimator;
   LimelightPoseEstimator limelightFrontPoseEstimator;
-  Limelight limelightBack = new Limelight("limelight-back");
-  Limelight limelightFront = new Limelight("limelight-front");
+  Limelight limelightBack = new Limelight("limelight-front");
+  Limelight limelightFront = new Limelight("limelight-back");
   private File swerveJsonDirectory = new File(Filesystem.getDeployDirectory(), "swerve");
 
   public SwerveSubsystem() {
@@ -238,32 +238,56 @@ public void periodic() {
 
     private void addVisionFromEstimator(LimelightPoseEstimator estimator) {
     Optional<PoseEstimate> est = estimator.getPoseEstimate();
-    if (!est.isPresent()) return;
+    if (est.isEmpty()) return;
 
     PoseEstimate poseEstimate = est.get();
-
     if (poseEstimate.tagCount == 0) return;
 
-    // MT1 ambiguity filter — tighter than MT2 due to single-tag PnP dual-solution problem
-    if (poseEstimate.getAvgTagAmbiguity() > 0.2) return;
+    double avgDist = poseEstimate.avgTagDist;
 
-    // Reject tags too far away — MT1 accuracy degrades fast with distance
-    if (poseEstimate.avgTagDist > 4.0) return;
+    // ====================================================================
+    // 1. SENARYO: ÇOKLU TAG (MULTI-TAG) KUSURSUZLUĞU
+    // Ekranda 2 veya daha fazla tag varsa, kamera 3D uzayı kusursuz anlar.
+    // ====================================================================
+    if (poseEstimate.tagCount > 1) {
+        // Uzaklığın karesi (Quadratic) ile büyüyen çok hafif bir hata payı.
+        // Başlangıç hatası (0.1) çok düşüktür çünkü çoklu tag aşırı güvenilirdir.
+        double xyStdDev = 0.1 + (Math.pow(avgDist, 2) * 0.02);
+        double rotStdDev = 0.1 + (Math.pow(avgDist, 2) * 0.05);
 
-    // Distance-based std dev scaling (quadratic — far tags get way less trust)
-    double distScale = 1.0 + (poseEstimate.avgTagDist * poseEstimate.avgTagDist) / 4.0;
+        // Veriyi doğrudan StdDev matrisi ile şasiye gömüyoruz!
+        swerveDrive.addVisionMeasurement(
+            poseEstimate.pose.toPose2d(),
+            poseEstimate.timestampSeconds,
+            VecBuilder.fill(xyStdDev, xyStdDev, rotStdDev)
+        );
+        return; // İşlem bitti, alt satırlara inme
+    }
 
-    // Multi-tag is dramatically more reliable for MT1
-    double tagScale = (poseEstimate.tagCount >= 2) ? 0.5 : 1.0;
+    // ====================================================================
+    // 2. SENARYO: TEK TAG (SINGLE-TAG) HAYATTA KALMA MODU
+    // Ekranda 1 tag varsa, kamera açıyı uydurur ve mesafe ölçümü zayıflar.
+    // ====================================================================
+    if (poseEstimate.tagCount == 1) {
+        // Belirsizlik (Ambiguity) 0.2'den büyükse kamera halüsinasyon görüyordur, direkt reddet!
+        if (poseEstimate.getAvgTagAmbiguity() > 0.2) return;
 
-    double xyStdDev = 0.5 * distScale * tagScale;
+        // MT1 modunda tek tag ile 4.5 metreden sonrası matematiksel olarak çöp veridir.
+        if (avgDist > 4.5) return;
 
-    // Single-tag MT1 rotation is essentially random — don't trust it
-    // Multi-tag gives usable heading
-    double rotStdDev = (poseEstimate.tagCount >= 2) ? 0.5 : 9999.0;
+        // Mesafe arttıkça X/Y hatasını çok agresif (karesel) olarak artırıyoruz.
+        // Başlangıç hatası (0.5) çoklu tag'e göre yüksektir.
+        double xyStdDev = 0.5 + (Math.pow(avgDist, 2) * 0.15);
 
-    Pose2d visionPose = poseEstimate.pose.toPose2d();
-    swerveDrive.setVisionMeasurementStdDevs(VecBuilder.fill(xyStdDev, xyStdDev, rotStdDev));
-    swerveDrive.addVisionMeasurement(visionPose, poseEstimate.timestampSeconds);
+        // ÖLÜMCÜL KORUMA: Tek tag MT1 ASLA doğru robot açısı veremez!
+        // Değeri 9999.0 yaparak Kalman Filtresine "Vizyon açısını SİL, donanım Gyro'sunu kullan" diyoruz.
+        double rotStdDev = 9999.0;
+
+        swerveDrive.addVisionMeasurement(
+            poseEstimate.pose.toPose2d(),
+            poseEstimate.timestampSeconds,
+            VecBuilder.fill(xyStdDev, xyStdDev, rotStdDev)
+        );
+    }
   }
 }

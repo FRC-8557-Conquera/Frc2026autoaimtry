@@ -129,7 +129,7 @@ public final class Constants {
     // Neo + SparkMax kullanılıyor
     public static final int turretMotor = 33; 
     public static final int encoderPort = 5; // Through Bore Encoder DIO Portu
-    public static final double encoderOffset = 0.756984; // SIFIR noktasının offseti
+    public static final double encoderOffset = 0.231; // SIFIR noktasının offseti
     public static final double turretDist = -0.141;
     
     // YENİ: Mekanik oran ve sınırlar

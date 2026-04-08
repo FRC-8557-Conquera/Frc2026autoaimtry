@@ -28,6 +28,9 @@ import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.local.SparkWrapper;
+import static edu.wpi.first.units.Units.Second;
+import static edu.wpi.first.units.Units.Seconds;
+import static edu.wpi.first.units.Units.Volts;
 
 public class TurretSubsystem extends SubsystemBase {
     private boolean turretZeroed = false;
@@ -41,11 +44,10 @@ public class TurretSubsystem extends SubsystemBase {
             .withIdleMode(MotorMode.BRAKE)
             .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
             .withStatorCurrentLimit(Amps.of(40)) // Neo'yu yakmamak için 40'a çektim
-            .withMotorInverted(true)
+            .withMotorInverted(false)
             .withClosedLoopRampRate(Seconds.of(0.25))
             .withOpenLoopRampRate(Seconds.of(0.25))
-            // -180 ve +180 derece yazılımsal sınırı (0.5 tur)
-            .withSoftLimit(Rotations.of(-0.5), Rotations.of(0.5)) 
+            .withSoftLimit(Rotations.of(-0.325), Rotations.of(0.475)) 
             .withFeedforward(new SimpleMotorFeedforward(0, 0, 0))
             .withControlMode(ControlMode.CLOSED_LOOP);
                         
@@ -56,7 +58,7 @@ public class TurretSubsystem extends SubsystemBase {
             .withStartingPosition(Rotations.of(0))
             .withTelemetry("TurretMech", TelemetryVerbosity.HIGH)
             // -180 ve +180 sınırları Hard Limit olarak da eklendi
-            .withHardLimit(Rotations.of(-0.51), Rotations.of(0.51));
+            .withHardLimit(Rotations.of(-0.5), Rotations.of(0.350));
 
     private final Pivot turret = new Pivot(turretConfig);
 
@@ -88,6 +90,10 @@ public class TurretSubsystem extends SubsystemBase {
         return raw;
     }
 
+    public Command sysId() {
+    return turret.sysId(Volts.of(7), Volts.of(0.5).per(Second), Seconds.of(8));
+  }
+
     // MANUEL TEST METODU (Yavaş Dönüş)
     public Command rotateDutyCycle(double dutyCycle) {
         return run(() -> turretSMC.setDutyCycle(dutyCycle));
@@ -111,7 +117,7 @@ public class TurretSubsystem extends SubsystemBase {
                 startTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
             } else if (edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - startTime > 2.0) {
                 // Orana (16) bölerek sıfırlama yapıyoruz
-                turretMotor.getEncoder().setPosition(getAbsoluteAngle() / Constants.Turret.gearRatio);
+                turretMotor.getEncoder().setPosition(getAbsoluteAngle() / 4.0);
                 turretZeroed = true;
             }
         }

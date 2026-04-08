@@ -4,6 +4,8 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Rotations;
+
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -24,6 +26,7 @@ import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
+import frc.robot.subsystems.shooter.ShooterSubsystem.ShotIntent;
 import frc.robot.subsystems.spindexer.SpindexerSubsystem;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 import frc.robot.util.FuelSim;
@@ -45,17 +48,18 @@ public class RobotContainer {
 
   // Mekanizma Butonları
   private final JoystickButton yerToplamaButonu = new JoystickButton(driver, 1);
+  private final JoystickButton turretZero = new JoystickButton(driver, 2);
   private final JoystickButton intakeToggleButonu = new JoystickButton(driver, 4);
   private final JoystickButton rollerButonu = new JoystickButton(driver, 5); 
 /*private final JoystickButton feederAl = new JoystickButton(driver2, 3);
   private final JoystickButton feederTers = new JoystickButton(driver2, 4);
   private final JoystickButton spindexerF = new JoystickButton(driver2, 5);
   private final JoystickButton spindexerR = new JoystickButton(driver2, 6);*/
-  
   private final JoystickButton turretLeftTest = new JoystickButton(driver, 7);
   private final JoystickButton turretRightTest = new JoystickButton(driver, 8);
-  private final JoystickButton hoodUpTest = new JoystickButton(driver, 9);
-  private final JoystickButton hoodDownTest = new JoystickButton(driver, 10);
+  private final JoystickButton hubButton = new JoystickButton(driver, 9);
+  private final JoystickButton turretSysID = new JoystickButton(driver, 10);
+
 
   public FuelSim fuelSim = new FuelSim();  
 
@@ -100,7 +104,9 @@ public class RobotContainer {
   SendableChooser<Command> m_chooser;
 
   public RobotContainer() {
-    s_Swerve.setupPathPlanner();
+    // 1. HATA ÇÖZÜMÜ: Buradaki s_Swerve.setupPathPlanner(); satırını sildik! 
+    // Çünkü SwerveSubsystem kendi içinde zaten bunu hallediyor.
+
     m_chooser = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData("Auto Chooser", m_chooser);
 
@@ -113,6 +119,9 @@ public class RobotContainer {
     
     configureButtonBindings();
     s_Swerve.zeroGyroWithAlliance();
+    
+    // 2. HATA ÇÖZÜMÜ: Varsayılan komutu DOĞRU sisteme (Turret) ve CANLI YENİLEME ()-> ile atadık!
+    turret.setDefaultCommand(turret.setAngle(() -> shooter.getTurretSetpoint()));
   }
 
   private void configureButtonBindings() {
@@ -121,6 +130,9 @@ public class RobotContainer {
 
     rollerButonu.whileTrue(Commands.run(() -> intake.setRollerPower(Constants.Intake.rollerInSpeed), intake))
                 .onFalse(Commands.runOnce(() -> intake.setRollerPower(0.0), intake));
+
+    turretSysID.whileTrue(turret.sysId());
+    hubButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.HUB)));
 
   /*feederAl.whileTrue(feeder.feed()).onFalse(feeder.stop());
     feederTers.whileTrue(feeder.reverse()).onFalse(feeder.stop());
@@ -134,10 +146,11 @@ public class RobotContainer {
     // TURRET (Sağ-Sol Dönüş) -> %30 güçle
     turretLeftTest.whileTrue(turret.rotateDutyCycle(0.3)).onFalse(turret.stop());
     turretRightTest.whileTrue(turret.rotateDutyCycle(-0.3)).onFalse(turret.stop());
+    turretZero.whileTrue(turret.setAngle(Rotations.of(0.25)));
 
     // HOOD (Yukarı-Aşağı Kalkış) -> %30 güçle
-    hoodUpTest.whileTrue(hood.rotateDutyCycle(0.3)).onFalse(hood.stop());
-    hoodDownTest.whileTrue(hood.rotateDutyCycle(-0.3)).onFalse(hood.stop());
+    //hoodUpTest.whileTrue(hood.rotateDutyCycle(0.3)).onFalse(hood.stop());
+   // hoodDownTest.whileTrue(hood.rotateDutyCycle(-0.3)).onFalse(hood.stop());
 
     // ==========================================================
     // KUSURSUZ FLYWHEEL TETİK KOMUTU (SADECE BİR KERE YAZILDI)
