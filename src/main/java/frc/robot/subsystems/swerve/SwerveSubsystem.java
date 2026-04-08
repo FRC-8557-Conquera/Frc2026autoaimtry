@@ -29,7 +29,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
 
-import static edu.wpi.first.units.Units.DegreesPerSecond;
 
 import java.io.File;
 import java.util.Optional;
@@ -41,10 +40,8 @@ import swervelib.math.SwerveMath;
 import swervelib.parser.SwerveParser;
 import swervelib.telemetry.SwerveDriveTelemetry;
 import limelight.Limelight;
-import limelight.networktables.AngularVelocity3d;
 import limelight.networktables.LimelightPoseEstimator;
 import limelight.networktables.LimelightSettings.LEDMode;
-import limelight.networktables.Orientation3d;
 import limelight.networktables.PoseEstimate;
 import limelight.networktables.LimelightPoseEstimator.EstimationMode;
 
@@ -228,43 +225,45 @@ public class SwerveSubsystem extends SubsystemBase {
       .withLimelightLEDMode(LEDMode.PipelineControl)
       .save();
 
-  limelightBackPoseEstimator = limelightBack.createPoseEstimator(EstimationMode.MEGATAG2);
-  limelightFrontPoseEstimator = limelightFront.createPoseEstimator(EstimationMode.MEGATAG2);
-  
-  swerveDrive.setVisionMeasurementStdDevs(VecBuilder.fill(0.05, 0.05, 0.022));
+  limelightBackPoseEstimator = limelightBack.createPoseEstimator(EstimationMode.MEGATAG1);
+  limelightFrontPoseEstimator = limelightFront.createPoseEstimator(EstimationMode.MEGATAG1);
 }
 
 @Override
 public void periodic() {
-
-    double yawVelocity = swerveDrive.getGyro().getYawAngularVelocity().in(DegreesPerSecond);
-
-        limelightBack.getSettings()
-             .withRobotOrientation(new Orientation3d(swerveDrive.getGyro().getRotation3d(),
-                                                     new AngularVelocity3d(DegreesPerSecond.of(0),
-                                                                           DegreesPerSecond.of(0),
-                                                                           DegreesPerSecond.of(yawVelocity))));
-            
-        limelightFront.getSettings()
-             .withRobotOrientation(new Orientation3d(swerveDrive.getGyro().getRotation3d(),
-                                                     new AngularVelocity3d(DegreesPerSecond.of(0),
-                                                                           DegreesPerSecond.of(0),
-                                                                           DegreesPerSecond.of(yawVelocity))));
     addVisionFromEstimator(limelightBackPoseEstimator);
-    addVisionFromEstimator(limelightFrontPoseEstimator);  
+    addVisionFromEstimator(limelightFrontPoseEstimator);
     field.setRobotPose(swerveDrive.getPose());
   }
 
     private void addVisionFromEstimator(LimelightPoseEstimator estimator) {
     Optional<PoseEstimate> est = estimator.getPoseEstimate();
+    if (!est.isPresent()) return;
 
-    if (est.isPresent()) {
-      PoseEstimate poseEstimate = est.get();
-      
-    if (poseEstimate.tagCount > 0 && poseEstimate.getAvgTagAmbiguity() < 0.3 && poseEstimate.avgTagDist < 4.0) {
-        Pose2d visionPose = poseEstimate.pose.toPose2d();
-        swerveDrive.addVisionMeasurement(visionPose,poseEstimate.timestampSeconds);
-      }
-    }
+    PoseEstimate poseEstimate = est.get();
+
+    if (poseEstimate.tagCount == 0) return;
+
+    // MT1 ambiguity filter — tighter than MT2 due to single-tag PnP dual-solution problem
+    if (poseEstimate.getAvgTagAmbiguity() > 0.2) return;
+
+    // Reject tags too far away — MT1 accuracy degrades fast with distance
+    if (poseEstimate.avgTagDist > 4.0) return;
+
+    // Distance-based std dev scaling (quadratic — far tags get way less trust)
+    double distScale = 1.0 + (poseEstimate.avgTagDist * poseEstimate.avgTagDist) / 4.0;
+
+    // Multi-tag is dramatically more reliable for MT1
+    double tagScale = (poseEstimate.tagCount >= 2) ? 0.5 : 1.0;
+
+    double xyStdDev = 0.5 * distScale * tagScale;
+
+    // Single-tag MT1 rotation is essentially random — don't trust it
+    // Multi-tag gives usable heading
+    double rotStdDev = (poseEstimate.tagCount >= 2) ? 0.5 : 9999.0;
+
+    Pose2d visionPose = poseEstimate.pose.toPose2d();
+    swerveDrive.setVisionMeasurementStdDevs(VecBuilder.fill(xyStdDev, xyStdDev, rotStdDev));
+    swerveDrive.addVisionMeasurement(visionPose, poseEstimate.timestampSeconds);
   }
 }
