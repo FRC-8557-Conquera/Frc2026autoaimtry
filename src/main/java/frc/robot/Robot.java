@@ -166,7 +166,7 @@ public class Robot extends LoggedRobot
     {
         matchTimer.restart();
         autonomousCommand = robotContainer.getAutonomousCommand();
-        robotContainer.s_Swerve.seedOdometryWithMegaTag1();
+        
         
         if (autonomousCommand != null)
         {

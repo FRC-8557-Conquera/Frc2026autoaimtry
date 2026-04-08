@@ -124,31 +124,39 @@ public final class Constants {
 
   }
 
-  /* ===================== TURRET ===================== */
+  /* ===================== TURRET (DÖNÜŞ / PAN) ===================== */
   public static final class Turret {
-    public static final int turretMotor = 33;
-    public static final int encoderPort = 5; 
-    public static final double encoderOffset = 0.756984; 
+    // Neo + SparkMax kullanılıyor
+    public static final int turretMotor = 33; 
+    public static final int encoderPort = 5; // Through Bore Encoder DIO Portu
+    public static final double encoderOffset = 0.756984; // SIFIR noktasının offseti
     public static final double turretDist = -0.141;
+    
+    // YENİ: Mekanik oran ve sınırlar
+    public static final double gearRatio = 16.0; // 1/4 * 1/4 = 1/16
+    public static final double maxAngleDegrees = 180.0;
+    public static final double minAngleDegrees = -180.0;
   }
 
-    public static final class Hood {
-
-    public static final int hoodMotor = 34;
-    public static final int encoderPort = 1; // EXAMPLE CHANGE THIS VALUE
-    public static final IdleMode idleMode = IdleMode.kBrake;
-    public static final boolean inverted = false;
-
+  /* ===================== HOOD (ŞAPKA / TILT) ===================== */
+  public static final class Hood {
+    // Neo Vortex + SparkFlex kullanılıyor!
+    public static final int hoodMotor = 34; 
+    public static final int encoderPort = 7; // Through Bore Encoder DIO Portu
+    
+    // YENİ: Sınırlar ve Oranlar (Açıları mekaniğinize göre ayarlarsın)
     public static final double minAngleDegrees = 20.0;
     public static final double maxAngleDegrees = 40.0;
-    public static final double hoodOffsetDeg = 73.2; // EXAMPLE CHANGE THIS VALUE
+    public static final double hoodOffsetDeg = 73.2; 
+    public static final double gearRatio = 12.15; // Kendi oranını buraya gir!
   }
+
 
   /* ===================== FLYWHEEL ===================== */
 
   public static final class Flywheel{
     public static final int flywheelMotor = 35;
-    public static final double MAX_RPS = 90;
+    public static final double MAX_RPS = 100;
     public static final double MIN_RPS = 10;
     public static final Distance flywheelDiameter = Inches.of(4);
   }
