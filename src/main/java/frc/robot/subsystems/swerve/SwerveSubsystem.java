@@ -63,7 +63,7 @@ public class SwerveSubsystem extends SubsystemBase {
      {
       throw new RuntimeException(e);
     }
-    SwerveDriveTelemetry.verbosity = SwerveDriveTelemetry.TelemetryVerbosity.HIGH;
+    SwerveDriveTelemetry.verbosity = SwerveDriveTelemetry.TelemetryVerbosity.LOW;
     field = new Field2d();
     SmartDashboard.putData("Field", field);
     swerveDrive.setModuleEncoderAutoSynchronize(false, 1);
@@ -229,11 +229,25 @@ public class SwerveSubsystem extends SubsystemBase {
   limelightFrontPoseEstimator = limelightFront.createPoseEstimator(EstimationMode.MEGATAG1);
 }
 
-@Override
-public void periodic() {
-    addVisionFromEstimator(limelightBackPoseEstimator);
-    addVisionFromEstimator(limelightFrontPoseEstimator);
+// Saniyede 50 kere ağır JSON dosyası indirmek yerine, veriyi ışık hızında NT4'e basıyoruz!
+  @Override
+  public void periodic() {
+    swerveDrive.updateOdometry();
     field.setRobotPose(swerveDrive.getPose());
+
+    // YAGSL'dan gerçek şasi hızını ve dönüşünü al
+    double yawDegrees = getHeading().getDegrees();
+    double yawVelocity = Math.toDegrees(getChassisSpeeds().omegaRadiansPerSecond);
+    
+    // MegaTag2 için Limelight'ın tam olarak beklediği veri dizilimi: [yaw, yawRate, pitch, pitchRate, roll, rollRate]
+    double[] orientationData = new double[] { yawDegrees, yawVelocity, 0.0, 0.0, 0.0, 0.0 };
+
+    // Veriyi ağır .save() metodu olmadan, doğrudan Limelight'ın NetworkTables beynine çakıyoruz!
+    edu.wpi.first.networktables.NetworkTableInstance.getDefault().getTable("limelight-back").getEntry("robot_orientation_set").setDoubleArray(orientationData);
+    edu.wpi.first.networktables.NetworkTableInstance.getDefault().getTable("limelight-front").getEntry("robot_orientation_set").setDoubleArray(orientationData);
+            
+    addVisionFromEstimator(limelightBackPoseEstimator);
+    addVisionFromEstimator(limelightFrontPoseEstimator);  
   }
 
     private void addVisionFromEstimator(LimelightPoseEstimator estimator) {

@@ -11,7 +11,6 @@ import java.util.function.Supplier;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
@@ -39,17 +38,17 @@ public class TurretSubsystem extends SubsystemBase {
     private final SparkMax turretMotor = new SparkMax(Constants.Turret.turretMotor, MotorType.kBrushless);
     
     private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
-            .withClosedLoopController(2.3 ,0, 0.23)
+            .withClosedLoopController(2.3, 0, 0.23)
             .withGearing(new MechanismGearing(Constants.Turret.gearRatio)) 
             .withIdleMode(MotorMode.BRAKE)
-            .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
+            .withTelemetry("TurretMotor", TelemetryVerbosity.LOW)
             .withStatorCurrentLimit(Amps.of(40)) 
-            // DÜZELTME 1: ESKİ KODDAKİ GİBİ MOTORU TEKRAR TRUE YAPTIK! (Ters kaçmasını çözer)
             .withMotorInverted(true)
             .withClosedLoopRampRate(Seconds.of(0.25))
             .withOpenLoopRampRate(Seconds.of(0.25))
             .withSoftLimit(Rotations.of(-0.325), Rotations.of(0.350)) 
-            .withFeedforward(new ArmFeedforward(0, 0, 0.5))
+            // HATA DÜZELTİLDİ: Yatay dönen taret için SimpleMotorFeedforward kullanıldı!
+            .withFeedforward(new SimpleMotorFeedforward(0, 0.0, 0)) 
             .withControlMode(ControlMode.CLOSED_LOOP);
                         
     private final SmartMotorController turretSMC = new SparkWrapper(turretMotor, DCMotor.getNEO(1), motorConfig);
@@ -57,7 +56,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final PivotConfig turretConfig = new PivotConfig(turretSMC)
             .withMOI(Meters.of(0.24), Pounds.of(2))
             .withStartingPosition(Rotations.of(0))
-            .withTelemetry("TurretMech", TelemetryVerbosity.HIGH)
+            .withTelemetry("TurretMech", TelemetryVerbosity.LOW)
             .withHardLimit(Rotations.of(-0.5), Rotations.of(0.350));
 
     private final Pivot turret = new Pivot(turretConfig);
@@ -69,6 +68,7 @@ public class TurretSubsystem extends SubsystemBase {
         Angle wrapped = edu.wpi.first.units.Units.Rotations.of(MathUtil.inputModulus(offsetAngle.in(edu.wpi.first.units.Units.Rotations), -0.5, 0.5));
         turretSMC.setPosition(wrapped);
     }
+
     public Command setAngle(Angle angle) {
         Angle offsetAngle = angle.minus(Rotations.of(0.25));
         Angle wrapped = Rotations.of(MathUtil.inputModulus(offsetAngle.in(Rotations), -0.5, 0.5));

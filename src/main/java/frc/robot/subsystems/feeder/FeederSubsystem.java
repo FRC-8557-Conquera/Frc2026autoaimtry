@@ -59,7 +59,7 @@ public class FeederSubsystem extends SubsystemBase {
         RotationsPerSecondPerSecond.of(1000)) // TODO: Change the PID values
         .withGearing(new MechanismGearing(4))
         .withIdleMode(MotorMode.BRAKE)
-        .withTelemetry("FeederMotor", TelemetryVerbosity.HIGH)
+        .withTelemetry("FeederMotor", TelemetryVerbosity.LOW)
         .withStatorCurrentLimit(Amps.of(40))
         .withMotorInverted(false)
         .withClosedLoopRampRate(Seconds.of(0))

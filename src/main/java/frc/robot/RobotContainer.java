@@ -4,7 +4,10 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Degree;
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -51,6 +54,7 @@ public class RobotContainer {
   private final JoystickButton turretZero = new JoystickButton(driver, 2);
   private final JoystickButton intakeToggleButonu = new JoystickButton(driver, 4);
   private final JoystickButton rollerButonu = new JoystickButton(driver, 5); 
+  private final JoystickButton debugShoot = new JoystickButton(driver2, 8);
 /*private final JoystickButton feederAl = new JoystickButton(driver2, 3);
   private final JoystickButton feederTers = new JoystickButton(driver2, 4);
   private final JoystickButton spindexerF = new JoystickButton(driver2, 5);
@@ -124,6 +128,7 @@ public class RobotContainer {
     
     // YENİDEN AKTİF EDİLDİ: Taretin hedefi canlı takip etmesini sağlayan Default Command
     turret.setDefaultCommand(turret.setAngle(() -> shooter.getTurretSetpoint()));
+    
   }
 
   private void configureButtonBindings() {
@@ -156,11 +161,9 @@ public class RobotContainer {
     //hoodUpTest.whileTrue(hood.rotateDutyCycle(0.3)).onFalse(hood.stop());
    // hoodDownTest.whileTrue(hood.rotateDutyCycle(-0.3)).onFalse(hood.stop());
 
-    // ==========================================================
-    // KUSURSUZ FLYWHEEL TETİK KOMUTU (SADECE BİR KERE YAZILDI)
-    // 2. Kolun (Operator / driver2) Sağ Tetiğini (Axis 3) dinler!
-    // ==========================================================
-    flywheel.setDefaultCommand(flywheel.runFromTrigger(() -> driver.getRawAxis(3)));
+    // flywheel.setDefaultCommand(flywheel.runFromTrigger(() -> driver.getRawAxis(3)));
+    debugShoot.whileTrue(shooter.debugShoot()).whileFalse(flywheel.setVelocity(() -> RotationsPerSecond.of(0)));
+    
     // Rakip Saha Kontrol Tetikleyicisi
     Trigger opponentSideTrigger = new Trigger(() -> {
         Pose2d pose = s_Swerve.getPose();

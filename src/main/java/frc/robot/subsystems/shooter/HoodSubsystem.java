@@ -8,7 +8,7 @@ import static edu.wpi.first.units.Units.Seconds;
 
 import java.util.function.Supplier;
 
-import com.revrobotics.spark.SparkMax; // Neo Vortex SparkFlex ile sürülse de kütüphanede aynı sınıfla çağrılabilir, takımınıza göre SparkFlex ile değiştirebilirsiniz.
+import com.revrobotics.spark.SparkMax; 
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
 import edu.wpi.first.math.controller.ArmFeedforward;
@@ -28,18 +28,22 @@ import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
-import yams.motorcontrollers.local.SparkWrapper; // TalonFXWrapper yerine SparkWrapper!
+import yams.motorcontrollers.local.SparkWrapper; 
 
 public class HoodSubsystem extends SubsystemBase {
+    // SIFIRLAMA İÇİN GEREKLİ DEĞİŞKENLER
+    private boolean hoodZeroed = false;
+    private double startTime = 0;
+
     // VORTEX MOTOR
     private final SparkMax hoodMotor = new SparkMax(Hood.hoodMotor, MotorType.kBrushless);
     private final DutyCycleEncoder hoodAbsoluteEncoder = new DutyCycleEncoder(Hood.encoderPort);
     
     private final SmartMotorControllerConfig hoodMotorConfig = new SmartMotorControllerConfig(this)
-            .withClosedLoopController(1.5, 0, 0)
+            .withClosedLoopController(2.0, 0, 0)
             .withGearing(new MechanismGearing(Hood.gearRatio)) 
             .withIdleMode(MotorMode.BRAKE)
-            .withTelemetry("HoodMotor", TelemetryVerbosity.HIGH)
+            .withTelemetry("HoodMotor", TelemetryVerbosity.LOW)
             .withStatorCurrentLimit(Amps.of(40))
             .withMotorInverted(false)
             .withClosedLoopRampRate(Seconds.of(0.25))
@@ -47,25 +51,29 @@ public class HoodSubsystem extends SubsystemBase {
             .withFeedforward(new ArmFeedforward(0, 0, 0))
             .withControlMode(ControlMode.CLOSED_LOOP);
             
-    // DCMotor.getNeoVortex olarak tanımlandı!
     private final SmartMotorController hoodSMC = new SparkWrapper(hoodMotor, DCMotor.getNeoVortex(1), hoodMotorConfig);
-
+    
     private final ArmConfig hoodConfig = new ArmConfig(hoodSMC)
             .withStartingPosition(Degrees.of(Hood.minAngleDegrees)) 
             .withLength(Inches.of(6)).withMass(Pounds.of(1))     
-            .withTelemetry("HoodMech", TelemetryVerbosity.HIGH)
+            .withTelemetry("HoodMech", TelemetryVerbosity.LOW)
             .withSoftLimits(Degrees.of(Hood.minAngleDegrees), Degrees.of(Hood.maxAngleDegrees))
             .withHardLimit(Degrees.of(Hood.minAngleDegrees - 2), Degrees.of(Hood.maxAngleDegrees + 2));
             
     private final Arm hood = new Arm(hoodConfig);
 
     public HoodSubsystem() {
-        double currentAbsoluteAngleDeg = (hoodAbsoluteEncoder.get() * 360.0) - Hood.hoodOffsetDeg;
-        double motorRotations = (currentAbsoluteAngleDeg / 360.0) * Hood.gearRatio;
-        hoodMotor.getEncoder().setPosition(motorRotations);
+
     }
 
-    public Angle getAngle() { return hood.getAngle(); }
+    // ABSOLUTE ENKODERDEN GERÇEK DERECEYİ OKUMA METODU
+    private double getAbsoluteAngleDeg() {
+        return (hoodAbsoluteEncoder.get() * 360.0) - Hood.hoodOffsetDeg;
+    }
+
+    public Angle getAngle() { 
+        return hood.getAngle(); 
+    }
 
     // MANUEL TEST METODU (Yavaş Dönüş)
     public Command rotateDutyCycle(double dutyCycle) {
@@ -81,8 +89,20 @@ public class HoodSubsystem extends SubsystemBase {
         hood.updateTelemetry();
         SmartDashboard.putNumber("Hood/ThroughBore_Raw", hoodAbsoluteEncoder.get());
         SmartDashboard.putNumber("Hood/Relative_Angle_Deg", hood.getAngle().in(Degrees));
+        SmartDashboard.putNumber("Hood/Absolute_Calc_Deg", getAbsoluteAngleDeg());
         SmartDashboard.putBoolean("Hood/Encoder_Connected", hoodAbsoluteEncoder.isConnected());
+
+        if (!hoodZeroed) {
+            if (startTime == 0) {
+                startTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
+            } else if (edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - startTime > 1.5) {
+                hoodMotor.getEncoder().setPosition(0);
+                
+                hoodZeroed = true; // Sadece 1 kere çalışır ve kilitlenir
+            }
+        }
     }
+    
     // SİLİNEN HAYATİ METOTLAR GERİ GELDİ
     public Command setAngle(Angle angle) {
         return hood.setAngle(angle);

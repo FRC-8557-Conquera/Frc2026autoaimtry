@@ -38,7 +38,9 @@ public class ShooterSubsystem extends SubsystemBase {
     public TurretSubsystem turret = new TurretSubsystem();
     public FlywheelSubsystem flywheel = new FlywheelSubsystem();
     public HoodSubsystem hood = new HoodSubsystem();
-    public GenericEntry entry;
+    public GenericEntry flywheelEntry;
+    public GenericEntry hoodEntry;
+    private int trajTickCounter = 0; // Görselleştirme sayacı
     
     private static class SimulatedFuel {
         double x, y, z;
@@ -66,23 +68,30 @@ public class ShooterSubsystem extends SubsystemBase {
     public ShooterSubsystem(SwerveSubsystem swerve) {
         this.swerve = swerve;
         buildLookupTables();
-        tab = Shuffleboard.getTab("Shooter");
-        entry = tab.addPersistent("Flywheel Speed (RPS)", 40)
+        flywheelEntry = Shuffleboard.getTab("Shooter")
+            .add("FlywheelSpeed", 40.0)
+            .withWidget(BuiltInWidgets.kNumberSlider)
+            .getEntry();
+        hoodEntry = Shuffleboard.getTab("Shooter")
+            .add("HoodAngle", 0.0)
             .withWidget(BuiltInWidgets.kNumberSlider)
             .getEntry();
     }
 
     @Override
     public void periodic() {
-        SmartDashboard.putNumber("Distance", getHubDistance().in(Meters));
-        SmartDashboard.putNumber("Slider", entry.getDouble(10));
         SmartDashboard.putBoolean("hubButtonPressed", intent != ShotIntent.OFF);
         updateTrajectoryVisualization();
     }
 
+    
+
     public Command debugShoot() {
-        double speedRPS = entry.getDouble(40);
-        return flywheel.setVelocity(() -> RotationsPerSecond.of(speedRPS));
+        return flywheel.setVelocity(() -> RotationsPerSecond.of(flywheelEntry.getDouble(40.0)));
+    }
+
+    public Command debugHood() {
+        return hood.setAngle(() -> Degrees.of(hoodEntry.getDouble(0.0)));
     }
 
     public void setIntent(ShotIntent intent) { this.intent = intent; }
@@ -107,6 +116,9 @@ public class ShooterSubsystem extends SubsystemBase {
             
             // DÜZELTME 2: ESKİ KODDAKİ 180 DERECE FLIP YAMASI EKLENDİ! (Uzağa bakmayı çözer)
             Rotation2d fieldAngle = targetTranslation.minus(turretFieldPosition).getAngle().plus(Rotation2d.k180deg);
+            double dist = targetTranslation.minus(turretFieldPosition).getNorm();
+
+            SmartDashboard.putNumber("Shooter/Distance", dist);
             
             double setpointDeg = fieldAngle.minus(robotPose.getRotation()).getDegrees();
             return Degrees.of((setpointDeg));
@@ -163,6 +175,17 @@ public class ShooterSubsystem extends SubsystemBase {
     public enum ShotIntent { HUB, SOTM, DUMP, OFF }
 
     public void updateTrajectoryVisualization() {
+        // EĞER OFF MODUNDAYSAK (ATEŞ ETMİYORSAK) RAM'İ YORMA, SADECE ÇİZGİYİ SİL VE ÇIK!
+        if (intent == ShotIntent.OFF) {
+            Logger.recordOutput("AdvantageScope/Shooter_Trajectory", new Pose3d[0]);
+            return; 
+        }
+
+        // TİCK SAYACI: İşlemi her 20ms'de bir değil, her 100ms'de bir (5 tick) yapıyoruz!
+        trajTickCounter++;
+        if (trajTickCounter < 5) return; 
+        trajTickCounter = 0;
+
         Pose2d robotPose = swerve.getPose(); 
         double hoodPitch = getHoodSetpoint().in(Radians);        
         double turretYaw = getTurretSetpoint().in(Radians);        

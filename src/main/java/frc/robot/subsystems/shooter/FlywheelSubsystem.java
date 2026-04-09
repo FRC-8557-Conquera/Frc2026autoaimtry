@@ -40,7 +40,7 @@ public class FlywheelSubsystem extends SubsystemBase {
       .withClosedLoopController(0.2, 0.0, 0.005, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))
       .withGearing(new MechanismGearing(1))                      
       .withIdleMode(MotorMode.BRAKE)
-      .withTelemetry("FlywheelMotor", TelemetryVerbosity.HIGH)
+      .withTelemetry("FlywheelMotor", TelemetryVerbosity.LOW)
       .withSupplyCurrentLimit(Amps.of(40))
       .withMotorInverted(false)
       .withClosedLoopRampRate(Seconds.of(0))
@@ -53,7 +53,7 @@ public class FlywheelSubsystem extends SubsystemBase {
   private final FlyWheelConfig flywheelConfig = new FlyWheelConfig(motor)
       .withDiameter(Inches.of(4))
       .withMass(Pounds.of(1))
-      .withTelemetry("FlywheelMech", TelemetryVerbosity.HIGH)
+      .withTelemetry("FlywheelMech", TelemetryVerbosity.LOW)
       .withSoftLimit(RotationsPerSecond.of(-100), RotationsPerSecond.of(100))
       .withSpeedometerSimulation(RotationsPerSecond.of(120));
 
@@ -115,8 +115,8 @@ public class FlywheelSubsystem extends SubsystemBase {
           }
       });
   }
+  
   // =========================================================================
-
   @Override
   public void periodic() {
     double velocityRPS = getVelocity().in(RotationsPerSecond);
