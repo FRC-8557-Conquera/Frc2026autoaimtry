@@ -99,23 +99,29 @@ public class ShooterSubsystem extends SubsystemBase {
     
     public Angle getTurretSetpoint() {
         Pose2d robotPose = swerve.getPose();
-        Translation2d turretOffset = new Translation2d(Turret.turretDist, 0); 
+        Translation2d turretOffset = new Translation2d(-0.125, -0.105); 
         Translation2d turretFieldPosition = robotPose.getTranslation().plus(turretOffset.rotateBy(robotPose.getRotation()));
 
         if (intent == ShotIntent.HUB || intent == ShotIntent.SOTM) {
             Translation2d targetTranslation = (intent == ShotIntent.SOTM) ? getVirtualTarget() : getHubPose().getTranslation();
-            Rotation2d fieldAngle = targetTranslation.minus(turretFieldPosition).getAngle();
-            double setpointDeg = fieldAngle.minus(robotPose.getRotation()).getDegrees();
             
-            return Degrees.of((setpointDeg)); // Akıllı korumayı kullan!
+            // DÜZELTME 2: ESKİ KODDAKİ 180 DERECE FLIP YAMASI EKLENDİ! (Uzağa bakmayı çözer)
+            Rotation2d fieldAngle = targetTranslation.minus(turretFieldPosition).getAngle().plus(Rotation2d.k180deg);
+            
+            double setpointDeg = fieldAngle.minus(robotPose.getRotation()).getDegrees();
+            return Degrees.of((setpointDeg));
         }
 
         if (intent == ShotIntent.DUMP) {
             Translation2d virtualDropZone = getDumpVirtualTarget();
-            Rotation2d turretRelative = virtualDropZone.minus(turretFieldPosition).getAngle().minus(robotPose.getRotation()); 
-            
-            return Degrees.of((turretRelative.getDegrees())); // Akıllı korumayı kullan!
+            // Dump için de 180 flip eklendi
+            Rotation2d fieldAngle = virtualDropZone.minus(turretFieldPosition).getAngle().plus(Rotation2d.k180deg);
+            Rotation2d turretRelative = fieldAngle.minus(robotPose.getRotation()); 
+            return Degrees.of((turretRelative.getDegrees())); 
         }
+        
+        // OFF iken tarete "olduğun yerde kal" demek için iç açıya 0.25 eklememiz lazım,
+        // çünkü setAngle() her zaman 0.25 çıkarıyor. Eklemezsen feedback döngüsü oluşur ve taret döner.
         return Rotations.of(0.25);
     }
 
@@ -246,7 +252,6 @@ public class ShooterSubsystem extends SubsystemBase {
                 poseArray.add(new Pose3d(fuel.x, fuel.y, fuel.z, new Rotation3d()));
             }
         }
-        // 3. DÜZELTME: Simüle edilen uçan topları modern Struct ile yolla
         Logger.recordOutput("AdvantageScope/FlyingFuels", poseArray.toArray(new Pose3d[0]));
     }
 
@@ -281,30 +286,26 @@ public class ShooterSubsystem extends SubsystemBase {
     public boolean isReadyToShoot() {
         if (intent == ShotIntent.OFF) return false;
         
-        // 1. Flywheel Kontrolü
         double flywheelRPS = flywheel.getVelocity().in(RotationsPerSecond);
         double targetRPS = getFlywheelSetpoint().in(RotationsPerSecond);
         boolean flywheelReady = Math.abs(flywheelRPS - targetRPS) < 1.5;
 
-        // 2. Taret Açı Kontrolü 
         double turretDeg = turret.getAngle().in(Degrees);
         double targetDeg = getTurretSetpoint().in(Degrees);
         double turretError = MathUtil.inputModulus(turretDeg - targetDeg, -180.0, 180.0);
         boolean turretReady = Math.abs(turretError) < 2.0;
 
-        // 3. EKSİK OLAN HOOD (ŞAPKA) KONTROLÜ EKLENDİ!
         double hoodDeg = hood.getAngle().in(Degrees);
         double targetHoodDeg = getHoodSetpoint().in(Degrees);
-        boolean hoodReady = Math.abs(hoodDeg - targetHoodDeg) < 1.5; // 1.5 derece hata payı
+        boolean hoodReady = Math.abs(hoodDeg - targetHoodDeg) < 1.5; 
 
         Logger.recordOutput("Ready_Debug/FlywheelReady", flywheelReady);
         Logger.recordOutput("Ready_Debug/TurretReady", turretReady);
-        Logger.recordOutput("Ready_Debug/HoodReady", hoodReady); // Ekranda gör
+        Logger.recordOutput("Ready_Debug/HoodReady", hoodReady); 
         Logger.recordOutput("Ready_Debug/Intent", intent.name());
         
         if (edu.wpi.first.wpilibj.RobotBase.isSimulation()) return true; 
 
-        // Üçü de yeşil yanmadan asla ateş etme!
         return flywheelReady && turretReady && hoodReady;
     }
 }

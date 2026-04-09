@@ -9,6 +9,7 @@ import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Volts;
 
+import com.ctre.phoenix6.SignalLogger;
 import com.fasterxml.jackson.databind.JsonSerializable.Base;
 
 import edu.wpi.first.math.geometry.Translation2d;
@@ -57,6 +58,9 @@ public class Robot extends LoggedRobot
         
         // Loglama sistemini başlat!
         Logger.start();
+
+        SignalLogger.setPath("/home/lvuser/hoot_logs");
+        SignalLogger.start();
 
         // RobotContainer her zaman Logger.start() işleminden SONRA tanımlanmalıdır!
         robotContainer = new RobotContainer();

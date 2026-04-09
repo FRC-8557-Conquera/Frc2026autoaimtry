@@ -39,10 +39,11 @@ public class TurretSubsystem extends SubsystemBase {
     
     private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
             .withClosedLoopController(1.5, 0, 0)
-            .withGearing(new MechanismGearing(Constants.Turret.gearRatio)) // 16.0 ORANI BURADA!
+            .withGearing(new MechanismGearing(Constants.Turret.gearRatio)) 
             .withIdleMode(MotorMode.BRAKE)
             .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
-            .withStatorCurrentLimit(Amps.of(40)) // Neo'yu yakmamak için 40'a çektim
+            .withStatorCurrentLimit(Amps.of(40)) 
+            // DÜZELTME 1: ESKİ KODDAKİ GİBİ MOTORU TEKRAR TRUE YAPTIK! (Ters kaçmasını çözer)
             .withMotorInverted(true)
             .withClosedLoopRampRate(Seconds.of(0.25))
             .withOpenLoopRampRate(Seconds.of(0.25))
@@ -56,19 +57,15 @@ public class TurretSubsystem extends SubsystemBase {
             .withMOI(Meters.of(0.24), Pounds.of(2))
             .withStartingPosition(Rotations.of(0))
             .withTelemetry("TurretMech", TelemetryVerbosity.HIGH)
-            // -180 ve +180 sınırları Hard Limit olarak da eklendi
             .withHardLimit(Rotations.of(-0.5), Rotations.of(0.350));
 
     private final Pivot turret = new Pivot(turretConfig);
 
     public TurretSubsystem() {}
 
-    // ShootCommand gibi Execute içinde sürekli çağrılan yerler için DIREKT set metodu (Command döndürmez)
     public void setAngleDirect(Angle angle) {
         Angle offsetAngle = angle.minus(edu.wpi.first.units.Units.Rotations.of(0.25));
         Angle wrapped = edu.wpi.first.units.Units.Rotations.of(MathUtil.inputModulus(offsetAngle.in(edu.wpi.first.units.Units.Rotations), -0.5, 0.5));
-        
-        // YAMS altyapısında direkt pozisyon vermek için Motor Controller'a erişiyoruz
         turretSMC.setPosition(wrapped);
     }
     public Command setAngle(Angle angle) {
@@ -90,10 +87,9 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public Command sysId() {
-    return turret.sysId(Volts.of(7), Volts.of(0.5).per(Second), Seconds.of(8));
-  }
+        return turret.sysId(Volts.of(7), Volts.of(0.5).per(Second), Seconds.of(8));
+    }
 
-    // MANUEL TEST METODU (Yavaş Dönüş)
     public Command rotateDutyCycle(double dutyCycle) {
         return run(() -> turretSMC.setDutyCycle(dutyCycle));
     }
@@ -105,7 +101,6 @@ public class TurretSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         turret.updateTelemetry();
-        // ELASTİC İÇİN VERİLER
         SmartDashboard.putNumber("Turret/ThroughBore_Raw", turretThroughBoreEncoder.get());
         SmartDashboard.putNumber("Turret/Absolute_Rotations", getAbsoluteAngle());
         SmartDashboard.putNumber("Turret/Relative_Angle_Deg", turret.getAngle().in(Degrees));
@@ -115,7 +110,6 @@ public class TurretSubsystem extends SubsystemBase {
             if (startTime == 0) {
                 startTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
             } else if (edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - startTime > 2.0) {
-                // Orana (16) bölerek sıfırlama yapıyoruz
                 turretMotor.getEncoder().setPosition(getAbsoluteAngle() / 16.0);
                 turretZeroed = true;
             }

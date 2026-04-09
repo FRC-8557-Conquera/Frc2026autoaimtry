@@ -40,7 +40,7 @@ public class RobotContainer {
   }
 
   private final Joystick driver = new Joystick(0);
-//  private final Joystick driver2 = new Joystick(1);
+  private final Joystick driver2 = new Joystick(1);
 
   // Sürüş Butonları
   private final JoystickButton zeroGyro = new JoystickButton(driver, 3);
@@ -59,7 +59,9 @@ public class RobotContainer {
   private final JoystickButton turretRightTest = new JoystickButton(driver, 8);
   private final JoystickButton hubButton = new JoystickButton(driver, 9);
   private final JoystickButton turretSysID = new JoystickButton(driver, 10);
-
+  
+  // Yazılım Butonları
+  private final JoystickButton flywheelSysID = new JoystickButton(driver2, 7);
 
   public FuelSim fuelSim = new FuelSim();  
 
@@ -132,6 +134,7 @@ public class RobotContainer {
                 .onFalse(Commands.runOnce(() -> intake.setRollerPower(0.0), intake));
 
     turretSysID.whileTrue(turret.sysId());
+    flywheelSysID.whileTrue(flywheel.sysId());
     
     // YENİDEN YAZILDI: Hub Butonu ile HUB moduna geçme ve bırakınca OFF moduna dönme işlemi
     hubButton.onTrue(Commands.run(() -> shooter.setIntent(ShotIntent.HUB)));
@@ -158,7 +161,6 @@ public class RobotContainer {
     // 2. Kolun (Operator / driver2) Sağ Tetiğini (Axis 3) dinler!
     // ==========================================================
     flywheel.setDefaultCommand(flywheel.runFromTrigger(() -> driver.getRawAxis(3)));
-
     // Rakip Saha Kontrol Tetikleyicisi
     Trigger opponentSideTrigger = new Trigger(() -> {
         Pose2d pose = s_Swerve.getPose();
