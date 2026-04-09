@@ -20,7 +20,7 @@
   },
   "encoder": {
     "type": "cancoder",
-    "id": 53,
+    "id": 28,
     "canbus": "*"
   },
   "absoluteEncoderInverted": false

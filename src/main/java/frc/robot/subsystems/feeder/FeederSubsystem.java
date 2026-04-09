@@ -60,7 +60,7 @@ public class FeederSubsystem extends SubsystemBase {
         .withGearing(new MechanismGearing(4))
         .withIdleMode(MotorMode.BRAKE)
         .withTelemetry("FeederMotor", TelemetryVerbosity.HIGH)
-        .withStatorCurrentLimit(Amps.of(60))
+        .withStatorCurrentLimit(Amps.of(40))
         .withMotorInverted(false)
         .withClosedLoopRampRate(Seconds.of(0))
         .withOpenLoopRampRate(Seconds.of(0))

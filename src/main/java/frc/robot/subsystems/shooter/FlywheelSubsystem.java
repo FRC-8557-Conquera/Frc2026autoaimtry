@@ -41,7 +41,7 @@ public class FlywheelSubsystem extends SubsystemBase {
       .withGearing(new MechanismGearing(1))                      
       .withIdleMode(MotorMode.BRAKE)
       .withTelemetry("FlywheelMotor", TelemetryVerbosity.HIGH)
-      .withSupplyCurrentLimit(Amps.of(80))
+      .withSupplyCurrentLimit(Amps.of(40))
       .withMotorInverted(false)
       .withClosedLoopRampRate(Seconds.of(0))
       .withOpenLoopRampRate(Seconds.of(0))   

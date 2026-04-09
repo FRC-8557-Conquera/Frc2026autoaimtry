@@ -11,6 +11,7 @@ import java.util.function.Supplier;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
@@ -38,7 +39,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final SparkMax turretMotor = new SparkMax(Constants.Turret.turretMotor, MotorType.kBrushless);
     
     private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
-            .withClosedLoopController(1.5, 0, 0)
+            .withClosedLoopController(2.3 ,0, 0.23)
             .withGearing(new MechanismGearing(Constants.Turret.gearRatio)) 
             .withIdleMode(MotorMode.BRAKE)
             .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
@@ -48,7 +49,7 @@ public class TurretSubsystem extends SubsystemBase {
             .withClosedLoopRampRate(Seconds.of(0.25))
             .withOpenLoopRampRate(Seconds.of(0.25))
             .withSoftLimit(Rotations.of(-0.325), Rotations.of(0.350)) 
-            .withFeedforward(new SimpleMotorFeedforward(0, 0, 0))
+            .withFeedforward(new ArmFeedforward(0, 0, 0.5))
             .withControlMode(ControlMode.CLOSED_LOOP);
                         
     private final SmartMotorController turretSMC = new SparkWrapper(turretMotor, DCMotor.getNEO(1), motorConfig);
