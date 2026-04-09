@@ -120,7 +120,7 @@ public class RobotContainer {
     configureButtonBindings();
     s_Swerve.zeroGyroWithAlliance();
     
-    // 2. HATA ÇÖZÜMÜ: Varsayılan komutu DOĞRU sisteme (Turret) ve CANLI YENİLEME ()-> ile atadık!
+    // YENİDEN AKTİF EDİLDİ: Taretin hedefi canlı takip etmesini sağlayan Default Command
     turret.setDefaultCommand(turret.setAngle(() -> shooter.getTurretSetpoint()));
   }
 
@@ -132,8 +132,9 @@ public class RobotContainer {
                 .onFalse(Commands.runOnce(() -> intake.setRollerPower(0.0), intake));
 
     turretSysID.whileTrue(turret.sysId());
-    hubButton.onTrue(new InstantCommand(() -> shooter.setIntent(ShotIntent.HUB)));
-
+    
+    // YENİDEN YAZILDI: Hub Butonu ile HUB moduna geçme ve bırakınca OFF moduna dönme işlemi
+    hubButton.onTrue(Commands.run(() -> shooter.setIntent(ShotIntent.HUB)));
   /*feederAl.whileTrue(feeder.feed()).onFalse(feeder.stop());
     feederTers.whileTrue(feeder.reverse()).onFalse(feeder.stop());
 

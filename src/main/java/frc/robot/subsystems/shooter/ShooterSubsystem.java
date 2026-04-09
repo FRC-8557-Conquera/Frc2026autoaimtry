@@ -96,27 +96,7 @@ public class ShooterSubsystem extends SubsystemBase {
         flywheelMap.put(4.5, 30.0); flywheelMap.put(5.5, 32.0);
     }
 
-    // 1. DÜZELTME: KABLO KOPARMA KORUMASI (Soft Limits & Wrap Logic)
-    private double wrapTurretAngle(double setpointDeg) {
-        double currentPosition = turret.getAngle().in(Degrees);
-        double deltaTheta = ((setpointDeg - currentPosition + 180.0) % 360.0) - 180.0;
-        double targetPosition = currentPosition + deltaTheta;
-
-        // Taretin fiziksel dönüş sınırları (Örn: -180 ile 180 arası)
-        double L_min = -180.0; 
-        double L_max = 180.0;  
-
-        // Eğer en kısa yol sınırı aşıyorsa, taretin ters yönden (uzun yoldan) dönmesini sağla
-        if (targetPosition > L_max) {
-            targetPosition -= 360.0;
-        } else if (targetPosition < L_min) {
-            targetPosition += 360.0;
-        }
-
-        // Son güvenlik: Kesinlikle sınırların dışına çıkma
-        return MathUtil.clamp(targetPosition, L_min, L_max);
-    }
-
+    
     public Angle getTurretSetpoint() {
         Pose2d robotPose = swerve.getPose();
         Translation2d turretOffset = new Translation2d(Turret.turretDist, 0); 
@@ -127,14 +107,14 @@ public class ShooterSubsystem extends SubsystemBase {
             Rotation2d fieldAngle = targetTranslation.minus(turretFieldPosition).getAngle();
             double setpointDeg = fieldAngle.minus(robotPose.getRotation()).getDegrees();
             
-            return Degrees.of(wrapTurretAngle(setpointDeg)); // Akıllı korumayı kullan!
+            return Degrees.of((setpointDeg)); // Akıllı korumayı kullan!
         }
 
         if (intent == ShotIntent.DUMP) {
             Translation2d virtualDropZone = getDumpVirtualTarget();
             Rotation2d turretRelative = virtualDropZone.minus(turretFieldPosition).getAngle().minus(robotPose.getRotation()); 
             
-            return Degrees.of(wrapTurretAngle(turretRelative.getDegrees())); // Akıllı korumayı kullan!
+            return Degrees.of((turretRelative.getDegrees())); // Akıllı korumayı kullan!
         }
         return Rotations.of(0.25);
     }

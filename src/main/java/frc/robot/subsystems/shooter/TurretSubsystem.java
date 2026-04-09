@@ -29,7 +29,6 @@ import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.local.SparkWrapper;
 import static edu.wpi.first.units.Units.Second;
-import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
 public class TurretSubsystem extends SubsystemBase {
@@ -44,10 +43,10 @@ public class TurretSubsystem extends SubsystemBase {
             .withIdleMode(MotorMode.BRAKE)
             .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
             .withStatorCurrentLimit(Amps.of(40)) // Neo'yu yakmamak için 40'a çektim
-            .withMotorInverted(false)
+            .withMotorInverted(true)
             .withClosedLoopRampRate(Seconds.of(0.25))
             .withOpenLoopRampRate(Seconds.of(0.25))
-            .withSoftLimit(Rotations.of(-0.325), Rotations.of(0.475)) 
+            .withSoftLimit(Rotations.of(-0.325), Rotations.of(0.350)) 
             .withFeedforward(new SimpleMotorFeedforward(0, 0, 0))
             .withControlMode(ControlMode.CLOSED_LOOP);
                         
@@ -86,7 +85,7 @@ public class TurretSubsystem extends SubsystemBase {
     public Angle getAngle() { return turret.getAngle(); }
 
     private double getAbsoluteAngle() {
-        double raw = ((turretThroughBoreEncoder.get() - Constants.Turret.encoderOffset) % 1 + 0.5) % 1 - 0.5;
+        double raw = ((turretThroughBoreEncoder.get() - Constants.Turret.encoderOffset) % 1.0 + 0.5) % 1.0 - 0.5;
         return raw;
     }
 
@@ -117,7 +116,7 @@ public class TurretSubsystem extends SubsystemBase {
                 startTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
             } else if (edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - startTime > 2.0) {
                 // Orana (16) bölerek sıfırlama yapıyoruz
-                turretMotor.getEncoder().setPosition(getAbsoluteAngle() / 4.0);
+                turretMotor.getEncoder().setPosition(getAbsoluteAngle() / 16.0);
                 turretZeroed = true;
             }
         }
