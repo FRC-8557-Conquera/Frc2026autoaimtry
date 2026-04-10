@@ -1,47 +1,57 @@
 package frc.robot.commands;
 
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
 import frc.robot.subsystems.feeder.FeederSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.spindexer.SpindexerSubsystem;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 public class ShootCommand extends Command {
     private final SpindexerSubsystem spindexer;
     private final FeederSubsystem feeder;
     private final ShooterSubsystem shooter;
+    
+    // KODDAN DEĞİŞTİREBİLECEĞİN SABİT HIZ (40 RPS = 2400 RPM)
+    private final double TARGET_RPS = 40.0; 
 
     public ShootCommand(SpindexerSubsystem spindexer, FeederSubsystem feeder, ShooterSubsystem shooter) {
         this.spindexer = spindexer;
         this.feeder = feeder;
         this.shooter = shooter;
         
-        // KRİTİK DÜZELTME: Kullanılan Tonal alt sistemler Require edilmeli.
-        // Böylece Scheduler bu komutu iptal ettiğinde motorlar yetkisiz kalmaz.
+        // Otonomda alt sistemlerin çakışmasını engellemek için Require zorunludur
         addRequirements(spindexer, feeder, shooter.flywheel); 
     }
 
     @Override
     public void initialize() {
-        // .schedule() çağrıları tamamen kaldırıldı.
+        // Başlangıç temizliği
     }
 
     @Override
     public void execute() {
-        // Maç içi veya test sırasında Elastic'ten anlık RPS verisini çek.
-        // Execute döngüsü saniyede 50 kez (20ms) çalıştığı için değer değiştiği an motora yansır.
-        double currentRPS = SmartDashboard.getNumber("FlywheelSpeed", 40.0);
+        // 1. FLYWHEEL'E GÜCÜ VER (Hedef: 40 RPS)
+        shooter.flywheel.setRPSDirect(TARGET_RPS);
         
-        // Alt sistemlerde tanımladığın Direct metotları ile motorlara güç ver
-        shooter.flywheel.setRPSDirect(currentRPS);
-        feeder.setDutyCycleDirect(Constants.Feeder.feedSpeed);
-        spindexer.setDutyCycleDirect(Constants.Spindexer.spindexerspeed);
+        // 2. SÜRÜCÜ 2'NİN YAPTIĞI "BEKLE-FIRLAT" MANTIĞI
+        double currentRPS = shooter.flywheel.getVelocity().in(RotationsPerSecond);
+        
+        // Eğer motor hedef hıza yaklaştıysa (2.0 RPS hata payı ile)
+        if (Math.abs(currentRPS - TARGET_RPS) < 2.0) { 
+            // Topu fırlat!
+            feeder.setDutyCycleDirect(Constants.Feeder.feedSpeed);
+            spindexer.setDutyCycleDirect(Constants.Spindexer.spindexerspeed);
+        } else {
+            // Motor hala devir alıyor, topu erken verip sıkıştırma! Durdur.
+            feeder.stopDirect();
+            spindexer.stopDirect();
+        }
     }
 
     @Override
     public void end(boolean interrupted) {
-        // Otonomdaki 5 saniyelik deadline bittiğinde veya teleop'ta tuş bırakıldığında motorlar anında durur.
+        // Komut (PathPlanner'daki wait süresi dolunca) bittiğinde her şeyi sustur
         shooter.flywheel.stopDirect();
         feeder.stopDirect();
         spindexer.stopDirect();
@@ -49,6 +59,7 @@ public class ShootCommand extends Command {
     
     @Override
     public boolean isFinished() {
-        return false; // Komut dışarıdan bir trigger veya timeout ile kesilene kadar çalışmaya devam eder.
+        // İstediğin gibi, komut kod içinde asla kendi kendine bitmez, süreyi PathPlanner yönetir.
+        return false; 
     }
 }
