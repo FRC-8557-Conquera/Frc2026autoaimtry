@@ -3,37 +3,32 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 4.396690391459075,
-        "y": 7.139027283511269
+        "x": 3.762,
+        "y": 7.406
       },
       "prevControl": null,
       "nextControl": {
-        "x": 4.837817319098459,
-        "y": 7.3434519572953745
+        "x": 4.7620000000000005,
+        "y": 7.406
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 7.116,
-        "y": 7.0
+        "x": 6.614110718492345,
+        "y": 6.102190812720848
       },
       "prevControl": {
-        "x": 6.438172404005127,
-        "y": 7.215188861401703
+        "x": 7.0307538280329815,
+        "y": 7.501684334511189
       },
       "nextControl": null,
       "isLocked": false,
       "linkedName": null
     }
   ],
-  "rotationTargets": [
-    {
-      "waypointRelativePos": 0.5,
-      "rotationDegrees": -5.276679467819513
-    }
-  ],
+  "rotationTargets": [],
   "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [],
@@ -47,7 +42,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -66.0
+    "rotation": 0.0
   },
   "reversed": false,
   "folder": "sol cycle",

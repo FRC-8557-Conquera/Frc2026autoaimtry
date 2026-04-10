@@ -3,7 +3,7 @@
   "robotLength": 0.82,
   "holonomicMode": true,
   "pathFolders": [
-    "sol 2cycle"
+    "sol cycle"
   ],
   "autoFolders": [],
   "defaultMaxVel": 5.0,

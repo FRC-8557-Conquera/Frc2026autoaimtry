@@ -73,6 +73,13 @@ public class FlywheelSubsystem extends SubsystemBase {
     setPoint = speed.in(RotationsPerSecond);
     return flywheel.setSpeed(speed);
   }
+  public void setRPSDirect(double rps) {
+    // Command DÖNDÜRMEDEN direkt motora hızı bas
+    flywheel.setSpeed(RotationsPerSecond.of(rps));  
+  }
+  public void stopDirect() {
+    motor.setDutyCycle(0.0);
+  }
 
   public Command setDutyCycle(double dutyCycle) {
     return flywheel.set(dutyCycle);

@@ -20,8 +20,8 @@
         "y": 7.3434519572953745
       },
       "prevControl": {
-        "x": 7.06497034400949,
-        "y": 7.440284697508897
+        "x": 7.066403409446135,
+        "y": 7.3434519572953745
       },
       "nextControl": null,
       "isLocked": false,
@@ -45,7 +45,7 @@
     "rotation": 0.0
   },
   "reversed": false,
-  "folder": "sol 2cycle",
+  "folder": "sol cycle",
   "idealStartingState": {
     "velocity": 0,
     "rotation": -90.0

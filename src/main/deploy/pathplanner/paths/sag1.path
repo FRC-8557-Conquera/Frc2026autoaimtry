@@ -4,12 +4,12 @@
     {
       "anchor": {
         "x": 4.396690391459075,
-        "y": 7.139027283511269
+        "y": 0.860972716488731
       },
       "prevControl": null,
       "nextControl": {
         "x": 4.837817319098459,
-        "y": 7.3434519572953745
+        "y": 0.6565480427046255
       },
       "isLocked": false,
       "linkedName": null
@@ -17,11 +17,11 @@
     {
       "anchor": {
         "x": 7.116,
-        "y": 7.0
+        "y": 1.0
       },
       "prevControl": {
         "x": 6.438172404005127,
-        "y": 7.215188861401703
+        "y": 0.784811138598297
       },
       "nextControl": null,
       "isLocked": false,
@@ -31,7 +31,7 @@
   "rotationTargets": [
     {
       "waypointRelativePos": 0.5,
-      "rotationDegrees": -5.276679467819513
+      "rotationDegrees": 5.276679467819513
     }
   ],
   "constraintZones": [],
@@ -47,10 +47,10 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -66.0
+    "rotation": 66.0
   },
   "reversed": false,
-  "folder": "sol cycle",
+  "folder": "sag cycle",
   "idealStartingState": {
     "velocity": 0,
     "rotation": 0.0

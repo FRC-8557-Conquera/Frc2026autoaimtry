@@ -1,0 +1,49 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "sol1"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "sol2"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "sol3"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "sol4"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "sol5"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "sol6"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}
