@@ -32,13 +32,14 @@ public class YerToplamaCommand extends Command {
         // Intake tekerlekleri topu içeri çeksin
         intake.setRollerPower(Constants.Intake.rollerInSpeed);
         feeder.setMotor(Constants.Feeder.feedSpeed);
-        // Spindexer topu depolamak için dönsün (Kendi spindexer metodunuza göre güncelleyin)
+        // Spindexer topu depolamak için dönsün 
+        // (Kendi spindexer metodunuza göre güncelleyin)
         spindexer.setMotor(Constants.Spindexer.spindexerspeed); 
     }
 
     @Override
     public void end(boolean interrupted) {
-        // KOMUT BİTTİĞİNDE (Veya buton bırakıldığında) MÜKEMMEL KORUMA:
+        // KOMUT BİTTİĞİNDE (Veya buton bırakıldığında) :
         // Motorları durdur
         intake.setRollerPower(0.0);
         spindexer.setMotor(0.0);

@@ -64,6 +64,8 @@ public class Robot extends LoggedRobot
 
         // RobotContainer her zaman Logger.start() işleminden SONRA tanımlanmalıdır!
         robotContainer = new RobotContainer();
+
+        SmartDashboard.putNumber("FlywheelSpeed", 40.0);
     }
 
     public Robot()
@@ -75,6 +77,7 @@ public class Robot extends LoggedRobot
     @Override
     public void robotPeriodic()
     {
+        SmartDashboard.putNumber("D", SmartDashboard.getNumber("FlywheelSpeed", 40.0));
         CommandScheduler.getInstance().run();
         publishMatchTime();
     }

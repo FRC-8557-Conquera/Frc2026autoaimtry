@@ -4,7 +4,11 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import java.util.function.DoubleSupplier;
 
+import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.spindexer.SpindexerSubsystem;
 import frc.robot.subsystems.feeder.FeederSubsystem;
@@ -25,26 +29,18 @@ public class DebugShootCommand extends Command {
         this.spindexer = spindexer;
         this.feeder = feeder;
         this.flywheel = shooter.flywheel;
-        this.targetRPS = targetRPS;
-        
-        // DİKKAT: Turret ve Hood gereksinimden ÇIKARILDI! 
-        // Turret kendi başına arka planda bağımsız çalışacak.
-        addRequirements(spindexer, feeder, flywheel);
+        this.targetRPS = targetRPS;     
     }
 
     @Override
     public void initialize() {
         timer.reset();
         timer.start();
-        // Niyeti (ShotIntent) buradan sildik. Artık otonom başında açacağız.
     }
 
     @Override
-    public void execute() {
-        // ÖNEMLİ: .schedule() KESİNLİKLE KULLANILMAZ!
-        // Alt sistemlere gidip bu "Direct" (Command döndürmeyen void) metotları eklemelisin.
-        
-        flywheel.setVelocity(RotationsPerSecond.of(targetRPS.getAsDouble())); 
+    public void execute() {        
+        flywheel.setVelocity(() -> RotationsPerSecond.of(SmartDashboard.getNumber("FlywheelSpeed", 0)));
         spindexer.setMotor(Constants.Spindexer.spindexerspeed); 
         feeder.setMotor(Constants.Feeder.feedSpeed);
     }

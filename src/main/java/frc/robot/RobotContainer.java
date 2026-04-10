@@ -115,8 +115,6 @@ public class RobotContainer {
   SendableChooser<Command> m_chooser;
 
   public RobotContainer() {
-    // 1. HATA ÇÖZÜMÜ: Buradaki s_Swerve.setupPathPlanner(); satırını sildik! 
-    // Çünkü SwerveSubsystem kendi içinde zaten bunu hallediyor
     NamedCommands.registerCommand("Shoot", new ShootCommand(spindexer, feeder, shooter, 40.0));
     NamedCommands.registerCommand("Intake", new YerToplamaCommand(intake, spindexer, feeder));
 
@@ -132,11 +130,8 @@ public class RobotContainer {
     }
     
     configureButtonBindings();
-    s_Swerve.zeroGyroWithAlliance();
-    
-    // YENİDEN AKTİF EDİLDİ: Taretin hedefi canlı takip etmesini sağlayan Default Command
+    s_Swerve.zeroGyroWithAlliance();    
     turret.setDefaultCommand(turret.setAngle(() -> shooter.getTurretSetpoint()));
-    
   }
 
   private void configureButtonBindings() {
@@ -153,7 +148,7 @@ public class RobotContainer {
     dumpButton.onTrue(Commands.run(() -> shooter.setIntent(ShotIntent.DUMP)));
     offButton.onTrue(Commands.run(()-> shooter.setIntent(ShotIntent.OFF)));
 
-    feedingTers.whileTrue(new CombinedFeed(spindexer, feeder, false));
+    feedingTers.whileTrue(new CombinedFeed(spindexer, feeder, true));
 
 
     intakeTers.whileTrue(Commands.run(()-> intake.setRollerPower(-Constants.Intake.rollerInSpeed),intake))
@@ -177,12 +172,13 @@ public class RobotContainer {
    // hoodDownTest.whileTrue(hood.rotateDutyCycle(-0.3)).onFalse(hood.stop());
 
     // flywheel.setDefaultCommand(flywheel.runFromTrigger(() -> driver.getRawAxis(3)));
-    debugShoot.whileTrue(shooter.debugShoot(spindexer, feeder)).onFalse(new InstantCommand(() -> 
+    /* debugShoot.whileTrue(shooter.debugShoot(spindexer, feeder)).onFalse(new InstantCommand(() -> 
     {
       flywheel.setVelocity(() -> RotationsPerSecond.of(0));
       spindexer.stop();
       feeder.stop();
-    }));
+    })); */
+    debugShoot.whileTrue(shooter.debugShoot()).onFalse(flywheel.setVelocity(RotationsPerSecond.of(0)));
     
     // Rakip Saha Kontrol Tetikleyicisi
     Trigger opponentSideTrigger = new Trigger(() -> {

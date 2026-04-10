@@ -89,7 +89,9 @@ public class ShooterSubsystem extends SubsystemBase {
         updateTrajectoryVisualization();
     }
 
-    
+    public Command debugShoot() {
+        return flywheel.setVelocity(() -> RotationsPerSecond.of(SmartDashboard.getNumber("FlywheelSpeed", 40.0)));
+    }
 
     public DebugShootCommand debugShoot(SpindexerSubsystem spindexer, FeederSubsystem feeder) {
         return new DebugShootCommand(spindexer, feeder, this, () -> flywheelEntry.getDouble(40.0));
