@@ -115,7 +115,7 @@ public class RobotContainer {
   SendableChooser<Command> m_chooser;
 
   public RobotContainer() {
-    NamedCommands.registerCommand("Shoot", new ShootCommand(spindexer, feeder, shooter, 40.0));
+    NamedCommands.registerCommand("Shoot", new ShootCommand(spindexer, feeder, shooter));
     NamedCommands.registerCommand("Intake", new YerToplamaCommand(intake, spindexer, feeder));
 
 

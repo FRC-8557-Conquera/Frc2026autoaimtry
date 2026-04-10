@@ -1,44 +1,54 @@
 package frc.robot.commands;
 
-import static edu.wpi.first.units.Units.RotationsPerSecond;
-
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.subsystems.spindexer.SpindexerSubsystem;
-import frc.robot.subsystems.feeder.FeederSubsystem;
-import frc.robot.subsystems.shooter.FlywheelSubsystem;
-import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.Constants;
+import frc.robot.subsystems.feeder.FeederSubsystem;
+import frc.robot.subsystems.shooter.ShooterSubsystem;
+import frc.robot.subsystems.spindexer.SpindexerSubsystem;
 
 public class ShootCommand extends Command {
     private final SpindexerSubsystem spindexer;
     private final FeederSubsystem feeder;
-    private final FlywheelSubsystem flywheel;
+    private final ShooterSubsystem shooter;
 
-    public ShootCommand(SpindexerSubsystem spindexer, FeederSubsystem feeder, ShooterSubsystem shooter, double targetRPS) {
+    public ShootCommand(SpindexerSubsystem spindexer, FeederSubsystem feeder, ShooterSubsystem shooter) {
         this.spindexer = spindexer;
         this.feeder = feeder;
-        this.flywheel = shooter.flywheel;
-        // Only require spindexer — flywheel and feeder are owned by their YAMS commands
-        addRequirements(spindexer);
+        this.shooter = shooter;
+        
+        // KRİTİK DÜZELTME: Kullanılan Tonal alt sistemler Require edilmeli.
+        // Böylece Scheduler bu komutu iptal ettiğinde motorlar yetkisiz kalmaz.
+        addRequirements(spindexer, feeder, shooter.flywheel); 
     }
 
     @Override
     public void initialize() {
-        // Schedule YAMS commands once — Supplier keeps them live
-        flywheel.setVelocity(() -> RotationsPerSecond.of(SmartDashboard.getNumber("FlywheelSpeed", 40.0))).schedule();
-        feeder.feed().schedule();
+        // .schedule() çağrıları tamamen kaldırıldı.
     }
 
     @Override
     public void execute() {
-        spindexer.setMotor(Constants.Spindexer.spindexerspeed);
+        // Maç içi veya test sırasında Elastic'ten anlık RPS verisini çek.
+        // Execute döngüsü saniyede 50 kez (20ms) çalıştığı için değer değiştiği an motora yansır.
+        double currentRPS = SmartDashboard.getNumber("FlywheelSpeed", 40.0);
+        
+        // Alt sistemlerde tanımladığın Direct metotları ile motorlara güç ver
+        shooter.flywheel.setRPSDirect(currentRPS);
+        feeder.setDutyCycleDirect(Constants.Feeder.feedSpeed);
+        spindexer.setDutyCycleDirect(Constants.Spindexer.spindexerspeed);
     }
 
     @Override
     public void end(boolean interrupted) {
-        spindexer.stopMotor();
-        flywheel.setVelocity(RotationsPerSecond.of(0)).schedule();
-        feeder.stop().schedule();
+        // Otonomdaki 5 saniyelik deadline bittiğinde veya teleop'ta tuş bırakıldığında motorlar anında durur.
+        shooter.flywheel.stopDirect();
+        feeder.stopDirect();
+        spindexer.stopDirect();
+    }
+    
+    @Override
+    public boolean isFinished() {
+        return false; // Komut dışarıdan bir trigger veya timeout ile kesilene kadar çalışmaya devam eder.
     }
 }

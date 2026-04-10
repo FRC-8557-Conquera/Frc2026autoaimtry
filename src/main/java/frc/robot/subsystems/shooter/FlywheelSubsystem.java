@@ -39,7 +39,7 @@ public class FlywheelSubsystem extends SubsystemBase {
   private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
       .withClosedLoopController(0.2, 0.0, 0.005, RotationsPerSecond.of(100), RotationsPerSecondPerSecond.of(2500))
       .withGearing(new MechanismGearing(1))                      
-      .withIdleMode(MotorMode.BRAKE)
+      .withIdleMode(MotorMode.COAST)
       .withTelemetry("FlywheelMotor", TelemetryVerbosity.LOW)
       .withSupplyCurrentLimit(Amps.of(40))
       .withMotorInverted(false)
