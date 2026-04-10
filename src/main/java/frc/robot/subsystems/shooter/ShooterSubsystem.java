@@ -39,7 +39,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
     private final SwerveSubsystem swerve;
     private ShuffleboardTab tab;
-    public ShotIntent intent = ShotIntent.OFF;
+    public ShotIntent intent = ShotIntent.HUB;
     public TurretSubsystem turret = new TurretSubsystem();
     public FlywheelSubsystem flywheel = new FlywheelSubsystem();
     public HoodSubsystem hood = new HoodSubsystem();

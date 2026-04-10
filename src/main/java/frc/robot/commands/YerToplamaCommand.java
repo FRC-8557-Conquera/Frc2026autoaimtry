@@ -13,22 +13,18 @@ public class YerToplamaCommand extends Command {
     private final SpindexerSubsystem spindexer;
     private final FeederSubsystem feeder;
 
-    private final Timer timer = new Timer();
-    private final double duration;
-    public YerToplamaCommand(IntakeSubsystem intake, SpindexerSubsystem spindexer, FeederSubsystem feeder, double duration) {
+    public YerToplamaCommand(IntakeSubsystem intake, SpindexerSubsystem spindexer, FeederSubsystem feeder) {
         
         this.intake = intake;
         this.spindexer = spindexer;
         this.feeder = feeder;
-        this.duration = duration;
         // Komut çalışırken bu iki alt sistemi meşgul eder
-        addRequirements(intake, spindexer);
+        addRequirements(intake, spindexer,feeder);
     }
 
     @Override
     public void initialize() {
-        timer.reset();
-        timer.start();
+        if(!intake.isFullyDeployed()) intake.toggleIntake();
     }
 
     @Override
@@ -41,18 +37,11 @@ public class YerToplamaCommand extends Command {
     }
 
     @Override
-    public boolean isFinished() {
-        return timer.hasElapsed(duration);
-    }
-
-    @Override
     public void end(boolean interrupted) {
         // KOMUT BİTTİĞİNDE (Veya buton bırakıldığında) MÜKEMMEL KORUMA:
         // Motorları durdur
         intake.setRollerPower(0.0);
         spindexer.setMotor(0.0);
         feeder.setMotor(0.0);
-
-        timer.stop();
     }
 }

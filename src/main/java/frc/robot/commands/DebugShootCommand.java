@@ -59,7 +59,7 @@ public class DebugShootCommand extends Command {
         // Motorları durdur
         flywheel.stopDirect();
         spindexer.stopMotor();
-        feeder.stop();
+        feeder.stopDirect(); 
         timer.stop();
     }
 }

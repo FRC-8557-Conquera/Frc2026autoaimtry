@@ -70,7 +70,6 @@ public class FlywheelSubsystem extends SubsystemBase {
   }
 
   public Command setVelocity(AngularVelocity speed) {
-    setPoint = speed.in(RotationsPerSecond);
     return flywheel.setSpeed(speed);
   }
   public void setRPSDirect(double rps) {
