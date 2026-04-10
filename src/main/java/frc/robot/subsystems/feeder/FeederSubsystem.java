@@ -69,26 +69,25 @@ public class FeederSubsystem extends SubsystemBase {
   private final SmartMotorController feederSMC = new SparkWrapper(feederMotor,
                   DCMotor.getNEO(1),
                   motorConfig);
+                  // FeederSubsystem içinden:
+public Command feed() { return run(() -> {feederSMC.setVelocity(RPM.of(3000));}); }
+
+public void setMotor(double speed) { feederMotor.set(speed); } // RAW ERİŞİM!
   // Komut sınıflarından motoru doğrudan yüzdelik güç ile çalıştırmak için
-  public void setMotor(double speed) {
-        // Eğer motorun adı feederMotor ise (SparkMax veya TalonSRX varsayımıyla):
-        
-    // NOT: Eğer Feeder motorun Kraken (TalonFX) ise yukarıdaki yerine şunu kullanmalısın:
-    // For SparkMax, call set with a double percent output (-1.0 .. 1.0)
-    feederMotor.set(speed);
-    }
+
   public FeederSubsystem() {}
   public Command dutyCycleFeed() {
     return run(() -> feederSMC.setDutyCycle(-Feeder.feedSpeed));
   }
+  
   @Override
   public void periodic() {
     feederSMC.updateTelemetry();
   }
   // run forward
-  public Command feed() {
+ /*  public Command feed() {
     return run(() -> {feederSMC.setVelocity(RPM.of(3000));});
-  }
+  }*/
 
   // reverse
   public Command reverse() {
