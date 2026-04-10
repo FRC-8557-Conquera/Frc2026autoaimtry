@@ -24,9 +24,14 @@ import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.subsystems.feeder.FeederSubsystem;
+import frc.robot.subsystems.spindexer.SpindexerSubsystem;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 import frc.robot.Constants.fieldConstants;
+import frc.robot.commands.DebugShootCommand;
+import frc.robot.commands.ShootCommand;
 import frc.robot.Constants.Shooter;
+import frc.robot.Constants.Spindexer;
 import frc.robot.Constants.Turret;
 import org.littletonrobotics.junction.Logger;
 
@@ -86,12 +91,8 @@ public class ShooterSubsystem extends SubsystemBase {
 
     
 
-    public Command debugShoot() {
-        return flywheel.setVelocity(() -> RotationsPerSecond.of(flywheelEntry.getDouble(40.0)));
-    }
-
-    public Command debugHood() {
-        return hood.setAngle(() -> Degrees.of(hoodEntry.getDouble(0.0)));
+    public DebugShootCommand debugShoot(SpindexerSubsystem spindexer, FeederSubsystem feeder) {
+        return new DebugShootCommand(spindexer, feeder, this, () -> flywheelEntry.getDouble(40.0));
     }
 
     public void setIntent(ShotIntent intent) { this.intent = intent; }

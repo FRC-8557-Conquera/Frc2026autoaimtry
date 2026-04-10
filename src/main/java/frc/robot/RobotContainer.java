@@ -10,6 +10,8 @@ import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -22,6 +24,8 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.commands.DebugShootCommand;
+import frc.robot.commands.ShootCommand;
 import frc.robot.commands.YerToplamaCommand;
 import frc.robot.subsystems.feeder.FeederSubsystem;
 import frc.robot.subsystems.intake.IntakeSubsystem;
@@ -50,19 +54,22 @@ public class RobotContainer {
   private final JoystickButton xLock = new JoystickButton(driver, 6);
 
   // Mekanizma Butonları
-  private final JoystickButton yerToplamaButonu = new JoystickButton(driver, 1);
-  private final JoystickButton turretZero = new JoystickButton(driver, 2);
-  private final JoystickButton intakeToggleButonu = new JoystickButton(driver, 4);
-  private final JoystickButton rollerButonu = new JoystickButton(driver, 5); 
-  private final JoystickButton debugShoot = new JoystickButton(driver2, 8);
+  private final JoystickButton intakeToggleButonu = new JoystickButton(driver2, 4);
+  private final JoystickButton rollerButonu = new JoystickButton(driver2, 5); 
+
+  private final JoystickButton debugShoot = new JoystickButton(driver2, 1);
 /*private final JoystickButton feederAl = new JoystickButton(driver2, 3);
   private final JoystickButton feederTers = new JoystickButton(driver2, 4);
   private final JoystickButton spindexerF = new JoystickButton(driver2, 5);
   private final JoystickButton spindexerR = new JoystickButton(driver2, 6);*/
+  
+  private final JoystickButton turretZero = new JoystickButton(driver2, 6);
   private final JoystickButton turretLeftTest = new JoystickButton(driver, 7);
   private final JoystickButton turretRightTest = new JoystickButton(driver, 8);
-  private final JoystickButton hubButton = new JoystickButton(driver, 9);
-  private final JoystickButton turretSysID = new JoystickButton(driver, 10);
+  private final JoystickButton hubButton = new JoystickButton(driver2, 9);
+  private final JoystickButton dumpButton = new JoystickButton(driver2, 10);
+  private final JoystickButton offButton = new JoystickButton(driver2, 11);
+
   
   // Yazılım Butonları
   private final JoystickButton flywheelSysID = new JoystickButton(driver2, 7);
@@ -78,7 +85,6 @@ public class RobotContainer {
   private final ShooterSubsystem shooter = new ShooterSubsystem(s_Swerve);
   private final TurretSubsystem turret = shooter.turret;
   private final FlywheelSubsystem flywheel = shooter.flywheel;
-  private final HoodSubsystem hood = shooter.hood;
   
   // YAGSL Sürüş Komutu
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(
@@ -111,7 +117,10 @@ public class RobotContainer {
 
   public RobotContainer() {
     // 1. HATA ÇÖZÜMÜ: Buradaki s_Swerve.setupPathPlanner(); satırını sildik! 
-    // Çünkü SwerveSubsystem kendi içinde zaten bunu hallediyor.
+    // Çünkü SwerveSubsystem kendi içinde zaten bunu hallediyor
+    NamedCommands.registerCommand("Shoot", new ShootCommand(spindexer, feeder, shooter, 6.0, 40.0));
+    NamedCommands.registerCommand("Intake", new YerToplamaCommand(intake, spindexer, feeder, 3.0));
+
 
     m_chooser = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData("Auto Chooser", m_chooser);
@@ -132,17 +141,18 @@ public class RobotContainer {
   }
 
   private void configureButtonBindings() {
-    yerToplamaButonu.whileTrue(new YerToplamaCommand(intake, spindexer, feeder));
     intakeToggleButonu.onTrue(new InstantCommand(() -> intake.toggleIntake(), intake));
 
     rollerButonu.whileTrue(Commands.run(() -> intake.setRollerPower(Constants.Intake.rollerInSpeed), intake))
                 .onFalse(Commands.runOnce(() -> intake.setRollerPower(0.0), intake));
 
-    turretSysID.whileTrue(turret.sysId());
+    
     flywheelSysID.whileTrue(flywheel.sysId());
     
     // YENİDEN YAZILDI: Hub Butonu ile HUB moduna geçme ve bırakınca OFF moduna dönme işlemi
     hubButton.onTrue(Commands.run(() -> shooter.setIntent(ShotIntent.HUB)));
+    dumpButton.onTrue(Commands.run(() -> shooter.setIntent(ShotIntent.DUMP)));
+    offButton.onTrue(Commands.run(()-> shooter.setIntent(ShotIntent.OFF)));
   /*feederAl.whileTrue(feeder.feed()).onFalse(feeder.stop());
     feederTers.whileTrue(feeder.reverse()).onFalse(feeder.stop());
 
@@ -162,7 +172,12 @@ public class RobotContainer {
    // hoodDownTest.whileTrue(hood.rotateDutyCycle(-0.3)).onFalse(hood.stop());
 
     // flywheel.setDefaultCommand(flywheel.runFromTrigger(() -> driver.getRawAxis(3)));
-    debugShoot.whileTrue(shooter.debugShoot()).whileFalse(flywheel.setVelocity(() -> RotationsPerSecond.of(0)));
+    debugShoot.whileTrue(shooter.debugShoot(spindexer, feeder)).whileFalse(new InstantCommand(() -> 
+    {
+      flywheel.setVelocity(() -> RotationsPerSecond.of(0));
+      spindexer.stop();
+      feeder.stop();
+    }));
     
     // Rakip Saha Kontrol Tetikleyicisi
     Trigger opponentSideTrigger = new Trigger(() -> {

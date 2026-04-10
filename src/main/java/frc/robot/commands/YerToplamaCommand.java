@@ -1,5 +1,6 @@
 package frc.robot.commands;
 
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
 import frc.robot.Constants.Feeder;
@@ -12,17 +13,22 @@ public class YerToplamaCommand extends Command {
     private final SpindexerSubsystem spindexer;
     private final FeederSubsystem feeder;
 
-    public YerToplamaCommand(IntakeSubsystem intake, SpindexerSubsystem spindexer, FeederSubsystem feeder) {
+    private final Timer timer = new Timer();
+    private final double duration;
+    public YerToplamaCommand(IntakeSubsystem intake, SpindexerSubsystem spindexer, FeederSubsystem feeder, double duration) {
+        
         this.intake = intake;
         this.spindexer = spindexer;
         this.feeder = feeder;
+        this.duration = duration;
         // Komut çalışırken bu iki alt sistemi meşgul eder
         addRequirements(intake, spindexer);
     }
 
     @Override
     public void initialize() {
-        // Komut başladığı an Intake dışarı çıksın
+        timer.reset();
+        timer.start();
     }
 
     @Override
@@ -35,11 +41,18 @@ public class YerToplamaCommand extends Command {
     }
 
     @Override
+    public boolean isFinished() {
+        return timer.hasElapsed(duration);
+    }
+
+    @Override
     public void end(boolean interrupted) {
         // KOMUT BİTTİĞİNDE (Veya buton bırakıldığında) MÜKEMMEL KORUMA:
         // Motorları durdur
         intake.setRollerPower(0.0);
         spindexer.setMotor(0.0);
         feeder.setMotor(0.0);
+
+        timer.stop();
     }
 }
