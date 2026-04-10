@@ -2,12 +2,6 @@ package frc.robot.commands;
 
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
-import java.util.function.DoubleSupplier;
-
-import edu.wpi.first.networktables.GenericEntry;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.spindexer.SpindexerSubsystem;
@@ -21,38 +15,30 @@ public class ShootCommand extends Command {
     private final FeederSubsystem feeder;
     private final FlywheelSubsystem flywheel;
 
-
-    // Constructor'a "targetRPS" eklendi!
     public ShootCommand(SpindexerSubsystem spindexer, FeederSubsystem feeder, ShooterSubsystem shooter, double targetRPS) {
         this.spindexer = spindexer;
         this.feeder = feeder;
         this.flywheel = shooter.flywheel;
-        // DİKKAT: Turret ve Hood gereksinimden ÇIKARILDI! 
-        // Turret kendi başına arka planda bağımsız çalışacak.
-        addRequirements(spindexer, feeder, flywheel);
+        // Only require spindexer — flywheel and feeder are owned by their YAMS commands
+        addRequirements(spindexer);
     }
 
     @Override
     public void initialize() {
+        // Schedule YAMS commands once — Supplier keeps them live
+        flywheel.setVelocity(() -> RotationsPerSecond.of(SmartDashboard.getNumber("FlywheelSpeed", 40.0))).schedule();
+        feeder.feed().schedule();
     }
 
     @Override
     public void execute() {
-        // ÖNEMLİ: .schedule() KESİNLİKLE KULLANILMAZ!
-        // Alt sistemlere gidip bu "Direct" (Command döndürmeyen void) metotları eklemelisin.
-        
-        flywheel.setVelocity(() -> RotationsPerSecond.of(SmartDashboard.getNumber("FlywheelSpeed", 40.0)))
-            .schedule(); 
-        spindexer.setMotor(Constants.Spindexer.spindexerspeed); 
-        feeder.feed().schedule();;
+        spindexer.setMotor(Constants.Spindexer.spindexerspeed);
     }
-
 
     @Override
     public void end(boolean interrupted) {
-        // Motorları durdur
+        spindexer.stopMotor();
         flywheel.setVelocity(RotationsPerSecond.of(0)).schedule();
-        spindexer.stop().schedule();;
-        feeder.stop().schedule();;
+        feeder.stop().schedule();
     }
 }

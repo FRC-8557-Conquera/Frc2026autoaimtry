@@ -1,5 +1,7 @@
 package frc.robot.commands;
 
+import static edu.wpi.first.units.Units.RotationsPerSecond;
+
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.feeder.FeederSubsystem;
@@ -14,8 +16,7 @@ public class DumpCommand extends Command {
     private final FeederSubsystem feeder;
     private final FlywheelSubsystem flywheel;
     private final ShooterSubsystem shooter;
-    // DÜZELTME 2: Turret değişkenini ve requirement'ını sildik, çünkü Taret kendi DefaultCommand'i ile çalışacak.
-    
+
     private final Timer timer = new Timer();
     private final double duration;
 
@@ -25,27 +26,22 @@ public class DumpCommand extends Command {
         this.flywheel = shooter.flywheel;
         this.shooter = shooter;
         this.duration = duration;
-        
-        // Sadece çalıştıracağımız motorları require ediyoruz
-        addRequirements(spindexer, feeder, flywheel);
+        // Only require spindexer/feeder — flywheel is owned by its YAMS command
+        addRequirements(spindexer, feeder);
     }
 
     @Override
     public void initialize() {
         timer.reset();
         timer.start();
-        
-        // DÜZELTME 3: Niyeti execute'da saniyede 50 kere atamak yerine, komut başlarken 1 kere atıyoruz.
         shooter.setIntent(ShotIntent.DUMP);
+        // Schedule flywheel YAMS command with live supplier
+        flywheel.setVelocity(() -> shooter.getFlywheelSetpoint()).schedule();
     }
 
     @Override
     public void execute() {
-        
-        double targetRPS = shooter.getFlywheelSetpoint().in(edu.wpi.first.units.Units.RotationsPerSecond);
-        flywheel.setRPSDirect(targetRPS); 
-        
-        spindexer.setDutyCycleDirect(Constants.Spindexer.reverseSpeed); 
+        spindexer.setDutyCycleDirect(Constants.Spindexer.reverseSpeed);
         feeder.setDutyCycleDirect(Constants.Feeder.feedSpeed);
     }
 
@@ -56,13 +52,10 @@ public class DumpCommand extends Command {
 
     @Override
     public void end(boolean interrupted) {
-        // DÜZELTME 4: Motorları durdur ve niyeti OFF yap ki taret rahatlasın
         shooter.setIntent(ShotIntent.OFF);
-        
         spindexer.stopDirect();
         feeder.stopDirect();
-        flywheel.stopDirect();
-        
+        flywheel.setVelocity(RotationsPerSecond.of(0)).schedule();
         timer.stop();
     }
 }
