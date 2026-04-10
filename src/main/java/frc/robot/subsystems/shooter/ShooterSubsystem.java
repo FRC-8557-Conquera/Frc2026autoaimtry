@@ -33,7 +33,8 @@ import frc.robot.commands.ShootCommand;
 import frc.robot.Constants.Shooter;
 import frc.robot.Constants.Spindexer;
 import frc.robot.Constants.Turret;
-import org.littletonrobotics.junction.Logger;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
 
 public class ShooterSubsystem extends SubsystemBase {
 
@@ -46,6 +47,10 @@ public class ShooterSubsystem extends SubsystemBase {
     public GenericEntry flywheelEntry;
     public GenericEntry hoodEntry;
     private int trajTickCounter = 0; // Görselleştirme sayacı
+    private final StructArrayPublisher<Pose3d> trajectoryPub =
+        NetworkTableInstance.getDefault().getStructArrayTopic("AdvantageScope/Shooter_Trajectory", Pose3d.struct).publish();
+    private final StructArrayPublisher<Pose3d> flyingFuelsPub =
+        NetworkTableInstance.getDefault().getStructArrayTopic("AdvantageScope/FlyingFuels", Pose3d.struct).publish();
     
     private static class SimulatedFuel {
         double x, y, z;
@@ -180,7 +185,7 @@ public class ShooterSubsystem extends SubsystemBase {
     public void updateTrajectoryVisualization() {
         // EĞER OFF MODUNDAYSAK (ATEŞ ETMİYORSAK) RAM'İ YORMA, SADECE ÇİZGİYİ SİL VE ÇIK!
         if (intent == ShotIntent.OFF) {
-            Logger.recordOutput("AdvantageScope/Shooter_Trajectory", new Pose3d[0]);
+            trajectoryPub.set(new Pose3d[0]);
             return; 
         }
 
@@ -224,7 +229,7 @@ public class ShooterSubsystem extends SubsystemBase {
             if (z > 0) trajectory.add(new Pose3d(x, y, z, new Rotation3d()));
             t += dt;
         }   
-        Logger.recordOutput("AdvantageScope/Shooter_Trajectory", trajectory.toArray(new Pose3d[0]));
+        trajectoryPub.set(trajectory.toArray(new Pose3d[0]));
     }
 
     public Translation2d getVirtualTarget() {
@@ -278,7 +283,7 @@ public class ShooterSubsystem extends SubsystemBase {
                 poseArray.add(new Pose3d(fuel.x, fuel.y, fuel.z, new Rotation3d()));
             }
         }
-        Logger.recordOutput("AdvantageScope/FlyingFuels", poseArray.toArray(new Pose3d[0]));
+        flyingFuelsPub.set(poseArray.toArray(new Pose3d[0]));
     }
 
     public Translation2d getDumpTargetPosition() {
@@ -325,10 +330,10 @@ public class ShooterSubsystem extends SubsystemBase {
         double targetHoodDeg = getHoodSetpoint().in(Degrees);
         boolean hoodReady = Math.abs(hoodDeg - targetHoodDeg) < 1.5; 
 
-        Logger.recordOutput("Ready_Debug/FlywheelReady", flywheelReady);
-        Logger.recordOutput("Ready_Debug/TurretReady", turretReady);
-        Logger.recordOutput("Ready_Debug/HoodReady", hoodReady); 
-        Logger.recordOutput("Ready_Debug/Intent", intent.name());
+        SmartDashboard.putBoolean("Ready_Debug/FlywheelReady", flywheelReady);
+        SmartDashboard.putBoolean("Ready_Debug/TurretReady", turretReady);
+        SmartDashboard.putBoolean("Ready_Debug/HoodReady", hoodReady);
+        SmartDashboard.putString("Ready_Debug/Intent", intent.name());
         
         if (edu.wpi.first.wpilibj.RobotBase.isSimulation()) return true; 
 

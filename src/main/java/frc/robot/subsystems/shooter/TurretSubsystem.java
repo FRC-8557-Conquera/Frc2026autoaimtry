@@ -107,13 +107,5 @@ public class TurretSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("Turret/Relative_Angle_Deg", turret.getAngle().in(Degrees));
         SmartDashboard.putBoolean("Turret/Encoder_Connected", turretThroughBoreEncoder.isConnected());
 
-        if (!turretZeroed) {
-            if (startTime == 0) {
-                startTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
-            } else if (edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - startTime > 2.0) {
-                turretMotor.getEncoder().setPosition(getAbsoluteAngle() / 16.0);
-                turretZeroed = true;
-            }
-        }
     }
 }

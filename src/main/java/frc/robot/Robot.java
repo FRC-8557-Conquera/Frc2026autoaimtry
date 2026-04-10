@@ -30,13 +30,8 @@ import swervelib.simulation.ironmaple.simulation.gamepieces.GamePieceOnFieldSimu
 import swervelib.simulation.ironmaple.simulation.seasonspecific.rebuilt2026.Arena2026Rebuilt;
 import swervelib.simulation.ironmaple.simulation.seasonspecific.rebuilt2026.RebuiltFuelOnField;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
-import org.littletonrobotics.junction.LoggedRobot;
-import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.NT4Publisher;
-import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
-// 1. DEĞİŞİKLİK: TimedRobot sınıfını LoggedRobot olarak değiştiriyoruz
-public class Robot extends LoggedRobot 
+public class Robot extends TimedRobot
 {
     private Command autonomousCommand;
     public RobotContainer robotContainer;
@@ -44,25 +39,9 @@ public class Robot extends LoggedRobot
     
     @Override
     public void robotInit() {
-        // AdvantageKit Loglama Kurulumu
-        Logger.recordMetadata("ProjectName", "FRC2026_AutoAim"); 
-        
-        if (isReal()) {
-            // Gerçek robotta hem USB Flash Belleğe (Log dosyası) yazar hem de NetworkTables'a (Anlık izleme) gönderir
-            Logger.addDataReceiver(new WPILOGWriter()); 
-            Logger.addDataReceiver(new NT4Publisher());
-        } else {
-            // Simülasyonda çalışırken sadece NetworkTables üzerinden AdvantageScope'a canlı veri basar
-            Logger.addDataReceiver(new NT4Publisher());
-        }
-        
-        // Loglama sistemini başlat!
-        Logger.start();
-
         SignalLogger.setPath("/home/lvuser/hoot_logs");
         SignalLogger.start();
 
-        // RobotContainer her zaman Logger.start() işleminden SONRA tanımlanmalıdır!
         robotContainer = new RobotContainer();
 
         SmartDashboard.putNumber("FlywheelSpeed", 40.0);
