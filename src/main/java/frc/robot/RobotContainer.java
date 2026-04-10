@@ -71,7 +71,7 @@ public class RobotContainer {
   private final JoystickButton offButton = new JoystickButton(driver2, 9);
   
   // Yazılım Butonları
-  private final JoystickButton flywheelSysID = new JoystickButton(driver2, 7);
+  //private final JoystickButton flywheelSysID = new JoystickButton(driver2, 7);
 
   public FuelSim fuelSim = new FuelSim();  
 
@@ -141,7 +141,7 @@ public class RobotContainer {
                 .onFalse(Commands.runOnce(() -> intake.setRollerPower(0.0), intake));
 
     
-    flywheelSysID.whileTrue(flywheel.sysId());
+  //  flywheelSysID.whileTrue(flywheel.sysId());
     
     // YENİDEN YAZILDI: Hub Butonu ile HUB moduna geçme ve bırakınca OFF moduna dönme işlemi
     hubButton.onTrue(Commands.run(() -> shooter.setIntent(ShotIntent.HUB)));
