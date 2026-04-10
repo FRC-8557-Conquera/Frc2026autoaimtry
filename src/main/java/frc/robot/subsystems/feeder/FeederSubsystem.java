@@ -94,12 +94,25 @@ public class FeederSubsystem extends SubsystemBase {
   public Command reverse() {
     return run(() -> {feederSMC.setVelocity(RPM.of(-3000));});
   }
+  // Feeder'ı Command oluşturmadan doğrudan belirtilen hızda çalıştırır
+    public void setDutyCycleDirect(double speed) {
+        // Eğer YAMS (SmartMotorController) kullanıyorsan:
+        // feederSMC.setDutyCycle(speed);
+        
+        // Eğer normal WPILib/SparkMax kullanıyorsan:
+        feederMotor.set(speed); // (Kendi motor ismine göre düzelt)
+    }
 
+    // Feeder'ı anında durdurur
+    public void stopDirect() {
+        // feederSMC.setDutyCycle(0); VEYA
+        feederMotor.set(0.0);
+    }
   // stop
   public Command stop() {
     return runOnce(() -> feederSMC.setVelocity(RPM.of(0)));
   }
-
+  
   public double getVelocity() {
     return feederMotor.getEncoder().getVelocity();
   }

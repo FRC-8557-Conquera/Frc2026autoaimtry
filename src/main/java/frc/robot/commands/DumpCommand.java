@@ -1,48 +1,52 @@
 package frc.robot.commands;
 
-import static edu.wpi.first.units.Units.RotationsPerSecond;
-
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.feeder.FeederSubsystem;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
-import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem.ShotIntent;
 import frc.robot.subsystems.spindexer.SpindexerSubsystem;
+import frc.robot.Constants;
 
 public class DumpCommand extends Command {
     private final SpindexerSubsystem spindexer;
     private final FeederSubsystem feeder;
     private final FlywheelSubsystem flywheel;
     private final ShooterSubsystem shooter;
-    private final TurretSubsystem turret;
+    // DÜZELTME 2: Turret değişkenini ve requirement'ını sildik, çünkü Taret kendi DefaultCommand'i ile çalışacak.
+    
     private final Timer timer = new Timer();
     private final double duration;
 
-    public DumpCommand(SpindexerSubsystem spindexer,FeederSubsystem feeder,ShooterSubsystem shooter, double duration) {
+    public DumpCommand(SpindexerSubsystem spindexer, FeederSubsystem feeder, ShooterSubsystem shooter, double duration) {
         this.spindexer = spindexer;
         this.feeder = feeder;
         this.flywheel = shooter.flywheel;
         this.shooter = shooter;
-        this.turret = shooter.turret;
         this.duration = duration;
-        addRequirements(spindexer,feeder,flywheel);
+        
+        // Sadece çalıştıracağımız motorları require ediyoruz
+        addRequirements(spindexer, feeder, flywheel);
     }
 
     @Override
     public void initialize() {
         timer.reset();
         timer.start();
+        
+        // DÜZELTME 3: Niyeti execute'da saniyede 50 kere atamak yerine, komut başlarken 1 kere atıyoruz.
+        shooter.setIntent(ShotIntent.DUMP);
     }
 
     @Override
     public void execute() {
-        shooter.intent = ShotIntent.DUMP;
-        turret.setAngle(shooter.getTurretSetpoint()).schedule();
-        spindexer.spinReverse().schedule();
-        feeder.feed().schedule();
-        flywheel.setVelocity(shooter.getFlywheelSetpoint()).schedule();
+        
+        double targetRPS = shooter.getFlywheelSetpoint().in(edu.wpi.first.units.Units.RotationsPerSecond);
+        flywheel.setRPSDirect(targetRPS); 
+        
+        spindexer.setDutyCycleDirect(Constants.Spindexer.reverseSpeed); 
+        feeder.setDutyCycleDirect(Constants.Feeder.feedSpeed);
     }
 
     @Override
@@ -52,9 +56,13 @@ public class DumpCommand extends Command {
 
     @Override
     public void end(boolean interrupted) {
-        spindexer.stop();
-        feeder.stop();
-        flywheel.setVelocity(RotationsPerSecond.of(0)).schedule();
+        // DÜZELTME 4: Motorları durdur ve niyeti OFF yap ki taret rahatlasın
+        shooter.setIntent(ShotIntent.OFF);
+        
+        spindexer.stopDirect();
+        feeder.stopDirect();
+        flywheel.stopDirect();
+        
         timer.stop();
     }
 }

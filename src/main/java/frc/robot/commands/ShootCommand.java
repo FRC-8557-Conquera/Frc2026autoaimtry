@@ -44,8 +44,8 @@ public class ShootCommand extends Command {
         // Alt sistemlere gidip bu "Direct" (Command döndürmeyen void) metotları eklemelisin.
         
         flywheel.setRPSDirect(targetRPS); 
-        spindexer.setDutyCycleDirect(Constants.Spindexer.spindexerspeed); 
-        feeder.setDutyCycleDirect(Constants.Feeder.feedSpeed);
+        spindexer.setMotor(Constants.Spindexer.spindexerspeed); 
+        feeder.setMotor(Constants.Feeder.feedSpeed);
     }
 
     @Override
@@ -57,8 +57,8 @@ public class ShootCommand extends Command {
     public void end(boolean interrupted) {
         // Motorları durdur
         flywheel.stopDirect();
-        spindexer.stopDirect();
-        feeder.stopDirect();
+        spindexer.stopMotor();
+        feeder.stop();
         timer.stop();
     }
 }

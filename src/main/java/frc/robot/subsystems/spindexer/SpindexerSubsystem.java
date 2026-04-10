@@ -29,7 +29,20 @@ public class SpindexerSubsystem extends SubsystemBase {
   public Command spinReverse() {
     return run(() -> spindexerMotor.set(Spindexer.reverseSpeed));
   }
+  // Spindexer'ı Command oluşturmadan doğrudan belirtilen hızda çalıştırır
+    public void setDutyCycleDirect(double speed) {
+        // Eğer YAMS (SmartMotorController) kullanıyorsan:
+        // spindexerSMC.setDutyCycle(speed);
+        
+        // Eğer normal WPILib/SparkMax kullanıyorsan:
+        spindexerMotor.set(speed); // (Kendi motor ismine göre düzelt)
+    }
 
+    // Spindexer'ı anında durdurur
+    public void stopDirect() {
+        // spindexerSMC.setDutyCycle(0); VEYA
+        spindexerMotor.set(0.0);
+    }
   public Command stop() {
     return runOnce(() -> spindexerMotor.set(0));
   }
