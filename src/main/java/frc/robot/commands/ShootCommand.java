@@ -40,25 +40,12 @@ public class ShootCommand extends Command {
     public void execute() {
         // ÖNEMLİ: .schedule() KESİNLİKLE KULLANILMAZ!
         // Alt sistemlere gidip bu "Direct" (Command döndürmeyen void) metotları eklemelisin.
-        
-<<<<<<< Updated upstream
-        // 2. SÜRÜCÜ 2'NİN YAPTIĞI "BEKLE-FIRLAT" MANTIĞI
-        double currentRPS = shooter.flywheel.getVelocity().in(RotationsPerSecond);
-        
-        if (Math.abs(currentRPS - TARGET_RPS) < 2.0) { 
-            // Topu fırlat!
-            feeder.setDutyCycleDirect(Constants.Feeder.feedSpeed);
-            spindexer.setDutyCycleDirect(Constants.Spindexer.spindexerspeed);
-        } else {
-            feeder.stopDirect();
-            spindexer.stopDirect();
-        }
-=======
+
         shooter.flywheel.setVelocity(() -> shooter.getFlywheelSetpoint())
             .schedule(); 
         spindexer.setMotor(Constants.Spindexer.spindexerspeed); 
         feeder.reverse().schedule();
->>>>>>> Stashed changes
+
     }
 
 

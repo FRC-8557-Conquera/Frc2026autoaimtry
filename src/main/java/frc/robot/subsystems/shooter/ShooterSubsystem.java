@@ -43,7 +43,6 @@ public class ShooterSubsystem extends SubsystemBase {
     public ShotIntent intent = ShotIntent.HUB;
     public TurretSubsystem turret = new TurretSubsystem();
     public FlywheelSubsystem flywheel = new FlywheelSubsystem();
-    public HoodSubsystem hood = new HoodSubsystem();
     public GenericEntry flywheelEntry;
     public GenericEntry hoodEntry;
     private int trajTickCounter = 0; // Görselleştirme sayacı
@@ -111,6 +110,7 @@ public class ShooterSubsystem extends SubsystemBase {
         flywheelMap.put(2.4, 30.5);
         flywheelMap.put(3.1, 35.0);
         flywheelMap.put(4.0, 40.0); 
+        flywheelMap.put(15.0, 60.0); 
     }
 
     
@@ -174,8 +174,6 @@ public class ShooterSubsystem extends SubsystemBase {
     }
  
     public Angle getHoodSetpoint() {
-        if (intent == ShotIntent.HUB || intent == ShotIntent.SOTM) return Degrees.of(MathUtil.clamp(hoodMap.get(getHubDistance().in(Meters)), 50.0, 70.0));
-        if (intent == ShotIntent.DUMP) return Degrees.of(MathUtil.clamp(hoodMap.get(getDumpDistance().in(Meters)), 50.0, 70.0));
         return Degrees.of(0);
     }
 
@@ -336,17 +334,14 @@ public class ShooterSubsystem extends SubsystemBase {
         double turretError = MathUtil.inputModulus(turretDeg - targetDeg, -180.0, 180.0);
         boolean turretReady = Math.abs(turretError) < 2.0;
 
-        double hoodDeg = hood.getAngle().in(Degrees);
         double targetHoodDeg = getHoodSetpoint().in(Degrees);
-        boolean hoodReady = Math.abs(hoodDeg - targetHoodDeg) < 1.5; 
 
         SmartDashboard.putBoolean("Ready_Debug/FlywheelReady", flywheelReady);
         SmartDashboard.putBoolean("Ready_Debug/TurretReady", turretReady);
-        SmartDashboard.putBoolean("Ready_Debug/HoodReady", hoodReady);
         SmartDashboard.putString("Ready_Debug/Intent", intent.name());
         
         if (edu.wpi.first.wpilibj.RobotBase.isSimulation()) return true; 
 
-        return flywheelReady && turretReady && hoodReady;
+        return flywheelReady && turretReady;
     }
 }

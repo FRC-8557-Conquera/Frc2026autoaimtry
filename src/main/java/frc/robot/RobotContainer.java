@@ -31,7 +31,6 @@ import frc.robot.commands.YerToplamaCommand;
 import frc.robot.subsystems.feeder.FeederSubsystem;
 import frc.robot.subsystems.intake.IntakeSubsystem;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
-import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem.ShotIntent;
@@ -52,18 +51,18 @@ public class RobotContainer {
 
   // Sürüş Butonları
   private final JoystickButton zeroGyro = new JoystickButton(driver, 3);
-  private final JoystickButton xLock = new JoystickButton(driver, 6);
+  private final JoystickButton xLock = new JoystickButton(driver, 1);
   private final JoystickButton turretLeftTest = new JoystickButton(driver2, 11);
   private final JoystickButton turretRightTest = new JoystickButton(driver2, 12);
 
   // Mekanizma Butonları
   
   private final JoystickButton debugShoot = new JoystickButton(driver2, 1);
-  private final JoystickButton intakeToggleButonu = new JoystickButton(driver, 2);
-  private final JoystickButton rollerButonu = new JoystickButton(driver, 1); 
+  private final JoystickButton intakeToggleButonu = new JoystickButton(driver, 5);
+  private final JoystickButton rollerButonu = new JoystickButton(driver, 6); 
 
   private final JoystickButton feedingTers = new JoystickButton(driver2, 4);
-  private final JoystickButton intakeTers = new JoystickButton(driver2, 6);
+  private final JoystickButton intakeTers = new JoystickButton(driver, 7);
 
   private final JoystickButton turretZero = new JoystickButton(driver2, 5);
   private final JoystickButton hubButton = new JoystickButton(driver2, 7);
