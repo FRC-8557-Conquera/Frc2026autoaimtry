@@ -80,6 +80,12 @@
           }
         },
         {
+          "type": "path",
+          "data": {
+            "pathName": "sag6"
+          }
+        },
+        {
           "type": "deadline",
           "data": {
             "commands": [
@@ -96,12 +102,6 @@
                 }
               }
             ]
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "sag6"
           }
         }
       ]

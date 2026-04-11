@@ -144,7 +144,7 @@ public class RobotContainer {
     
     // YENİDEN YAZILDI: Hub Butonu ile HUB moduna geçme ve bırakınca OFF moduna dönme işlemi
     hubButton.onTrue(Commands.run(() -> shooter.setIntent(ShotIntent.HUB)));
-    dumpButton.onTrue(Commands.run(() -> shooter.setIntent(ShotIntent.DUMP)));
+    // dumpButton.onTrue(Commands.run(() -> shooter.setIntent(ShotIntent.DUMP)));
     offButton.onTrue(Commands.run(()-> shooter.setIntent(ShotIntent.OFF)));
 
     feedingTers.whileTrue(new CombinedFeed(spindexer, feeder, true));

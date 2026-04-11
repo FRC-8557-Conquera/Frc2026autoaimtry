@@ -39,11 +39,13 @@ import edu.wpi.first.networktables.StructArrayPublisher;
 public class ShooterSubsystem extends SubsystemBase {
 
     private final SwerveSubsystem swerve;
-    private ShuffleboardTab tab;
     public ShotIntent intent = ShotIntent.HUB;
     public TurretSubsystem turret = new TurretSubsystem();
     public FlywheelSubsystem flywheel = new FlywheelSubsystem();
+    public GenericEntry flywheelEntry;
+    public GenericEntry hoodEntry;
 
+   
     private final InterpolatingDoubleTreeMap flywheelMap = new InterpolatingDoubleTreeMap();
     
     private Pose2d getHubPose() {
@@ -68,6 +70,10 @@ public class ShooterSubsystem extends SubsystemBase {
         return flywheel.setVelocity(() -> getFlywheelSetpoint());
     }
 
+    public DebugShootCommand debugShoot(SpindexerSubsystem spindexer, FeederSubsystem feeder) {
+        return new DebugShootCommand(spindexer, feeder, this, () -> flywheelEntry.getDouble(40.0));
+    }
+
     public void setIntent(ShotIntent intent) { this.intent = intent; }
     public ShotIntent getIntent() { return intent; }
 
@@ -77,7 +83,6 @@ public class ShooterSubsystem extends SubsystemBase {
         flywheelMap.put(2.4, 30.5);
         flywheelMap.put(3.1, 35.0);
         flywheelMap.put(4.0, 40.0); 
-        flywheelMap.put(15.0, 50.0);
     }
 
     
@@ -99,26 +104,21 @@ public class ShooterSubsystem extends SubsystemBase {
             return Degrees.of((setpointDeg));
         }
 
-        if (intent == ShotIntent.DUMP) {
-            var alliance = DriverStation.getAlliance();
-            boolean isRed = alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red;
-            // DS duvarından 2.5m içeri
-            Translation2d dumpTarget = new Translation2d(isRed ? 14.0 : 2.5, turretFieldPosition.getY());
-            Rotation2d fieldAngle = dumpTarget.minus(turretFieldPosition).getAngle().plus(Rotation2d.k180deg);
-            double setpointDeg = fieldAngle.minus(robotPose.getRotation()).getDegrees();
-            return Degrees.of(setpointDeg);
-        }
-        return Degrees.of(0.25);
-    }
 
+        
+        // OFF iken tarete "olduğun yerde kal" demek için iç açıya 0.25 eklememiz lazım,
+        // çünkü setAngle() her zaman 0.25 çıkarıyor. Eklemezsen feedback döngüsü oluşur ve taret döner.
+        return Rotations.of(0.25);
+
+    }
     public AngularVelocity getDumpVelocity() {
         boolean isRed = DriverStation.getAlliance().isPresent() && DriverStation.getAlliance().get() == DriverStation.Alliance.Red;
-        double robotX = swerve.getPose().getTranslation().getX();
-        double dumpX = isRed ? 14.0 : 2.5;
+        double robotX = swerve.getPose().getX();
+        double dumpX = isRed ? 6.5 : 2.5;
         double xDist = Math.abs(robotX - dumpX);
-        return flywheelMap.get(xDist) != null ? RotationsPerSecond.of(flywheelMap.get(xDist)) : RotationsPerSecond.of(50.0);
+        return RotationsPerSecond.of(flywheelMap.get(xDist) != null ? flywheelMap.get(xDist) : 50.0);
+        
     }
-
     public Distance getHubDistance() {
         Pose2d robotPose = swerve.getPose();
         Translation2d turretOffset = new Translation2d(-0.125, -0.105); 
@@ -133,11 +133,14 @@ public class ShooterSubsystem extends SubsystemBase {
             return RotationsPerSecond.of(rps);   
         }
         if (intent == ShotIntent.DUMP) {
-            return getDumpVelocity();
+            return getDumpVelocity();   
         }
         return RotationsPerSecond.of(0);
     }
 
+    public LinearVelocity getBaseExitVelocity(double distance) {
+        return MetersPerSecond.of(flywheelMap.get(distance) + Shooter.flywheelOffsetRPS);
+    }
     
     public enum ShotIntent { HUB, DUMP, OFF }
 }

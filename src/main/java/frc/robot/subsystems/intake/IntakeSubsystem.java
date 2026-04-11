@@ -82,7 +82,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public void setDeployTargetRotations(double rotations) {
         this.targetPositionRotations = rotations;
-    }
+    }  
 
     
     public void setRollerPower(double power) {

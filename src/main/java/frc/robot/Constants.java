@@ -94,11 +94,11 @@ public final class Constants {
     public static final int intakesag = 37; 
     public static final int rollerMotorID = 38; 
 
-    public static final double rollerInSpeed = 0.6; 
+    public static final double rollerInSpeed = 0.75; 
 
     // --- SENİN VERDİĞİN ÖZEL DEĞERLER ---
     public static final double KAPALI_POZISYON = -0.796; // Geri çekilince duracağı yer
-    public static final double ACIK_POZISYON = -2.628;   // Basınca gideceği uç nokta
+    public static final double ACIK_POZISYON = -2.630;   // Basınca gideceği uç nokta
 
     // Motion Magic Ayarları
     public static final double kP = 1.0;  
@@ -109,7 +109,7 @@ public final class Constants {
   /* ===================== SPINDEXER ===================== */
   public static final class Spindexer {
     public static final int spindexerMotor = 32; 
-    public static final double spindexerspeed = 0.5;
+    public static final double spindexerspeed = 0.6;
     public static final double reverseSpeed = -0.5;
   }
 
