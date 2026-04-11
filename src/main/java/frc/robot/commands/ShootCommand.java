@@ -37,13 +37,11 @@ public class ShootCommand extends Command {
         // 2. SÜRÜCÜ 2'NİN YAPTIĞI "BEKLE-FIRLAT" MANTIĞI
         double currentRPS = shooter.flywheel.getVelocity().in(RotationsPerSecond);
         
-        // Eğer motor hedef hıza yaklaştıysa (2.0 RPS hata payı ile)
         if (Math.abs(currentRPS - TARGET_RPS) < 2.0) { 
             // Topu fırlat!
             feeder.setDutyCycleDirect(Constants.Feeder.feedSpeed);
             spindexer.setDutyCycleDirect(Constants.Spindexer.spindexerspeed);
         } else {
-            // Motor hala devir alıyor, topu erken verip sıkıştırma! Durdur.
             feeder.stopDirect();
             spindexer.stopDirect();
         }

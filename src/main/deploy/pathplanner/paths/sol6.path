@@ -3,25 +3,25 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.762,
-        "y": 7.406
+        "x": 5.932,
+        "y": 5.53
       },
       "prevControl": null,
       "nextControl": {
-        "x": 4.7620000000000005,
-        "y": 7.406
+        "x": 5.3003996855406905,
+        "y": 5.530483624468888
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 6.614110718492345,
-        "y": 6.102190812720848
+        "x": 2.901162514827996,
+        "y": 5.53
       },
       "prevControl": {
-        "x": 7.0307538280329815,
-        "y": 7.501684334511189
+        "x": 4.145226073013772,
+        "y": 5.530266706057282
       },
       "nextControl": null,
       "isLocked": false,
@@ -45,7 +45,7 @@
     "rotation": 0.0
   },
   "reversed": false,
-  "folder": "sol cycle",
+  "folder": null,
   "idealStartingState": {
     "velocity": 0,
     "rotation": 0.0

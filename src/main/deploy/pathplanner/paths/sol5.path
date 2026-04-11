@@ -3,41 +3,41 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 8.27,
-        "y": 7.064
+        "x": 6.666,
+        "y": 6.237
       },
       "prevControl": null,
       "nextControl": {
-        "x": 8.590494699653599,
-        "y": 6.102190812720884
+        "x": 7.242416184971097,
+        "y": 5.645017341040463
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 8.034970553599418,
-        "y": 4.627915194346326
+        "x": 6.833479768786126,
+        "y": 3.9463583815028906
       },
       "prevControl": {
-        "x": 8.893016892600436,
-        "y": 4.069004276281444
+        "x": 8.03795490485212,
+        "y": 4.210352931873517
       },
       "nextControl": {
-        "x": 5.706042402833814,
-        "y": 6.144923439340436
+        "x": 6.068034682080924,
+        "y": 3.7785895953757236
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 3.762,
-        "y": 7.406
+        "x": 5.932,
+        "y": 5.53
       },
       "prevControl": {
-        "x": 9.381340400464188,
-        "y": 7.6623957597172785
+        "x": 5.915598440275159,
+        "y": 5.2805386025081384
       },
       "nextControl": null,
       "isLocked": false,
@@ -46,8 +46,24 @@
   ],
   "rotationTargets": [
     {
-      "waypointRelativePos": 1.1474245115452983,
-      "rotationDegrees": -112.88439397235051
+      "waypointRelativePos": 0.27225130890052246,
+      "rotationDegrees": -87.46571032396015
+    },
+    {
+      "waypointRelativePos": 0.5,
+      "rotationDegrees": -100.13731554620779
+    },
+    {
+      "waypointRelativePos": 0.6457242582897066,
+      "rotationDegrees": -116.98022095480455
+    },
+    {
+      "waypointRelativePos": 1.0226876090750496,
+      "rotationDegrees": 177.23607721770009
+    },
+    {
+      "waypointRelativePos": 1.6439790575916264,
+      "rotationDegrees": 90.0
     }
   ],
   "constraintZones": [],
@@ -63,10 +79,10 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 180.0
+    "rotation": 90.0
   },
   "reversed": false,
-  "folder": "sol cycle",
+  "folder": null,
   "idealStartingState": {
     "velocity": 0,
     "rotation": -90.0

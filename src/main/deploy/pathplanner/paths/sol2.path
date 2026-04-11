@@ -2,33 +2,26 @@
   "version": "2025.0",
   "waypoints": [
     {
-      "anchor": {
-        "x": 7.116,
-        "y": 7.0
-      },
+      "anchor": { "x": 7.116, "y": 7.06 },
       "prevControl": null,
-      "nextControl": {
-        "x": 7.53286219081272,
-        "y": 6.134240282685513
-      },
+      "nextControl": { "x": 7.53286219081272, "y": 6.194240282685513 },
       "isLocked": false,
       "linkedName": null
     },
     {
-      "anchor": {
-        "x": 7.872,
-        "y": 5.235
-      },
-      "prevControl": {
-        "x": 7.714475853945819,
-        "y": 5.675214487213344
-      },
+      "anchor": { "x": 7.83, "y": 4.712 },
+      "prevControl": { "x": 7.924371809377897, "y": 5.152392663474626 },
       "nextControl": null,
       "isLocked": false,
       "linkedName": null
     }
   ],
-  "rotationTargets": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.4,
+      "rotationDegrees": -78.42742215199465
+    }
+  ],
   "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [],
@@ -42,10 +35,10 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -90.0
+    "rotation": -98.47114463310373
   },
   "reversed": false,
-  "folder": "sol cycle",
+  "folder": null,
   "idealStartingState": {
     "velocity": 0,
     "rotation": -66.0

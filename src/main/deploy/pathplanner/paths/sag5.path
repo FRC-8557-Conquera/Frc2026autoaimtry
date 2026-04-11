@@ -3,41 +3,41 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 8.27,
-        "y": 0.936
+        "x": 6.666,
+        "y": 1.823
       },
       "prevControl": null,
       "nextControl": {
-        "x": 8.590494699653599,
-        "y": 1.897809187279116
+        "x": 7.242416184971097,
+        "y": 2.4149826589595373
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 8.034970553599418,
-        "y": 3.372084805653674
+        "x": 6.833479768786126,
+        "y": 4.11364161849711
       },
       "prevControl": {
-        "x": 8.893016892600436,
-        "y": 3.930995723718556
+        "x": 8.03795490485212,
+        "y": 3.8496470681264827
       },
       "nextControl": {
-        "x": 5.706042402833814,
-        "y": 1.855076560659564
+        "x": 6.068034682080924,
+        "y": 4.2814104046242765
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 3.762,
-        "y": 0.594
+        "x": 5.931722543352601,
+        "y": 2.530323699421965
       },
       "prevControl": {
-        "x": 9.381340400464188,
-        "y": 0.3376042402827215
+        "x": 5.915320983627759,
+        "y": 2.7797850969138267
       },
       "nextControl": null,
       "isLocked": false,
@@ -46,8 +46,24 @@
   ],
   "rotationTargets": [
     {
-      "waypointRelativePos": 1.1474245115452983,
-      "rotationDegrees": 112.88439397235051
+      "waypointRelativePos": 0.27225130890052246,
+      "rotationDegrees": 87.46571032396015
+    },
+    {
+      "waypointRelativePos": 0.5,
+      "rotationDegrees": 100.13731554620779
+    },
+    {
+      "waypointRelativePos": 0.6457242582897066,
+      "rotationDegrees": 116.98022095480455
+    },
+    {
+      "waypointRelativePos": 1.0226876090750496,
+      "rotationDegrees": -177.23607721770009
+    },
+    {
+      "waypointRelativePos": 1.6439790575916264,
+      "rotationDegrees": -90.0
     }
   ],
   "constraintZones": [],
@@ -63,10 +79,10 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -180.0
+    "rotation": -90.0
   },
   "reversed": false,
-  "folder": "sag cycle",
+  "folder": null,
   "idealStartingState": {
     "velocity": 0,
     "rotation": 90.0
