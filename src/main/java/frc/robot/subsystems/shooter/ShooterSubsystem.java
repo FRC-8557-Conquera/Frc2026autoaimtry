@@ -183,13 +183,12 @@ public class ShooterSubsystem extends SubsystemBase {
     public enum ShotIntent { HUB, SOTM, DUMP, OFF }
 
     public void updateTrajectoryVisualization() {
-        // EĞER OFF MODUNDAYSAK (ATEŞ ETMİYORSAK) RAM'İ YORMA, SADECE ÇİZGİYİ SİL VE ÇIK!
+        // EĞER OFF MODUNDAYSAK RAM'İ YORMA
         if (intent == ShotIntent.OFF) {
             trajectoryPub.set(new Pose3d[0]);
             return; 
         }
 
-        // TİCK SAYACI: İşlemi her 20ms'de bir değil, her 100ms'de bir (5 tick) yapıyoruz!
         trajTickCounter++;
         if (trajTickCounter < 5) return; 
         trajTickCounter = 0;
@@ -218,13 +217,17 @@ public class ShooterSubsystem extends SubsystemBase {
         }
         double vz = v0 * Math.sin(hoodPitch);   
 
-        java.util.ArrayList<Pose3d> trajectory = new java.util.ArrayList<>();
+        // OPTİMİZASYON 1: ArrayList'e başlangıç kapasitesi (60) vererek RAM'in sürekli yeniden boyutlandırma yapmasını engelledik.
+        java.util.ArrayList<Pose3d> trajectory = new java.util.ArrayList<>(60);
         double t = 0; double dt = 0.05; double z = startPos.getZ();
 
         while (z > 0 && t < 3.0) {
             double x = startPos.getX() + (vx * t);
             double y = startPos.getY() + (vy * t);
-            z = startPos.getZ() + (vz * t) - (0.5 * 9.81 * Math.pow(t, 2));
+            
+            // OPTİMİZASYON 2: İşlemci katili olan Math.pow(t, 2) yerine (t * t) kullanıldı.
+            // 0.5 * 9.81 işlemi önceden hesaplanıp sabitlendi (4.905).
+            z = startPos.getZ() + (vz * t) - (4.905 * (t * t));
 
             if (z > 0) trajectory.add(new Pose3d(x, y, z, new Rotation3d()));
             t += dt;
