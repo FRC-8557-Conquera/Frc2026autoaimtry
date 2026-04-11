@@ -75,7 +75,7 @@ public class IntakeSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         deployMotorLeft.setControl(positionRequest.withPosition(targetPositionRotations));
-        
+
         SmartDashboard.putNumber("Intake/Mevcut_Pozisyon", deployMotorLeft.getPosition().getValueAsDouble());
         SmartDashboard.putNumber("Intake/Hedef", targetPositionRotations);
     }

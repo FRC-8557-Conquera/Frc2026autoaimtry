@@ -43,27 +43,7 @@ public class ShooterSubsystem extends SubsystemBase {
     public ShotIntent intent = ShotIntent.HUB;
     public TurretSubsystem turret = new TurretSubsystem();
     public FlywheelSubsystem flywheel = new FlywheelSubsystem();
-    public GenericEntry flywheelEntry;
-    public GenericEntry hoodEntry;
-    private int trajTickCounter = 0; // Görselleştirme sayacı
-    private final StructArrayPublisher<Pose3d> trajectoryPub =
-        NetworkTableInstance.getDefault().getStructArrayTopic("AdvantageScope/Shooter_Trajectory", Pose3d.struct).publish();
-    private final StructArrayPublisher<Pose3d> flyingFuelsPub =
-        NetworkTableInstance.getDefault().getStructArrayTopic("AdvantageScope/FlyingFuels", Pose3d.struct).publish();
-    
-    private static class SimulatedFuel {
-        double x, y, z;
-        double vx, vy, vz;
-        double timeAlive = 0;
 
-        public SimulatedFuel(double x, double y, double z, double vx, double vy, double vz) {
-            this.x = x; this.y = y; this.z = z;
-            this.vx = vx; this.vy = vy; this.vz = vz;
-        }
-    }
-
-    private java.util.ArrayList<SimulatedFuel> flyingFuels = new java.util.ArrayList<>();
-    private final InterpolatingDoubleTreeMap hoodMap = new InterpolatingDoubleTreeMap();
     private final InterpolatingDoubleTreeMap flywheelMap = new InterpolatingDoubleTreeMap();
     
     private Pose2d getHubPose() {
@@ -77,28 +57,15 @@ public class ShooterSubsystem extends SubsystemBase {
     public ShooterSubsystem(SwerveSubsystem swerve) {
         this.swerve = swerve;
         buildLookupTables();
-        flywheelEntry = Shuffleboard.getTab("Shooter")
-            .add("FlywheelSpeed", 40.0)
-            .withWidget(BuiltInWidgets.kNumberSlider)
-            .getEntry();
-        hoodEntry = Shuffleboard.getTab("Shooter")
-            .add("HoodAngle", 0.0)
-            .withWidget(BuiltInWidgets.kNumberSlider)
-            .getEntry();
     }
 
     @Override
     public void periodic() {
         SmartDashboard.putBoolean("hubButtonPressed", intent != ShotIntent.OFF);
-        updateTrajectoryVisualization();
     }
 
     public Command debugShoot() {
         return flywheel.setVelocity(() -> getFlywheelSetpoint());
-    }
-
-    public DebugShootCommand debugShoot(SpindexerSubsystem spindexer, FeederSubsystem feeder) {
-        return new DebugShootCommand(spindexer, feeder, this, () -> flywheelEntry.getDouble(40.0));
     }
 
     public void setIntent(ShotIntent intent) { this.intent = intent; }
@@ -110,7 +77,7 @@ public class ShooterSubsystem extends SubsystemBase {
         flywheelMap.put(2.4, 30.5);
         flywheelMap.put(3.1, 35.0);
         flywheelMap.put(4.0, 40.0); 
-        flywheelMap.put(15.0, 60.0); 
+        flywheelMap.put(15.0, 50.0);
     }
 
     
@@ -119,8 +86,8 @@ public class ShooterSubsystem extends SubsystemBase {
         Translation2d turretOffset = new Translation2d(-0.125, -0.105); 
         Translation2d turretFieldPosition = robotPose.getTranslation().plus(turretOffset.rotateBy(robotPose.getRotation()));
 
-        if (intent == ShotIntent.HUB || intent == ShotIntent.SOTM) {
-            Translation2d targetTranslation = (intent == ShotIntent.SOTM) ? getVirtualTarget() : getHubPose().getTranslation();
+        if (intent == ShotIntent.HUB) {
+            Translation2d targetTranslation = getHubPose().getTranslation();
             
             // DÜZELTME 2: ESKİ KODDAKİ 180 DERECE FLIP YAMASI EKLENDİ! (Uzağa bakmayı çözer)
             Rotation2d fieldAngle = targetTranslation.minus(turretFieldPosition).getAngle().plus(Rotation2d.k180deg);
@@ -133,215 +100,44 @@ public class ShooterSubsystem extends SubsystemBase {
         }
 
         if (intent == ShotIntent.DUMP) {
-            Translation2d virtualDropZone = getDumpVirtualTarget();
-            // Dump için de 180 flip eklendi
-            Rotation2d fieldAngle = virtualDropZone.minus(turretFieldPosition).getAngle().plus(Rotation2d.k180deg);
-            Rotation2d turretRelative = fieldAngle.minus(robotPose.getRotation()); 
-            return Degrees.of((turretRelative.getDegrees())); 
+            var alliance = DriverStation.getAlliance();
+            boolean isRed = alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red;
+            // DS duvarından 2.5m içeri
+            Translation2d dumpTarget = new Translation2d(isRed ? 14.0 : 2.5, turretFieldPosition.getY());
+            Rotation2d fieldAngle = dumpTarget.minus(turretFieldPosition).getAngle().plus(Rotation2d.k180deg);
+            double setpointDeg = fieldAngle.minus(robotPose.getRotation()).getDegrees();
+            return Degrees.of(setpointDeg);
         }
-        
-        // OFF iken tarete "olduğun yerde kal" demek için iç açıya 0.25 eklememiz lazım,
-        // çünkü setAngle() her zaman 0.25 çıkarıyor. Eklemezsen feedback döngüsü oluşur ve taret döner.
-        return Rotations.of(0.25);
+        return Degrees.of(0.25);
     }
 
-    public Distance getDumpDistance() {
-        Pose2d robotPose = swerve.getPose();
-        Translation2d turretPos = robotPose.getTranslation().plus(new Translation2d(Turret.turretDist, 0).rotateBy(robotPose.getRotation()));
-        return Meters.of(turretPos.getDistance(getDumpVirtualTarget()));
+    public AngularVelocity getDumpVelocity() {
+        boolean isRed = DriverStation.getAlliance().isPresent() && DriverStation.getAlliance().get() == DriverStation.Alliance.Red;
+        double robotX = swerve.getPose().getTranslation().getX();
+        double dumpX = isRed ? 14.0 : 2.5;
+        double xDist = Math.abs(robotX - dumpX);
+        return flywheelMap.get(xDist) != null ? RotationsPerSecond.of(flywheelMap.get(xDist)) : RotationsPerSecond.of(50.0);
     }
-
-    public double getMagnitude(Transform2d pose) { return Math.sqrt(pose.getX() * pose.getX() + pose.getY() * pose.getY()); }
 
     public Distance getHubDistance() {
         Pose2d robotPose = swerve.getPose();
         Translation2d turretOffset = new Translation2d(-0.125, -0.105); 
         Translation2d turretFieldPosition = robotPose.getTranslation().plus(turretOffset.rotateBy(robotPose.getRotation()));
-        Translation2d targetTranslation = (intent == ShotIntent.SOTM) ? getVirtualTarget() : getHubPose().getTranslation();
+        Translation2d targetTranslation = getHubPose().getTranslation();
         return Meters.of(turretFieldPosition.getDistance(targetTranslation));
     }
 
     public AngularVelocity getFlywheelSetpoint() {
-        if (intent == ShotIntent.HUB || intent == ShotIntent.SOTM) {
+        if (intent == ShotIntent.HUB) {
             double rps = (flywheelMap.get(getHubDistance().in(Meters)) != null) ? flywheelMap.get(getHubDistance().in(Meters)) : 45.0;
             return RotationsPerSecond.of(rps);   
         }
         if (intent == ShotIntent.DUMP) {
-            double rps = (flywheelMap.get(getDumpDistance().in(Meters)) != null) ? flywheelMap.get(getDumpDistance().in(Meters)) : 45.0;
-            return RotationsPerSecond.of(rps);   
+            return getDumpVelocity();
         }
         return RotationsPerSecond.of(0);
     }
- 
-    public Angle getHoodSetpoint() {
-        return Degrees.of(0);
-    }
 
-    public Angle getHoodSetpoint(double distance) {
-        if(intent == ShotIntent.HUB || intent == ShotIntent.SOTM) return Degrees.of(MathUtil.clamp(hoodMap.get(distance), 20.0, 40.0));
-        return getHoodSetpoint();
-    }
-
-    public LinearVelocity getBaseExitVelocity(double distance) {
-        return MetersPerSecond.of(flywheelMap.get(distance) + Shooter.flywheelOffsetRPS);
-    }
     
-    public enum ShotIntent { HUB, SOTM, DUMP, OFF }
-
-    public void updateTrajectoryVisualization() {
-        if (intent == ShotIntent.OFF) {
-            trajectoryPub.set(new Pose3d[0]);
-            return; 
-        }
-
-        trajTickCounter++;
-        if (trajTickCounter < 5) return; 
-        trajTickCounter = 0;
-
-        Pose2d robotPose = swerve.getPose(); 
-        double hoodPitch = getHoodSetpoint().in(Radians);        
-        double turretYaw = getTurretSetpoint().in(Radians);        
-        double flywheelRPS = getFlywheelSetpoint().in(RotationsPerSecond);
-        
-        double radius = 0.0508; 
-        double v0 = (flywheelRPS * 2 * Math.PI * radius) * 0.8; 
-        Translation3d startPos = new Translation3d(robotPose.getX(), robotPose.getY(), 0.45);
-
-        double globalYaw = robotPose.getRotation().getRadians() + turretYaw;
-        double v_xy = v0 * Math.cos(hoodPitch); 
-
-        double vx, vy;
-        if (intent == ShotIntent.SOTM) {
-            var robotSpeeds = swerve.getChassisSpeeds();
-            Translation2d fieldVelocity = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond).rotateBy(robotPose.getRotation());
-            vx = (v_xy * Math.cos(globalYaw)) + fieldVelocity.getX(); 
-            vy = (v_xy * Math.sin(globalYaw)) + fieldVelocity.getY(); 
-        } else {
-            vx = v_xy * Math.cos(globalYaw); 
-            vy = v_xy * Math.sin(globalYaw); 
-        }
-        double vz = v0 * Math.sin(hoodPitch);   
-
-        // OPTİMİZASYON 1: ArrayList'e başlangıç kapasitesi (60) vererek RAM'in sürekli yeniden boyutlandırma yapmasını engelledik.
-        java.util.ArrayList<Pose3d> trajectory = new java.util.ArrayList<>(60);
-        double t = 0; double dt = 0.05; double z = startPos.getZ();
-
-        while (z > 0 && t < 3.0) {
-            double x = startPos.getX() + (vx * t);
-            double y = startPos.getY() + (vy * t);
-            
-            // OPTİMİZASYON 2: İşlemci katili olan Math.pow(t, 2) yerine (t * t) kullanıldı.
-            // 0.5 * 9.81 işlemi önceden hesaplanıp sabitlendi (4.905).
-            z = startPos.getZ() + (vz * t) - (4.905 * (t * t));
-
-            if (z > 0) trajectory.add(new Pose3d(x, y, z, new Rotation3d()));
-            t += dt;
-        }   
-        trajectoryPub.set(trajectory.toArray(new Pose3d[0]));
-    }
-
-    public Translation2d getVirtualTarget() {
-        Pose2d robotPose = swerve.getPose();
-        Translation2d actualHub = getHubPose().getTranslation();
-        double distanceToActual = robotPose.getTranslation().getDistance(actualHub);
-
-        var robotSpeeds = swerve.getChassisSpeeds();
-        Translation2d fieldVelocity = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond).rotateBy(robotPose.getRotation());
-        
-        double currentRPS = flywheelMap.get(distanceToActual) != null ? flywheelMap.get(distanceToActual) : 32.0;
-        double currentHoodRaw = hoodMap.get(distanceToActual) != null ? hoodMap.get(distanceToActual) : 50.0;
-        double v0 = (currentRPS * 2 * Math.PI * 0.0508) * 0.8;
-        double v_xy = v0 * Math.cos(Math.toRadians(currentHoodRaw));
-        if (v_xy < 0.1) v_xy = 0.1; 
-
-        double timeOfFlight = (distanceToActual / v_xy) + 0.04;
-
-        return new Translation2d(actualHub.getX() - (fieldVelocity.getX() * timeOfFlight), actualHub.getY() - (fieldVelocity.getY() * timeOfFlight));
-    }
-
-    public void spawnSimulatedFuel() {
-        Pose2d robotPose = swerve.getPose();
-        double v0 = (getFlywheelSetpoint().in(RotationsPerSecond) * 2 * Math.PI * 0.0508) * 0.8; 
-        double globalYaw = robotPose.getRotation().getRadians() + getTurretSetpoint().in(Radians);
-        double hoodPitch = getHoodSetpoint().in(Radians);
-        double v_xy = v0 * Math.cos(hoodPitch); 
-
-        var robotSpeeds = swerve.getChassisSpeeds();
-        Translation2d fieldVelocity = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond).rotateBy(robotPose.getRotation());
-        
-        flyingFuels.add(new SimulatedFuel(robotPose.getX(), robotPose.getY(), 0.45, 
-            (v_xy * Math.cos(globalYaw)) + fieldVelocity.getX(), (v_xy * Math.sin(globalYaw)) + fieldVelocity.getY(), v0 * Math.sin(hoodPitch)));
-    }
-
-    @Override
-    public void simulationPeriodic() {
-        double dt = 0.02; 
-        java.util.ArrayList<Pose3d> poseArray = new java.util.ArrayList<>();
-
-        var iterator = flyingFuels.iterator();
-        while (iterator.hasNext()) {
-            SimulatedFuel fuel = iterator.next();
-            fuel.x += fuel.vx * dt; fuel.y += fuel.vy * dt; fuel.z += fuel.vz * dt;
-            fuel.vz -= 9.81 * dt; 
-            fuel.timeAlive += dt;
-
-            if (fuel.z < 0.1 || fuel.timeAlive > 3.0) {
-                iterator.remove();
-            } else {
-                poseArray.add(new Pose3d(fuel.x, fuel.y, fuel.z, new Rotation3d()));
-            }
-        }
-        flyingFuelsPub.set(poseArray.toArray(new Pose3d[0]));
-    }
-
-    public Translation2d getDumpTargetPosition() {
-        Pose2d robotPose = swerve.getPose();
-        var alliance = DriverStation.getAlliance();
-        boolean isRed = alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red;
-        return new Translation2d(isRed ? 13.5 : 3.0, (robotPose.getY() > 4.1) ? 6.5 : 1.7);
-    }
-
-    public Translation2d getDumpVirtualTarget() {
-        Translation2d physicalTarget = getDumpTargetPosition();
-        Translation2d turretPos = swerve.getPose().getTranslation().plus(new Translation2d(Turret.turretDist, 0).rotateBy(swerve.getPose().getRotation()));
-        var robotSpeeds = swerve.getChassisSpeeds();
-        Translation2d fieldVelocity = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond).rotateBy(swerve.getPose().getRotation());
-
-        Translation2d virtualTarget = physicalTarget;
-        for(int i = 0; i < 3; i++) {
-            double distance = turretPos.getDistance(virtualTarget);
-            double rps = flywheelMap.get(distance) != null ? flywheelMap.get(distance) : 32.0;
-            double hoodDeg = hoodMap.get(distance) != null ? hoodMap.get(distance) : 50.0;
-            
-            double v_xy = ((rps * 2 * Math.PI * 0.0508) * 0.8) * Math.cos(Math.toRadians(hoodDeg));
-            if (v_xy < 0.1) v_xy = 0.1; 
-            
-            double timeOfFlight = distance / v_xy;
-            virtualTarget = new Translation2d(physicalTarget.getX() - (fieldVelocity.getX() * timeOfFlight), physicalTarget.getY() - (fieldVelocity.getY() * timeOfFlight));
-        }
-        return virtualTarget;
-    }
-
-    public boolean isReadyToShoot() {
-        if (intent == ShotIntent.OFF) return false;
-        
-        double flywheelRPS = flywheel.getVelocity().in(RotationsPerSecond);
-        double targetRPS = getFlywheelSetpoint().in(RotationsPerSecond);
-        boolean flywheelReady = Math.abs(flywheelRPS - targetRPS) < 1.5;
-
-        double turretDeg = turret.getAngle().in(Degrees);
-        double targetDeg = getTurretSetpoint().in(Degrees);
-        double turretError = MathUtil.inputModulus(turretDeg - targetDeg, -180.0, 180.0);
-        boolean turretReady = Math.abs(turretError) < 2.0;
-
-        double targetHoodDeg = getHoodSetpoint().in(Degrees);
-
-        SmartDashboard.putBoolean("Ready_Debug/FlywheelReady", flywheelReady);
-        SmartDashboard.putBoolean("Ready_Debug/TurretReady", turretReady);
-        SmartDashboard.putString("Ready_Debug/Intent", intent.name());
-        
-        if (edu.wpi.first.wpilibj.RobotBase.isSimulation()) return true; 
-
-        return flywheelReady && turretReady;
-    }
+    public enum ShotIntent { HUB, DUMP, OFF }
 }
