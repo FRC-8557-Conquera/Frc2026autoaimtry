@@ -1,39 +1,47 @@
 package frc.robot.commands;
 
-import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.Constants;
-import frc.robot.subsystems.feeder.FeederSubsystem;
-import frc.robot.subsystems.shooter.ShooterSubsystem;
-import frc.robot.subsystems.spindexer.SpindexerSubsystem;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
+
+import java.util.function.DoubleSupplier;
+
+import edu.wpi.first.networktables.GenericEntry;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.subsystems.spindexer.SpindexerSubsystem;
+import frc.robot.subsystems.feeder.FeederSubsystem;
+import frc.robot.subsystems.shooter.FlywheelSubsystem;
+import frc.robot.subsystems.shooter.ShooterSubsystem;
+import frc.robot.Constants;
 
 public class ShootCommand extends Command {
     private final SpindexerSubsystem spindexer;
     private final FeederSubsystem feeder;
     private final ShooterSubsystem shooter;
-    
-    // KODDAN DEĞİŞTİREBİLECEĞİN SABİT HIZ (40 RPS = 2400 RPM)
-    private final double TARGET_RPS = 40.0; 
 
+
+    // Constructor'a "targetRPS" eklendi!
     public ShootCommand(SpindexerSubsystem spindexer, FeederSubsystem feeder, ShooterSubsystem shooter) {
         this.spindexer = spindexer;
         this.feeder = feeder;
         this.shooter = shooter;
-        
-        // Otonomda alt sistemlerin çakışmasını engellemek için Require zorunludur
-        addRequirements(spindexer, feeder, shooter.flywheel); 
+        // DİKKAT: Turret ve Hood gereksinimden ÇIKARILDI! 
+        // Turret kendi başına arka planda bağımsız çalışacak.
+        addRequirements(spindexer, feeder, shooter.flywheel);
     }
 
     @Override
     public void initialize() {
-        // Başlangıç temizliği
     }
 
     @Override
     public void execute() {
-        // 1. FLYWHEEL'E GÜCÜ VER (Hedef: 40 RPS)
-        shooter.flywheel.setRPSDirect(TARGET_RPS);
+        // ÖNEMLİ: .schedule() KESİNLİKLE KULLANILMAZ!
+        // Alt sistemlere gidip bu "Direct" (Command döndürmeyen void) metotları eklemelisin.
         
+<<<<<<< Updated upstream
         // 2. SÜRÜCÜ 2'NİN YAPTIĞI "BEKLE-FIRLAT" MANTIĞI
         double currentRPS = shooter.flywheel.getVelocity().in(RotationsPerSecond);
         
@@ -45,19 +53,20 @@ public class ShootCommand extends Command {
             feeder.stopDirect();
             spindexer.stopDirect();
         }
+=======
+        shooter.flywheel.setVelocity(() -> shooter.getFlywheelSetpoint())
+            .schedule(); 
+        spindexer.setMotor(Constants.Spindexer.spindexerspeed); 
+        feeder.reverse().schedule();
+>>>>>>> Stashed changes
     }
+
 
     @Override
     public void end(boolean interrupted) {
-        // Komut (PathPlanner'daki wait süresi dolunca) bittiğinde her şeyi sustur
-        shooter.flywheel.stopDirect();
-        feeder.stopDirect();
-        spindexer.stopDirect();
-    }
-    
-    @Override
-    public boolean isFinished() {
-        // İstediğin gibi, komut kod içinde asla kendi kendine bitmez, süreyi PathPlanner yönetir.
-        return false; 
+        // Motoları durdur
+        shooter.flywheel.setVelocity(RotationsPerSecond.of(0)).schedule();
+        spindexer.stop().schedule();;
+        feeder.stop().schedule();;
     }
 }

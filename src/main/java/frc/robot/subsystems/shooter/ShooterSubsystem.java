@@ -95,7 +95,7 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public Command debugShoot() {
-        return flywheel.setVelocity(() -> RotationsPerSecond.of(SmartDashboard.getNumber("FlywheelSpeed", 40.0)));
+        return flywheel.setVelocity(() -> getFlywheelSetpoint());
     }
 
     public DebugShootCommand debugShoot(SpindexerSubsystem spindexer, FeederSubsystem feeder) {
@@ -106,11 +106,11 @@ public class ShooterSubsystem extends SubsystemBase {
     public ShotIntent getIntent() { return intent; }
 
     private void buildLookupTables() {
-        hoodMap.put(1.5, 70.0); hoodMap.put(2.5, 65.0); hoodMap.put(3.5, 60.0); 
-        hoodMap.put(4.5, 55.0); hoodMap.put(5.5, 50.0);
-
-        flywheelMap.put(1.5, 23.0); flywheelMap.put(2.5, 25.5); flywheelMap.put(3.5, 27.5);
-        flywheelMap.put(4.5, 30.0); flywheelMap.put(5.5, 32.0);
+        flywheelMap.put(1.3, 27.5); 
+        flywheelMap.put(2.0, 29.0); 
+        flywheelMap.put(2.4, 30.5);
+        flywheelMap.put(3.1, 35.0);
+        flywheelMap.put(4.0, 40.0); 
     }
 
     
@@ -155,13 +155,21 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public Distance getHubDistance() {
         Pose2d robotPose = swerve.getPose();
+        Translation2d turretOffset = new Translation2d(-0.125, -0.105); 
+        Translation2d turretFieldPosition = robotPose.getTranslation().plus(turretOffset.rotateBy(robotPose.getRotation()));
         Translation2d targetTranslation = (intent == ShotIntent.SOTM) ? getVirtualTarget() : getHubPose().getTranslation();
-        return Meters.of(robotPose.getTranslation().getDistance(targetTranslation));
+        return Meters.of(turretFieldPosition.getDistance(targetTranslation));
     }
 
     public AngularVelocity getFlywheelSetpoint() {
-        if (intent == ShotIntent.HUB || intent == ShotIntent.SOTM) return RotationsPerSecond.of(flywheelMap.get(getHubDistance().in(Meters)));
-        if (intent == ShotIntent.DUMP) return RotationsPerSecond.of(flywheelMap.get(getDumpDistance().in(Meters)));
+        if (intent == ShotIntent.HUB || intent == ShotIntent.SOTM) {
+            double rps = (flywheelMap.get(getHubDistance().in(Meters)) != null) ? flywheelMap.get(getHubDistance().in(Meters)) : 45.0;
+            return RotationsPerSecond.of(rps);   
+        }
+        if (intent == ShotIntent.DUMP) {
+            double rps = (flywheelMap.get(getDumpDistance().in(Meters)) != null) ? flywheelMap.get(getDumpDistance().in(Meters)) : 45.0;
+            return RotationsPerSecond.of(rps);   
+        }
         return RotationsPerSecond.of(0);
     }
  
@@ -183,7 +191,6 @@ public class ShooterSubsystem extends SubsystemBase {
     public enum ShotIntent { HUB, SOTM, DUMP, OFF }
 
     public void updateTrajectoryVisualization() {
-        // EĞER OFF MODUNDAYSAK RAM'İ YORMA
         if (intent == ShotIntent.OFF) {
             trajectoryPub.set(new Pose3d[0]);
             return; 

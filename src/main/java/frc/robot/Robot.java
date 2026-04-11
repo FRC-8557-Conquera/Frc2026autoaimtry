@@ -39,28 +39,8 @@ public class Robot extends TimedRobot
     
     @Override
     public void robotInit() {
-        // --- DİNAMİK USB TESPİTİ (Sabit /V/ veya /U/ kullanmak risklidir, otonom kontrol eklenmiştir) ---
-        String logPath = "/home/lvuser/hoot_logs"; // Kötü senaryo: İç hafızaya geri dönüş
-        
-        java.io.File usbV = new java.io.File("/V/");
-        java.io.File usbU = new java.io.File("/U/");
-
-        if (usbV.exists() && usbV.isDirectory()) {
-            logPath = "/V/hoot_logs";
-            System.out.println("LOGGING DURUMU: USB tespit edildi (/V/). Loglar güvenli alana yazılıyor.");
-        } else if (usbU.exists() && usbU.isDirectory()) {
-            logPath = "/U/hoot_logs";
-            System.out.println("LOGGING DURUMU: USB tespit edildi (/U/). Loglar güvenli alana yazılıyor.");
-        } else {
-            DriverStation.reportWarning("KRİTİK UYARI: USB Bellek bulunamadı! Loglar roboRIO dahili hafızasına yazılıyor.", false);
-        }
-
-        SignalLogger.setPath(logPath);
         SignalLogger.start();
-        // ------------------------------------------------------------------------------------------------
-
         robotContainer = new RobotContainer();
-
         SmartDashboard.putNumber("FlywheelSpeed", 40.0);
     }
 
