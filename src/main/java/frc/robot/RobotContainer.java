@@ -52,9 +52,7 @@ public class RobotContainer {
   // Sürüş Butonları
   private final JoystickButton zeroGyro = new JoystickButton(driver, 3);
   private final JoystickButton xLock = new JoystickButton(driver, 1);
-  private final JoystickButton turretLeftTest = new JoystickButton(driver2, 11);
-  private final JoystickButton turretRightTest = new JoystickButton(driver2, 12);
-
+ 
   // Mekanizma Butonları
   
   private final JoystickButton debugShoot = new JoystickButton(driver2, 1);
@@ -62,11 +60,13 @@ public class RobotContainer {
   private final JoystickButton rollerButonu = new JoystickButton(driver, 6); 
 
   private final JoystickButton feedingTers = new JoystickButton(driver2, 4);
+  private final JoystickButton feeding = new JoystickButton(driver2, 3);
+  
   private final JoystickButton intakeTers = new JoystickButton(driver, 7);
 
   private final JoystickButton turretZero = new JoystickButton(driver2, 5);
   private final JoystickButton hubButton = new JoystickButton(driver2, 7);
-  private final JoystickButton dumpButton = new JoystickButton(driver2, 8);
+  private final JoystickButton naiveButton = new JoystickButton(driver2, 8);
   private final JoystickButton offButton = new JoystickButton(driver2, 9);
   
   // Yazılım Butonları
@@ -130,7 +130,7 @@ public class RobotContainer {
     
     configureButtonBindings();
     s_Swerve.zeroGyroWithAlliance();    
-    turret.setDefaultCommand(turret.setAngle(() -> shooter.getTurretSetpoint()));
+    // turret.setDefaultCommand(turret.setAngle(() -> shooter.getTurretSetpoint()));
   }
 
   private void configureButtonBindings() {
@@ -143,12 +143,13 @@ public class RobotContainer {
   //  flywheelSysID.whileTrue(flywheel.sysId());
     
     // YENİDEN YAZILDI: Hub Butonu ile HUB moduna geçme ve bırakınca OFF moduna dönme işlemi
-    hubButton.onTrue(Commands.run(() -> shooter.setIntent(ShotIntent.HUB)));
+    hubButton.onTrue(Commands.runOnce(() -> shooter.setIntent(ShotIntent.HUB)));
     // dumpButton.onTrue(Commands.run(() -> shooter.setIntent(ShotIntent.DUMP)));
-    offButton.onTrue(Commands.run(()-> shooter.setIntent(ShotIntent.OFF)));
+    offButton.onTrue(Commands.runOnce(() -> shooter.setIntent(ShotIntent.OFF)));
+    
 
     feedingTers.whileTrue(new CombinedFeed(spindexer, feeder, true));
-
+    feeding.whileTrue(new CombinedFeed(spindexer, feeder, false));
 
     intakeTers.whileTrue(Commands.run(()-> intake.setRollerPower(-Constants.Intake.rollerInSpeed),intake))
     .onFalse(Commands.runOnce(() -> intake.setRollerPower(0.0), intake));
@@ -160,11 +161,6 @@ public class RobotContainer {
 
     zeroGyro.onTrue(new InstantCommand(() -> s_Swerve.zeroGyro()));
     xLock.whileTrue(Commands.runOnce(() -> s_Swerve.lock(), s_Swerve).repeatedly());
-
-    // TURRET (Sağ-Sol Dönüş) -> %30 güçle
-    turretLeftTest.whileTrue(turret.rotateDutyCycle(0.2)).onFalse(turret.stop());
-    turretRightTest.whileTrue(turret.rotateDutyCycle(-0.2)).onFalse(turret.stop());
-    turretZero.whileTrue(turret.setAngle(Rotations.of(0.25)));
 
     // HOOD (Yukarı-Aşağı Kalkış) -> %30 güçle
     //hoodUpTest.whileTrue(hood.rotateDutyCycle(0.3)).onFalse(hood.stop());

@@ -38,7 +38,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final SparkMax turretMotor = new SparkMax(Constants.Turret.turretMotor, MotorType.kBrushless);
     
     private final SmartMotorControllerConfig motorConfig = new SmartMotorControllerConfig(this)
-            .withClosedLoopController(2.3, 0, 0.23)
+            .withClosedLoopController(1.7, 0, 0.01)
             .withGearing(new MechanismGearing(Constants.Turret.gearRatio)) 
             .withIdleMode(MotorMode.BRAKE)
             .withTelemetry("TurretMotor", TelemetryVerbosity.LOW)
@@ -48,7 +48,7 @@ public class TurretSubsystem extends SubsystemBase {
             .withOpenLoopRampRate(Seconds.of(0.25))
             .withSoftLimit(Rotations.of(-0.325), Rotations.of(0.350)) 
             // HATA DÜZELTİLDİ: Yatay dönen taret için SimpleMotorFeedforward kullanıldı!
-            .withFeedforward(new SimpleMotorFeedforward(0, 0.0, 0)) 
+            .withFeedforward(new SimpleMotorFeedforward(0.0, 0.0, 0.0)) 
             .withControlMode(ControlMode.CLOSED_LOOP);
                         
     private final SmartMotorController turretSMC = new SparkWrapper(turretMotor, DCMotor.getNEO(1), motorConfig);

@@ -6,6 +6,9 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import java.util.ArrayList;
+import java.util.DoubleSummaryStatistics;
+import java.util.function.DoubleSupplier;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -37,13 +40,10 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 
 public class ShooterSubsystem extends SubsystemBase {
-
     private final SwerveSubsystem swerve;
     public ShotIntent intent = ShotIntent.HUB;
     public TurretSubsystem turret = new TurretSubsystem();
     public FlywheelSubsystem flywheel = new FlywheelSubsystem();
-    public GenericEntry flywheelEntry;
-    public GenericEntry hoodEntry;
 
    
     private final InterpolatingDoubleTreeMap flywheelMap = new InterpolatingDoubleTreeMap();
@@ -68,10 +68,6 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public Command debugShoot() {
         return flywheel.setVelocity(() -> getFlywheelSetpoint());
-    }
-
-    public DebugShootCommand debugShoot(SpindexerSubsystem spindexer, FeederSubsystem feeder) {
-        return new DebugShootCommand(spindexer, feeder, this, () -> flywheelEntry.getDouble(40.0));
     }
 
     public void setIntent(ShotIntent intent) { this.intent = intent; }
@@ -103,8 +99,6 @@ public class ShooterSubsystem extends SubsystemBase {
             double setpointDeg = fieldAngle.minus(robotPose.getRotation()).getDegrees();
             return Degrees.of((setpointDeg));
         }
-
-
         
         // OFF iken tarete "olduğun yerde kal" demek için iç açıya 0.25 eklememiz lazım,
         // çünkü setAngle() her zaman 0.25 çıkarıyor. Eklemezsen feedback döngüsü oluşur ve taret döner.
